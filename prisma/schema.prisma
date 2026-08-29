@@ -1,0 +1,830 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Leadwise Partnership Outreach CRM — data model
+//
+// Design principles:
+//  1. Every outreach interaction is an immutable-ish Activity row, never a
+//     boolean flag. Organisation.status / lastContactedAt are *derived cache*
+//     columns kept in sync by the activity service, never the source of truth.
+//  2. Soft deletion (deletedAt) on every CRM record so history is never lost.
+//  3. Normalised shadow columns (nameNormalized, domain, emailNormalized, ...)
+//     exist purely to make duplicate detection fast and index-backed.
+//  4. Indexes cover every filter/sort exposed in the UI.
+// ─────────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  OWNER
+  TL
+  INTERN
+}
+
+enum Priority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+/// Organisation lifecycle stage. Order matters: used for funnel ordering.
+enum OrgStatus {
+  NEW
+  ASSIGNED
+  CONTACTED
+  RESPONDED
+  INTERESTED
+  MEETING
+  PARTNERSHIP
+  REJECTED
+}
+
+enum ContactStatus {
+  NEW
+  CONTACTED
+  RESPONDED
+  INTERESTED
+  NOT_INTERESTED
+  UNREACHABLE
+}
+
+enum ActivityType {
+  CALL
+  EMAIL
+  LINKEDIN
+  MEETING
+  FOLLOW_UP
+  NOTE
+}
+
+/// Union of every per-channel outcome. Which subset is valid for a given
+/// ActivityType is enforced in the Zod layer (see src/lib/validation).
+enum ActivityOutcome {
+  // CALL
+  NO_ANSWER
+  BUSY
+  CONNECTED
+  CALL_BACK
+  WRONG_NUMBER
+  // EMAIL
+  SENT
+  REPLIED
+  BOUNCED
+  NO_RESPONSE
+  // LINKEDIN
+  PROFILE_FOUND
+  CONNECTION_SENT
+  CONNECTION_ACCEPTED
+  MESSAGE_SENT
+  // MEETING
+  MEETING_SCHEDULED
+  MEETING_COMPLETED
+  NO_SHOW
+  RESCHEDULED
+  // Shared sentiment outcomes
+  INTERESTED
+  NOT_INTERESTED
+  // FOLLOW_UP / NOTE
+  COMPLETED
+  LOGGED
+  OTHER
+}
+
+enum FollowUpStatus {
+  PENDING
+  DONE
+  CANCELLED
+}
+
+enum ReassignmentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum BackupStatus {
+  IN_PROGRESS
+  SUCCESS
+  PARTIAL_SUCCESS
+  FAILED
+}
+
+enum BackupTrigger {
+  SCHEDULED
+  MANUAL
+}
+
+enum NotificationPriority {
+  INFO
+  WARNING
+  URGENT
+}
+
+enum NotificationType {
+  FOLLOW_UP_DUE
+  FOLLOW_UP_OVERDUE
+  MEETING_REMINDER
+  ASSIGNMENT
+  BACKUP_COMPLETED
+  BACKUP_FAILED
+  SYSTEM
+}
+
+// ── Users & team ─────────────────────────────────────────────────────────────
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         Role      @default(INTERN)
+  phone        String?
+  /// Tailwind-safe accent key for the avatar chip (violet, teal, amber, ...)
+  avatarColor  String    @default("violet")
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  organisationsAssigned Organisation[] @relation("OrganisationAssignee")
+  organisationsCreated  Organisation[] @relation("OrganisationCreator")
+  contactsAssigned      Contact[]      @relation("ContactAssignee")
+  contactsCreated       Contact[]      @relation("ContactCreator")
+  activities            Activity[]     @relation("ActivityPerformer")
+  followUpsAssigned     FollowUp[]     @relation("FollowUpAssignee")
+  followUpsCreated      FollowUp[]     @relation("FollowUpCreator")
+  followUpsCompleted    FollowUp[]     @relation("FollowUpCompleter")
+  auditLogs             AuditLog[]
+  eodReports            EodReport[]
+  importBatches         ImportBatch[]
+
+  reassignmentsRequested ReassignmentRequest[] @relation("ReassignmentRequester")
+  reassignmentsDecided   ReassignmentRequest[] @relation("ReassignmentDecider")
+
+  notifications          Notification[]
+  notificationPreference NotificationPreference?
+  backupsCreated         BackupRecord[]        @relation("BackupCreator")
+  tagsCreated            Tag[]
+  templatesCreated       Template[]
+  target                 UserTarget?
+  savedViews             SavedView[]
+  comments               Comment[]
+  apiKeys                ApiKey[]
+  webhooks               WebhookEndpoint[]
+  attachments            Attachment[]
+
+  @@index([role])
+  @@index([isActive])
+  @@index([deletedAt])
+}
+
+// ── Organisations ────────────────────────────────────────────────────────────
+
+model Organisation {
+  id   String @id @default(cuid())
+  name String
+
+  /// lowercased, punctuation/suffix-stripped name — duplicate detection key
+  nameNormalized String
+
+  /// Sector / vertical, e.g. "Behavioural Health", "School", "NGO"
+  category String?
+  website  String?
+
+  /// bare hostname extracted from website (e.g. "athenabehavioural.com")
+  domain String?
+
+  generalEmail String?
+  generalPhone String?
+  linkedinUrl  String?
+  location     String?
+
+  priority Priority  @default(MEDIUM)
+  status   OrgStatus @default(NEW)
+  notes    String?
+
+  /// P1 Additions
+  nextAction        String?
+  leadSource        String?
+  leadSourceDetail  String?
+  rejectionReason   String?
+  rejectionNote     String?
+  partnershipStage  String?
+
+  /// P2 AI Intelligence & Scoring
+  aiScore                 Int?
+  aiScoreFactors          Json?
+  aiPriority              Priority?
+  aiSummary               String?
+  aiPartnershipLikelihood Int?
+  aiLastAnalyzedAt        DateTime?
+
+  /// P2 Custom Fields
+  customFields Json?
+
+  assignedToId String?
+  createdById  String
+
+  /// Derived caches, maintained by the activity service
+  lastContactedAt DateTime?
+  nextFollowupAt  DateTime?
+  activityCount   Int       @default(0)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  assignedTo User?  @relation("OrganisationAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdBy  User   @relation("OrganisationCreator", fields: [createdById], references: [id])
+
+  contacts             Contact[]
+  activities           Activity[]
+  followUps            FollowUp[]
+  reassignmentRequests ReassignmentRequest[]
+  tags                 OrganisationTag[]
+  comments             Comment[]
+  attachments          Attachment[]
+
+  @@index([nameNormalized])
+  @@index([domain])
+  @@index([status])
+  @@index([priority])
+  @@index([assignedToId])
+  @@index([nextFollowupAt])
+  @@index([lastContactedAt])
+  @@index([category])
+  @@index([leadSource])
+  @@index([aiScore])
+  @@index([deletedAt])
+  @@index([deletedAt, status])
+  @@index([deletedAt, assignedToId])
+}
+
+// ── Contacts ─────────────────────────────────────────────────────────────────
+
+model Contact {
+  id             String @id @default(cuid())
+  organisationId String
+
+  name           String
+  nameNormalized String
+
+  designation String?
+  department  String?
+
+  email           String?
+  emailNormalized String?
+  secondaryEmail  String?
+
+  phone           String?
+  /// digits-only phone, last 10 significant digits — duplicate detection key
+  phoneNormalized String?
+  secondaryPhone  String?
+
+  linkedinUrl     String?
+  /// normalised linkedin slug — duplicate detection key
+  linkedinHandle  String?
+
+  leadSource      String?
+
+  isDecisionMaker Boolean       @default(false)
+  priority        Priority      @default(MEDIUM)
+  status          ContactStatus @default(NEW)
+  notes           String?
+
+  /// P2 AI Contact Intelligence
+  aiScore         Int?
+  aiScoreFactors  Json?
+  aiDmConfidence  Int?
+  aiSummary       String?
+  customFields    Json?
+
+  assignedToId String?
+  createdById  String
+
+  lastContactedAt DateTime?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  assignedTo   User?        @relation("ContactAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdBy    User         @relation("ContactCreator", fields: [createdById], references: [id])
+
+  activities Activity[]
+  followUps  FollowUp[]
+  tags       ContactTag[]
+
+  @@index([organisationId])
+  @@index([nameNormalized])
+  @@index([emailNormalized])
+  @@index([phoneNormalized])
+  @@index([linkedinHandle])
+  @@index([isDecisionMaker])
+  @@index([assignedToId])
+  @@index([deletedAt])
+  @@index([deletedAt, organisationId])
+}
+
+// ── Activities — the heart of the CRM ────────────────────────────────────────
+
+model Activity {
+  id             String  @id @default(cuid())
+  organisationId String
+  contactId      String?
+  performedById  String
+
+  type         ActivityType
+  activityDate DateTime     @default(now())
+  outcome      ActivityOutcome
+  notes        String?
+
+  nextFollowupDate DateTime?
+
+  // ── Optional channel metadata ──
+  emailSubject    String?
+  emailTemplate   String?
+  emailUsed       String?
+  phoneNumberUsed String?
+  linkedinUrl     String?
+  meetingDate     DateTime?
+  /// Where the meeting happened / link
+  meetingLocation String?
+
+  /// Snapshot of the organisation status this activity moved things to (audit aid)
+  statusAfter OrgStatus?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  contact      Contact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  performedBy  User         @relation("ActivityPerformer", fields: [performedById], references: [id])
+
+  followUps FollowUp[]
+
+  @@index([organisationId, activityDate])
+  @@index([contactId])
+  @@index([performedById, activityDate])
+  @@index([type])
+  @@index([activityDate])
+  @@index([outcome])
+  @@index([deletedAt])
+  @@index([deletedAt, activityDate])
+  @@index([deletedAt, performedById, activityDate])
+}
+
+// ── Follow-ups ───────────────────────────────────────────────────────────────
+
+model FollowUp {
+  id             String  @id @default(cuid())
+  organisationId String
+  contactId      String?
+  /// The activity that spawned this follow-up, when applicable
+  activityId     String?
+
+  dueDate DateTime
+  note    String?
+  status  FollowUpStatus @default(PENDING)
+
+  reminderEnabled    Boolean   @default(true)
+  lastReminderSentAt DateTime?
+
+  assignedToId String
+  createdById  String
+
+  completedAt   DateTime?
+  completedById String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  contact      Contact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  activity     Activity?    @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  assignedTo   User         @relation("FollowUpAssignee", fields: [assignedToId], references: [id])
+  createdBy    User         @relation("FollowUpCreator", fields: [createdById], references: [id])
+  completedBy  User?        @relation("FollowUpCompleter", fields: [completedById], references: [id], onDelete: SetNull)
+
+  @@index([dueDate, status])
+  @@index([assignedToId, status, dueDate])
+  @@index([organisationId])
+  @@index([status])
+  @@index([deletedAt])
+  @@index([deletedAt, status, dueDate])
+}
+
+// ── Assignment conflict resolution ───────────────────────────────────────────
+
+model ReassignmentRequest {
+  id             String @id @default(cuid())
+  organisationId String
+
+  requestedById     String
+  currentAssigneeId String?
+  reason            String?
+
+  status     ReassignmentStatus @default(PENDING)
+  decidedById String?
+  decidedAt   DateTime?
+  decisionNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  requestedBy  User         @relation("ReassignmentRequester", fields: [requestedById], references: [id])
+  decidedBy    User?        @relation("ReassignmentDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([organisationId])
+  @@index([requestedById])
+}
+
+// ── EOD reports ──────────────────────────────────────────────────────────────
+
+model EodReport {
+  id String @id @default(cuid())
+
+  /// "YYYY-MM-DD" in APP_TIMEZONE — one canonical report per day
+  dateKey    String   @unique
+  reportDate DateTime
+
+  /// Deterministic metrics computed from the DB. AI never writes these.
+  metrics Json
+  /// Per-user breakdown rows
+  perUser Json
+  /// Notable status changes / hot leads pulled from activities
+  keyUpdates Json
+
+  /// AI-written narrative sections (nullable — EOD works without AI)
+  aiSummary    String?
+  aiHighlights Json?
+  aiProvider   String?
+  aiModel      String?
+  aiFailed     Boolean @default(false)
+
+  /// The exact WhatsApp-formatted text that was presented to the user
+  whatsappText String
+
+  version         Int       @default(1)
+  generatedById   String
+  lastSentAt      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  generatedBy User @relation(fields: [generatedById], references: [id])
+
+  @@index([reportDate])
+}
+
+// ── Audit trail ──────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id     String  @id @default(cuid())
+  userId String?
+
+  /// e.g. "organisation.status_changed", "organisation.assigned"
+  action      String
+  entityType  String
+  entityId    String
+  /// Human-readable label so the log survives entity deletion
+  entityLabel String?
+
+  /// Short human sentence rendered in the UI
+  summary String
+
+  before Json?
+  after  Json?
+
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId, createdAt])
+  @@index([userId, createdAt])
+  @@index([createdAt])
+  @@index([action])
+}
+
+// ── Excel import batches ─────────────────────────────────────────────────────
+
+model ImportBatch {
+  id           String @id @default(cuid())
+  fileName     String
+  uploadedById String
+
+  totalRows         Int
+  imported          Int @default(0)
+  updated           Int @default(0)
+  skippedDuplicates Int @default(0)
+  invalid           Int @default(0)
+
+  /// Column mapping used + per-row error report
+  summary Json?
+
+  createdAt DateTime @default(now())
+
+  uploadedBy User @relation(fields: [uploadedById], references: [id])
+
+  @@index([createdAt])
+}
+
+// ── Key/value app settings (WhatsApp target number, org name, ...) ───────────
+
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+// ── Backups ──────────────────────────────────────────────────────────────────
+
+model BackupRecord {
+  id           String        @id @default(cuid())
+  fileName     String
+  fileSizeBytes BigInt        @default(0)
+  status       BackupStatus  @default(IN_PROGRESS)
+  trigger      BackupTrigger @default(SCHEDULED)
+
+  organisationsCount Int @default(0)
+  contactsCount      Int @default(0)
+  activitiesCount    Int @default(0)
+  followUpsCount     Int @default(0)
+  usersCount         Int @default(0)
+  eodReportsCount    Int @default(0)
+
+  driveFileId   String?
+  driveFolderId String?
+  driveViewUrl  String?
+
+  errorMessage      String?
+  validationSummary Json?
+
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  createdById String?
+  createdBy   User?   @relation("BackupCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([status])
+}
+
+// ── Notifications ────────────────────────────────────────────────────────────
+
+model Notification {
+  id        String               @id @default(cuid())
+  userId    String
+  type      NotificationType
+  priority  NotificationPriority @default(INFO)
+
+  title     String
+  message   String
+  linkUrl   String?
+
+  entityType String?
+  entityId   String?
+
+  isRead    Boolean   @default(false)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt])
+  @@index([userId, createdAt])
+  @@index([type])
+}
+
+// ── User Notification Preferences ────────────────────────────────────────────
+
+model NotificationPreference {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+
+  followUpReminders        Boolean @default(true)
+  /// "SAME_DAY" | "ONE_DAY_BEFORE"
+  followUpReminderTiming   String  @default("SAME_DAY")
+  overdueReminders         Boolean @default(true)
+  meetingReminders         Boolean @default(true)
+  assignmentNotifications  Boolean @default(true)
+  backupAlerts             Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ── Tags ─────────────────────────────────────────────────────────────────────
+
+model Tag {
+  id         String   @id @default(cuid())
+  name       String   @unique
+  color      String   @default("violet")
+  isArchived Boolean  @default(false)
+
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organisations OrganisationTag[]
+  contacts      ContactTag[]
+
+  @@index([name])
+  @@index([isArchived])
+}
+
+model OrganisationTag {
+  organisationId String
+  tagId          String
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  tag          Tag          @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([organisationId, tagId])
+  @@index([tagId])
+  @@index([organisationId])
+}
+
+model ContactTag {
+  contactId String
+  tagId     String
+
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([contactId, tagId])
+  @@index([tagId])
+  @@index([contactId])
+}
+
+// ── Outreach Templates ───────────────────────────────────────────────────────
+
+model Template {
+  id          String   @id @default(cuid())
+  title       String
+  category    String   // "EMAIL", "LINKEDIN", "CALL_SCRIPT", "WHATSAPP"
+  subcategory String?  // "INITIAL_OUTREACH", "FOLLOW_UP", "MEETING_REQUEST", "PROPOSAL", "THANK_YOU", "OTHER"
+  subject     String?
+  body        String
+  isArchived  Boolean  @default(false)
+
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([isArchived])
+}
+
+// ── Team Daily Targets ───────────────────────────────────────────────────────
+
+model UserTarget {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  dailyOrganisations Int      @default(20)
+  dailyCalls         Int      @default(15)
+  dailyEmails        Int      @default(20)
+  dailyLinkedin      Int      @default(10)
+  dailyMeetings      Int      @default(2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ── Saved Filters & Views ────────────────────────────────────────────────────
+
+model SavedView {
+  id         String   @id @default(cuid())
+  name       String
+  entityType String   // "ORGANISATION", "CONTACT", "ACTIVITY", "PIPELINE"
+  filters    Json
+  isShared   Boolean  @default(false)
+
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([entityType])
+  @@index([createdById])
+  @@index([isShared])
+}
+
+// ── Internal Comments & Notes ────────────────────────────────────────────────
+
+model Comment {
+  id             String   @id @default(cuid())
+  organisationId String
+  authorId       String
+  body           String
+  mentions       String[] @default([])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  author       User         @relation(fields: [authorId], references: [id])
+
+  @@index([organisationId])
+  @@index([authorId])
+  @@index([deletedAt])
+}
+
+// ── Public REST API Keys ─────────────────────────────────────────────────────
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  name        String
+  keyHash     String    @unique
+  prefix      String    // First 8 chars for identification
+  userId      String
+  permissions String[]  @default(["read", "write"])
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  isRevoked   Boolean   @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([keyHash])
+  @@index([userId])
+}
+
+// ── Webhook Endpoints ────────────────────────────────────────────────────────
+
+model WebhookEndpoint {
+  id          String   @id @default(cuid())
+  url         String
+  secret      String   // HMAC signing secret
+  events      String[] // e.g. ["organisation.created", "activity.created"]
+  isActive    Boolean  @default(true)
+  createdById String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  @@index([isActive])
+}
+
+// ── Report Schedules ─────────────────────────────────────────────────────────
+
+model ReportSchedule {
+  id        String    @id @default(cuid())
+  type      String    // "EOD" | "WEEKLY" | "MONTHLY"
+  cronExpr  String    @default("0 19 * * 1-5")
+  lastRunAt DateTime?
+  isActive  Boolean   @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([type])
+}
+
+// ── Attachments & Documents ──────────────────────────────────────────────────
+
+model Attachment {
+  id             String   @id @default(cuid())
+  organisationId String
+  filename       String
+  fileSize       Int
+  mimeType       String
+  contentBase64  String   // In-DB zero-cost storage for proposals/agreements
+  uploadedById   String
+
+  createdAt DateTime @default(now())
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  uploadedBy   User         @relation(fields: [uploadedById], references: [id])
+
+  @@index([organisationId])
+  @@index([uploadedById])
+}

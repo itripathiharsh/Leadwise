@@ -1,0 +1,24 @@
+{
+  "name": "leadwise-whatsapp-agent",
+  "version": "1.0.0",
+  "description": "Local WhatsApp Web automation agent for Leadwise CRM EOD dispatch",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/server.ts",
+    "dev": "tsx watch src/server.ts",
+    "setup": "npx playwright install chromium"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "playwright": "^1.52.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
