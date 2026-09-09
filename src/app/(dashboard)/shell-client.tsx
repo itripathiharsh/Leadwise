@@ -154,21 +154,20 @@ export function DashboardShell({
       <aside className="hidden lg:flex w-64 flex-col border-r border-border/80 bg-surface/90 backdrop-blur-xl shrink-0 z-20">
         {/* Brand */}
         <div className="flex h-16 items-center justify-between px-5 border-b border-border/80">
-          <Link href="/dashboard" prefetch={true} className="flex items-center gap-2.5 group">
-            <div className="flex size-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-[0_0_16px_-2px_rgba(99,102,241,0.5)] group-hover:scale-105 transition-transform duration-200">
-              <Sparkles className="size-4.5" />
-            </div>
-            <div>
-              <div className="font-bold text-sm tracking-tight text-foreground flex items-center gap-1.5">
-                Leadwise
-                <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded-md bg-primary/15 text-primary border border-primary/25">
-                  CRM
-                </span>
-              </div>
-              <div className="text-[10px] uppercase font-medium tracking-wider text-muted-foreground">
-                Partnership Command Center
-              </div>
-            </div>
+          <Link href="/dashboard" prefetch={true} className="flex items-center gap-3 group">
+            <img
+              src="/logo-white-text.png"
+              alt="Leadwise"
+              className="h-8 w-auto object-contain drop-shadow-[0_0_12px_rgba(99,102,241,0.25)] group-hover:scale-105 transition-transform duration-200 hidden dark:block"
+            />
+            <img
+              src="/logo.png"
+              alt="Leadwise"
+              className="h-8 w-auto object-contain group-hover:scale-105 transition-transform duration-200 block dark:hidden"
+            />
+            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-primary/15 text-primary border border-primary/25">
+              CRM
+            </span>
           </Link>
         </div>
 

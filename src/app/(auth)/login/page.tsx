@@ -124,18 +124,27 @@ export default function LoginPage() {
 
         {/* Brand Header */}
         <div className="relative z-10 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative flex size-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-hover text-white shadow-lg shadow-primary/25 ring-1 ring-white/20">
-              <Sparkles className="size-5" />
+          <div className="flex items-center gap-5">
+            <div className="relative flex items-center">
+              <img
+                src="/logo-white-text.png"
+                alt="Leadwise"
+                className="h-12 xl:h-14 w-auto object-contain drop-shadow-[0_0_25px_rgba(99,102,241,0.35)] hidden dark:block"
+              />
+              <img
+                src="/logo.png"
+                alt="Leadwise"
+                className="h-12 xl:h-14 w-auto object-contain drop-shadow-[0_0_15px_rgba(0,0,0,0.1)] block dark:hidden"
+              />
             </div>
+            <div className="h-8 w-px bg-border/60" />
             <div>
-              <div className="font-display font-extrabold text-xl tracking-tight text-foreground flex items-center gap-2">
-                Leadwise
+              <div className="flex items-center gap-2">
                 <span className="text-[10px] font-bold tracking-widest uppercase px-2.5 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30">
                   Command Center
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground font-medium">
+              <p className="text-[11px] text-muted-foreground font-medium mt-0.5">
                 Partnership Intelligence & Outreach Platform
               </p>
             </div>
@@ -256,32 +265,50 @@ export default function LoginPage() {
 
         <div className="w-full max-w-md space-y-6 relative z-10">
           {/* Mobile Brand Header */}
-          <div className="flex flex-col items-center text-center space-y-2 lg:hidden">
-            <div className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-hover text-white shadow-lg shadow-primary/25 mb-1">
-              <Sparkles className="size-6" />
-            </div>
-            <h1 className="font-display font-extrabold text-2xl tracking-tight text-foreground">
-              Leadwise CRM
-            </h1>
-            <p className="text-xs text-muted-foreground max-w-xs">
+          <div className="flex flex-col items-center text-center space-y-2.5 lg:hidden">
+            <img
+              src="/logo-white-text.png"
+              alt="Leadwise"
+              className="h-14 w-auto object-contain drop-shadow-[0_0_25px_rgba(99,102,241,0.35)] mb-1 hidden dark:block"
+            />
+            <img
+              src="/logo.png"
+              alt="Leadwise"
+              className="h-14 w-auto object-contain drop-shadow-[0_0_15px_rgba(0,0,0,0.1)] mb-1 block dark:hidden"
+            />
+            <p className="text-xs text-muted-foreground max-w-xs font-medium">
               Partnership Intelligence Command Center
             </p>
           </div>
 
           {/* Form Container */}
           <div className="glass-card rounded-2xl border border-border/90 bg-surface/85 backdrop-blur-2xl p-7 sm:p-9 shadow-2xl space-y-6 rim-highlight">
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <h2 className="font-display font-bold text-xl tracking-tight text-foreground">
-                  Sign in to Leadwise
-                </h2>
-                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 font-semibold">
-                  Internal
+            <div className="space-y-4">
+              <div className="flex items-center justify-between pb-1 border-b border-border/50">
+                <div>
+                  <img
+                    src="/logo-white-text.png"
+                    alt="Leadwise"
+                    className="h-9 sm:h-10 w-auto object-contain drop-shadow-[0_0_15px_rgba(99,102,241,0.25)] hidden dark:block"
+                  />
+                  <img
+                    src="/logo.png"
+                    alt="Leadwise"
+                    className="h-9 sm:h-10 w-auto object-contain drop-shadow-[0_0_10px_rgba(0,0,0,0.1)] block dark:hidden"
+                  />
+                </div>
+                <span className="text-[10px] font-mono uppercase px-2.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 font-semibold">
+                  Secure Access
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Enter your authorized credentials to access your partnership pipeline, team accounts, and outreach cadences.
-              </p>
+              <div>
+                <h2 className="font-display font-bold text-xl tracking-tight text-foreground">
+                  Sign in to Command Center
+                </h2>
+                <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+                  Enter your authorized credentials to access your partnership pipeline, team accounts, and outreach cadences.
+                </p>
+              </div>
             </div>
 
             <form onSubmit={handleLogin} className="space-y-4">
