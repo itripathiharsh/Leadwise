@@ -2,15 +2,37 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import { Sparkles, ArrowRight, Lock, Mail } from 'lucide-react'
+import Link from 'next/link'
+import {
+  Sparkles,
+  ArrowRight,
+  Lock,
+  Mail,
+  Eye,
+  EyeOff,
+  Building2,
+  Users,
+  PhoneCall,
+  CalendarCheck,
+  Award,
+  CheckCircle2,
+  ShieldCheck,
+  TrendingUp,
+  Activity,
+  ChevronRight,
+  Sparkle,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input, Label } from '@/components/ui/field'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
+  const [showPassword, setShowPassword] = React.useState(false)
+  const [rememberMe, setRememberMe] = React.useState(true)
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
@@ -29,7 +51,7 @@ export default function LoginPage() {
       const data = await res.json()
 
       if (!res.ok || data.error) {
-        setError(data.error || 'Sign in failed. Check credentials.')
+        setError(data.error || 'Sign in failed. Please verify your email and password.')
         setLoading(false)
         return
       }
@@ -37,81 +59,326 @@ export default function LoginPage() {
       toast.success(`Welcome back, ${data.user.name}!`)
       window.location.href = '/dashboard'
     } catch {
-      setError('Network error while signing in. Please try again.')
+      setError('Network error while signing in. Please check connection and try again.')
       setLoading(false)
     }
   }
 
+  const pipelineStages = [
+    {
+      step: '01',
+      stage: 'Organization',
+      name: 'National Wellness Institute',
+      category: 'Healthcare & Wellness',
+      status: 'Target Identified',
+      icon: Building2,
+      accent: 'text-sky-400 bg-sky-500/10 border-sky-500/20',
+    },
+    {
+      step: '02',
+      stage: 'Key Contact',
+      name: 'Dr. Evelyn Vance (Chief Medical Officer)',
+      category: 'Verified Decision Maker',
+      status: 'Direct Channel Ready',
+      icon: Users,
+      accent: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20',
+    },
+    {
+      step: '03',
+      stage: 'Outreach & Cadence',
+      name: 'Tailored Clinical Proposal Sent',
+      category: 'Priority Phone & Direct Email',
+      status: 'Response Received (Warm)',
+      icon: PhoneCall,
+      accent: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+    },
+    {
+      step: '04',
+      stage: 'Partnership Meeting',
+      name: 'Strategic Integration & Demo',
+      category: 'Scheduled for Tomorrow, 11:00 AM',
+      status: 'Agenda Confirmed',
+      icon: CalendarCheck,
+      accent: 'text-purple-400 bg-purple-500/10 border-purple-500/20',
+    },
+    {
+      step: '05',
+      stage: 'Mutual Partnership',
+      name: 'Leadwise Clinical MoU Finalized',
+      category: 'Active Co-Branded Launch',
+      status: 'Signed & Ongoing',
+      icon: Award,
+      accent: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+    },
+  ]
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-8 bg-surface-muted/60">
-      <div className="w-full max-w-md space-y-6">
+    <div className="flex min-h-screen w-full bg-canvas text-foreground overflow-hidden">
+      {/* LEFT SIDE: Brand Showcase & Animated Interactive Command Center */}
+      <div className="relative hidden lg:flex lg:w-[54%] flex-col justify-between p-12 xl:p-16 border-r border-border bg-gradient-to-br from-surface to-canvas overflow-hidden">
+        {/* Ambient Glows */}
+        <div className="absolute -top-32 -left-32 size-[500px] rounded-full bg-primary/15 blur-[120px] pointer-events-none" />
+        <div className="absolute top-1/2 -right-32 size-[450px] rounded-full bg-purple-600/10 blur-[130px] pointer-events-none" />
+        <div className="absolute -bottom-32 left-1/4 size-[400px] rounded-full bg-emerald-600/10 blur-[120px] pointer-events-none" />
+        <div className="absolute inset-0 bg-grid opacity-[0.18] pointer-events-none" />
+
         {/* Brand Header */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md mb-2">
-            <Sparkles className="size-6" />
-          </div>
-          <h1 className="font-bold text-2xl tracking-tight text-foreground">
-            Leadwise Outreach
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            Single Source of Truth for Partnership Outreach & Activities
-          </p>
-        </div>
-
-        {/* Login Card */}
-        <div className="rounded-2xl border border-border bg-surface p-6 sm:p-8 shadow-sm space-y-6">
-          <form onSubmit={handleLogin} className="space-y-4">
-            {error && (
-              <div className="rounded-lg border border-destructive/30 bg-destructive-soft p-3 text-xs text-destructive font-medium">
-                {error}
+        <div className="relative z-10 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="relative flex size-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-hover text-white shadow-lg shadow-primary/25 ring-1 ring-white/20">
+              <Sparkles className="size-5" />
+            </div>
+            <div>
+              <div className="font-display font-extrabold text-xl tracking-tight text-foreground flex items-center gap-2">
+                Leadwise
+                <span className="text-[10px] font-bold tracking-widest uppercase px-2.5 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30">
+                  Command Center
+                </span>
               </div>
-            )}
-
-            <div className="space-y-1.5">
-              <Label htmlFor="email" required>Email address</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="name@leadwise.com"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                leading={<Mail className="size-4 text-muted-foreground" />}
-              />
+              <p className="text-xs text-muted-foreground font-medium">
+                Partnership Intelligence & Outreach Platform
+              </p>
             </div>
+          </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="password" required>Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                leading={<Lock className="size-4 text-muted-foreground" />}
-              />
-            </div>
-
-            <Button
-              type="submit"
-              variant="primary"
-              size="lg"
-              className="w-full mt-2"
-              loading={loading}
-              icon={<ArrowRight className="size-4" />}
-            >
-              Sign In to CRM
-            </Button>
-          </form>
-
-
+          <div className="hidden xl:flex items-center gap-2 px-3 py-1 rounded-full border border-border/80 bg-surface/60 backdrop-blur-md text-xs font-mono text-muted-foreground">
+            <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>INSTITUTIONAL SYNC ACTIVE</span>
+          </div>
         </div>
 
-        <p className="text-center text-xs text-muted-foreground">
-          Protected by Leadwise RBAC & Secure Session Tokens
-        </p>
+        {/* Hero Narrative & Animated CRM Pipeline */}
+        <div className="relative z-10 my-auto py-8 space-y-8 max-w-2xl">
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-semibold">
+              <Sparkle className="size-3.5" />
+              <span>Turn high-friction outreach into verified partnerships</span>
+            </div>
+            <h1 className="font-display text-4xl xl:text-5xl font-black tracking-tight text-foreground leading-[1.15]">
+              The Partnership Intelligence Command Center.
+            </h1>
+            <p className="text-sm xl:text-base text-muted-foreground leading-relaxed">
+              Orchestrate executive-tier clinical outreach, map authenticated institutional decision-makers, and convert strategic relationships into verified partnerships with zero friction.
+            </p>
+          </div>
+
+          {/* Interactive Miniature Pipeline Simulation */}
+          <div className="relative rounded-2xl border border-border/80 bg-surface/70 backdrop-blur-xl p-6 shadow-2xl space-y-4 rim-highlight">
+            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+              <div className="flex items-center gap-2">
+                <Activity className="size-4 text-primary" />
+                <span className="text-xs font-bold uppercase tracking-wider text-foreground">
+                  The Leadwise Deal Progression Engine
+                </span>
+              </div>
+              <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 font-semibold">
+                100% Traceability
+              </span>
+            </div>
+
+            <div className="relative space-y-2.5">
+              {pipelineStages.map((item, idx) => {
+                const Icon = item.icon
+                const isLast = idx === pipelineStages.length - 1
+
+                return (
+                  <div
+                    key={item.step}
+                    className={cn(
+                      'group relative flex items-center gap-3.5 rounded-xl border p-2.5 transition-all duration-300',
+                      isLast
+                        ? 'border-emerald-500/40 bg-emerald-500/5 hover:bg-emerald-500/10 shadow-sm'
+                        : 'border-border/60 bg-surface/40 hover:bg-surface-elevated/70 hover:border-border'
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        'flex size-9 items-center justify-center rounded-lg border font-mono text-xs font-bold shrink-0 transition-transform group-hover:scale-105',
+                        item.accent
+                      )}
+                    >
+                      <Icon className="size-4.5" />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[10px] text-muted-foreground font-semibold">
+                            {item.step}
+                          </span>
+                          <span className="text-xs font-bold text-foreground truncate">
+                            {item.stage}
+                          </span>
+                          <ChevronRight className="size-3 text-muted-foreground/60" />
+                          <span className="text-xs font-medium text-foreground/90 truncate">
+                            {item.name}
+                          </span>
+                        </div>
+                        <span
+                          className={cn(
+                            'text-[10px] px-2 py-0.5 rounded-md font-mono shrink-0 font-medium',
+                            isLast
+                              ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                              : 'bg-surface text-muted-foreground border border-border/80'
+                          )}
+                        >
+                          {item.status}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-muted-foreground flex items-center gap-2 mt-0.5">
+                        <span>{item.category}</span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Security & Reliability Footer */}
+        <div className="relative z-10 flex items-center justify-between border-t border-border/60 pt-6 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="size-4 text-emerald-400 shrink-0" />
+            <span>Multi-tier Enterprise RBAC with zero data leaks</span>
+          </div>
+          <div className="flex items-center gap-1.5 font-mono text-[11px]">
+            <TrendingUp className="size-3.5 text-primary" />
+            <span>Velocity Engine 3.2</span>
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT SIDE: High-Density Executive Login Card */}
+      <div className="relative flex flex-1 flex-col items-center justify-center p-6 sm:p-12 lg:p-16 bg-surface/30">
+        {/* Subtle Ambient Radial Light */}
+        <div className="absolute -top-24 right-0 size-80 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+
+        <div className="w-full max-w-md space-y-6 relative z-10">
+          {/* Mobile Brand Header */}
+          <div className="flex flex-col items-center text-center space-y-2 lg:hidden">
+            <div className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-hover text-white shadow-lg shadow-primary/25 mb-1">
+              <Sparkles className="size-6" />
+            </div>
+            <h1 className="font-display font-extrabold text-2xl tracking-tight text-foreground">
+              Leadwise CRM
+            </h1>
+            <p className="text-xs text-muted-foreground max-w-xs">
+              Partnership Intelligence Command Center
+            </p>
+          </div>
+
+          {/* Form Container */}
+          <div className="glass-card rounded-2xl border border-border/90 bg-surface/85 backdrop-blur-2xl p-7 sm:p-9 shadow-2xl space-y-6 rim-highlight">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <h2 className="font-display font-bold text-xl tracking-tight text-foreground">
+                  Sign in to Leadwise
+                </h2>
+                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 font-semibold">
+                  Internal
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Enter your authorized credentials to access your partnership pipeline, team accounts, and outreach cadences.
+              </p>
+            </div>
+
+            <form onSubmit={handleLogin} className="space-y-4">
+              {error && (
+                <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-3.5 text-xs text-destructive font-medium animate-in-fast flex items-start gap-2.5">
+                  <div className="size-2 rounded-full bg-destructive mt-1 shrink-0 animate-ping" />
+                  <span className="leading-tight">{error}</span>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label htmlFor="email" required className="text-xs font-semibold text-foreground/90">
+                  Corporate Email
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="harsh@sentiomind.com"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  leading={<Mail className="size-4 text-muted-foreground" />}
+                  className="bg-surface-elevated/60 border-border focus:bg-surface focus:border-primary transition-all text-sm"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" required className="text-xs font-semibold text-foreground/90">
+                    Secure Password
+                  </Label>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="text-[11px] font-medium text-muted-foreground hover:text-primary inline-flex items-center gap-1 transition-colors"
+                  >
+                    {showPassword ? (
+                      <>
+                        <EyeOff className="size-3" />
+                        <span>Hide</span>
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="size-3" />
+                        <span>Show</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••••••"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  leading={<Lock className="size-4 text-muted-foreground" />}
+                  className="bg-surface-elevated/60 border-border focus:bg-surface focus:border-primary transition-all text-sm"
+                />
+              </div>
+
+              <div className="flex items-center justify-between pt-1 text-xs">
+                <label className="flex items-center gap-2 cursor-pointer select-none text-muted-foreground hover:text-foreground transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="rounded border-border text-primary focus:ring-primary/40 size-3.5 bg-surface-elevated"
+                  />
+                  <span className="text-xs">Remember this device</span>
+                </label>
+                <span className="text-[11px] text-muted-foreground/70 font-mono">
+                  AES-256 Auth
+                </span>
+              </div>
+
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                className="w-full mt-2 font-bold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all duration-200"
+                loading={loading}
+                loadingText="Authenticating command..."
+                icon={<ArrowRight className="size-4" />}
+              >
+                Launch Command Center
+              </Button>
+            </form>
+          </div>
+
+          {/* Quick Access Helper */}
+          <div className="rounded-xl border border-border/60 bg-surface/50 p-3.5 text-center text-xs text-muted-foreground backdrop-blur-md">
+            <span>Production Partnership Portal · Sentiomind Group</span>
+          </div>
+        </div>
       </div>
     </div>
   )

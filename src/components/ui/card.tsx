@@ -1,17 +1,36 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 
+export interface CardProps extends React.ComponentProps<'div'> {
+  interactive?: boolean
+  variant?: 'default' | 'elevated' | 'subtle' | 'ghost' | 'glass' | 'glow'
+  sheen?: boolean
+}
+
 export function Card({
   className,
   interactive = false,
+  variant = 'default',
+  sheen = false,
   ...props
-}: React.ComponentProps<'div'> & { interactive?: boolean }) {
+}: CardProps) {
+  const variantStyles = {
+    default: 'border border-border/80 bg-card text-card-foreground shadow-xs rim-highlight',
+    elevated: 'border border-border/90 bg-surface-raised text-card-foreground shadow-md rim-highlight',
+    subtle: 'border border-border/50 bg-surface-muted/50 text-card-foreground shadow-none',
+    ghost: 'border-0 bg-transparent shadow-none',
+    glass: 'border border-border/70 bg-surface/80 backdrop-blur-xl text-card-foreground shadow-xs rim-highlight',
+    glow: 'border border-primary/30 bg-primary-soft/15 text-card-foreground shadow-sm rim-highlight',
+  }
+
   return (
     <div
       className={cn(
-        'rounded-xl border border-border bg-card text-card-foreground shadow-xs',
+        'rounded-xl transition-all duration-200 ease-out',
+        variantStyles[variant],
+        sheen && 'surface-sheen',
         interactive &&
-          'transition-[border-color,box-shadow] duration-150 hover:border-border-strong hover:shadow-sm',
+          'cursor-pointer hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0',
         className,
       )}
       {...props}

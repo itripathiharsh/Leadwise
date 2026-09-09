@@ -12,6 +12,7 @@ import {
   Mail,
   CalendarCheck,
   Plus,
+  RefreshCw,
 } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -64,30 +65,63 @@ export default function CalendarPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 p-4 sm:p-6 lg:p-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <CalendarIcon className="size-6 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Outreach &amp; Follow-up Calendar
-            </h1>
+      {/* Executive Command Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/80 pb-5">
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary shadow-xs">
+              <CalendarIcon className="size-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2.5">
+                <h1 className="font-display font-extrabold text-2xl tracking-tight text-foreground">
+                  Meeting Schedule & Deadlines
+                </h1>
+                <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-surface-elevated text-primary border border-primary/20 font-bold">
+                  {events.length} Scheduled
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Time-mapped discovery calls, follow-up deadlines, and partnership alignment syncs.
+              </p>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Scheduled follow-ups, discovery meetings, and outreach deadlines.
-          </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={prevMonth} icon={<ChevronLeft className="size-4" />} />
-          <span className="text-sm font-bold min-w-36 text-center">{monthName}</span>
-          <Button variant="outline" size="sm" onClick={nextMonth} icon={<ChevronRight className="size-4" />} />
+        <div className="flex items-center gap-2.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchEvents}
+            icon={<RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />}
+            className="border-border hover:bg-surface-elevated"
+          >
+            Refresh
+          </Button>
+
+          <div className="flex items-center gap-1 rounded-xl border border-border/80 bg-surface/80 p-1 shadow-xs">
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={prevMonth}
+              icon={<ChevronLeft className="size-3.5" />}
+            />
+            <span className="text-xs font-bold font-mono min-w-32 text-center text-foreground px-2">
+              {monthName}
+            </span>
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={nextMonth}
+              icon={<ChevronRight className="size-3.5" />}
+            />
+          </div>
         </div>
       </div>
 
       {/* Calendar Grid */}
-      <Card className="border-border bg-surface shadow-xs overflow-hidden">
-        <div className="grid grid-cols-7 border-b border-border text-center text-xs font-bold py-2.5 bg-surface-muted/50 text-muted-foreground uppercase">
+      <div className="glass-card rounded-2xl border border-border/90 bg-surface/80 shadow-md overflow-hidden rim-highlight">
+        <div className="grid grid-cols-7 border-b border-border/80 text-center text-xs font-mono font-bold py-3 bg-surface-elevated/50 text-muted-foreground uppercase tracking-wider">
           <div>Sun</div>
           <div>Mon</div>
           <div>Tue</div>
@@ -97,9 +131,9 @@ export default function CalendarPage() {
           <div>Sat</div>
         </div>
 
-        <div className="grid grid-cols-7 divide-x divide-y divide-border border-b border-border">
+        <div className="grid grid-cols-7 divide-x divide-y divide-border/60 border-b border-border/60">
           {blanksArray.map((_, i) => (
-            <div key={`blank-${i}`} className="min-h-28 bg-surface-muted/20 p-2" />
+            <div key={`blank-${i}`} className="min-h-32 bg-surface-elevated/20 p-2" />
           ))}
 
           {daysArray.map((d) => {
@@ -111,30 +145,43 @@ export default function CalendarPage() {
               <div
                 key={`day-${d}`}
                 className={cn(
-                  'min-h-28 p-2 transition-colors relative space-y-1',
-                  isToday ? 'bg-primary-soft/20 ring-1 ring-inset ring-primary' : 'bg-surface hover:bg-muted/30',
+                  'min-h-32 p-2.5 transition-colors relative space-y-1.5',
+                  isToday
+                    ? 'bg-primary/10 ring-2 ring-inset ring-primary/60'
+                    : 'bg-surface/50 hover:bg-surface-elevated/60',
                 )}
               >
                 <div className="flex items-center justify-between text-xs">
-                  <span className={cn('font-bold', isToday ? 'text-primary' : 'text-muted-foreground')}>
+                  <span
+                    className={cn(
+                      'font-mono font-bold text-xs',
+                      isToday
+                        ? 'text-primary flex items-center gap-1'
+                        : 'text-muted-foreground',
+                    )}
+                  >
+                    {isToday && <span className="size-1.5 rounded-full bg-primary animate-pulse" />}
                     {d}
                   </span>
                   {dayEvents.length > 0 && (
-                    <Badge tone="blue" size="sm">
+                    <span className="font-mono text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-primary/20 text-primary border border-primary/30">
                       {dayEvents.length}
-                    </Badge>
+                    </span>
                   )}
                 </div>
 
-                <div className="space-y-1 max-h-20 overflow-y-auto pr-0.5">
+                <div className="space-y-1 max-h-24 overflow-y-auto pr-0.5">
                   {dayEvents.map((ev) => (
                     <Link
                       key={ev.id}
                       href={`/organisations/${ev.organisationId}`}
-                      className="block p-1 rounded-md bg-surface-muted/90 border border-border text-[10px] hover:border-primary transition-colors"
+                      className="block p-1.5 rounded-lg bg-surface-elevated/80 border border-border/70 text-[10px] hover:border-primary transition-all shadow-2xs"
                     >
                       <div className="font-bold text-foreground truncate">{ev.organisation?.name}</div>
-                      <div className="text-muted-foreground truncate">{ev.notes || 'Follow-up Call'}</div>
+                      <div className="text-muted-foreground truncate flex items-center gap-1 mt-0.5">
+                        <Clock className="size-2.5 text-amber-400" />
+                        <span>{ev.note || 'Follow-up Call'}</span>
+                      </div>
                     </Link>
                   ))}
                 </div>
@@ -142,7 +189,7 @@ export default function CalendarPage() {
             )
           })}
         </div>
-      </Card>
+      </div>
     </div>
   )
 }

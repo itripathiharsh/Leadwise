@@ -24,6 +24,8 @@ import {
   Sparkles,
   Menu,
   X,
+  Sun,
+  Moon,
 } from 'lucide-react'
 import { NotificationCenter } from '@/components/domain/notification-center'
 import { GlobalSearchDialog } from '@/components/domain/global-search-dialog'
@@ -58,28 +60,81 @@ export function DashboardShell({
   const [createOrgOpen, setCreateOrgOpen] = React.useState(false)
   const [createContactOpen, setCreateContactOpen] = React.useState(false)
   const [preselectedOrg, setPreselectedOrg] = React.useState<{ id: string; name: string } | null>(null)
+  const [isDark, setIsDark] = React.useState(true)
+
+  React.useEffect(() => {
+    setIsDark(document.documentElement.classList.contains('dark'))
+  }, [])
+
+  const toggleTheme = () => {
+    if (document.documentElement.classList.contains('dark')) {
+      document.documentElement.classList.remove('dark')
+      localStorage.setItem('leadwise_theme', 'light')
+      setIsDark(false)
+    } else {
+      document.documentElement.classList.add('dark')
+      localStorage.setItem('leadwise_theme', 'dark')
+      setIsDark(true)
+    }
+  }
 
   const isOwnerOrTL = user.role === 'OWNER' || user.role === 'TL'
 
-  const navItems = [
-    { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Pipeline', href: '/pipeline', icon: Kanban },
-    { label: 'Organisations', href: '/organisations', icon: Building2 },
-    { label: 'Contacts', href: '/contacts', icon: Users },
-    { label: 'Activities', href: '/activities', icon: Activity },
-    { label: 'Follow-ups', href: '/followups', icon: CalendarClock },
-    { label: 'Calendar', href: '/calendar', icon: CalendarCheck },
-    { label: 'Templates', href: '/templates', icon: FileText },
-    { label: 'Analytics', href: '/analytics', icon: TrendingUp },
-    ...(isOwnerOrTL
-      ? [
-          { label: 'Team', href: '/team', icon: BarChart3 },
-          { label: 'AI & Funnel', href: '/analytics/advanced', icon: Sparkles },
-          { label: 'EOD Reports', href: '/eod', icon: FileSpreadsheet },
-        ]
-      : []),
-    { label: 'Profile', href: '/profile', icon: User },
-    { label: 'Settings', href: '/settings', icon: Settings },
+  // Keyboard shortcut for Cmd+K / Ctrl+K
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setSearchOpen((prev) => !prev)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  const navGroups = [
+    {
+      title: 'Overview',
+      items: [
+        { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+      ],
+    },
+    {
+      title: 'Outreach',
+      items: [
+        { label: 'Organisations', href: '/organisations', icon: Building2 },
+        { label: 'Contacts', href: '/contacts', icon: Users },
+        { label: 'Pipeline', href: '/pipeline', icon: Kanban },
+        { label: 'Activities', href: '/activities', icon: Activity },
+        { label: 'Follow-ups', href: '/followups', icon: CalendarClock },
+        { label: 'Calendar', href: '/calendar', icon: CalendarCheck },
+      ],
+    },
+    {
+      title: 'Resources',
+      items: [
+        { label: 'Templates', href: '/templates', icon: FileText },
+        ...(isOwnerOrTL ? [{ label: 'Team', href: '/team', icon: BarChart3 }] : []),
+      ],
+    },
+    {
+      title: 'Insights',
+      items: [
+        { label: 'Analytics', href: '/analytics', icon: TrendingUp },
+        ...(isOwnerOrTL
+          ? [
+              { label: 'AI & Funnel', href: '/analytics/advanced', icon: Sparkles },
+              { label: 'EOD Reports', href: '/eod', icon: FileSpreadsheet },
+            ]
+          : []),
+      ],
+    },
+    {
+      title: 'System',
+      items: [
+        { label: 'Settings', href: '/settings', icon: Settings },
+      ],
+    },
   ]
 
   const handleLogout = async () => {
@@ -96,66 +151,85 @@ export function DashboardShell({
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-64 flex-col border-r border-border bg-surface shrink-0">
+      <aside className="hidden lg:flex w-64 flex-col border-r border-border/80 bg-surface/90 backdrop-blur-xl shrink-0 z-20">
         {/* Brand */}
-        <div className="flex h-16 items-center justify-between px-6 border-b border-border">
-          <Link href="/dashboard" className="flex items-center gap-2.5">
-            <div className="flex size-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs">
+        <div className="flex h-16 items-center justify-between px-5 border-b border-border/80">
+          <Link href="/dashboard" prefetch={true} className="flex items-center gap-2.5 group">
+            <div className="flex size-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-[0_0_16px_-2px_rgba(99,102,241,0.5)] group-hover:scale-105 transition-transform duration-200">
               <Sparkles className="size-4.5" />
             </div>
             <div>
-              <div className="font-bold text-sm tracking-tight text-foreground">Leadwise</div>
-              <div className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">
-                Outreach CRM
+              <div className="font-bold text-sm tracking-tight text-foreground flex items-center gap-1.5">
+                Leadwise
+                <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded-md bg-primary/15 text-primary border border-primary/25">
+                  CRM
+                </span>
+              </div>
+              <div className="text-[10px] uppercase font-medium tracking-wider text-muted-foreground">
+                Partnership Command Center
               </div>
             </div>
           </Link>
         </div>
 
         {/* Quick Action Button */}
-        <div className="p-4 border-b border-border/60">
+        <div className="p-3.5 border-b border-border/60">
           <Button
             variant="primary"
             size="sm"
             onClick={() => setLogModalOpen(true)}
-            className="w-full justify-center shadow-xs font-semibold"
-            icon={<Plus className="size-4" />}
+            className="w-full justify-center shadow-xs font-semibold h-9 text-xs"
+            icon={<Plus className="size-3.5" />}
           >
             Log Activity
           </Button>
         </div>
 
-        {/* Navigation Items */}
-        <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-          {navItems.map((item) => {
-            const active =
-              pathname === item.href ||
-              (item.href !== '/dashboard' && pathname.startsWith(item.href))
-            const Icon = item.icon
+        {/* Navigation Groups */}
+        <nav className="flex-1 overflow-y-auto p-3 space-y-4 scrollbar-slim">
+          {navGroups.map((group) => (
+            <div key={group.title} className="space-y-1">
+              <div className="px-2.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
+                {group.title}
+              </div>
+              <div className="space-y-0.5">
+                {group.items.map((item) => {
+                  const active =
+                    pathname === item.href ||
+                    (item.href !== '/dashboard' && pathname.startsWith(item.href))
+                  const Icon = item.icon
 
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-colors',
-                  active
-                    ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                )}
-              >
-                <Icon className="size-4 shrink-0" />
-                <span>{item.label}</span>
-              </Link>
-            )
-          })}
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      prefetch={true}
+                      className={cn(
+                        'relative flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all duration-150',
+                        active
+                          ? 'bg-primary/15 text-primary font-semibold border border-primary/30 shadow-[0_0_12px_-3px_rgba(99,102,241,0.25)]'
+                          : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground border border-transparent',
+                      )}
+                    >
+                      {active && (
+                        <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-primary shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
+                      )}
+                      <Icon className={cn('size-4 shrink-0', active ? 'text-primary' : 'text-muted-foreground')} />
+                      <span>{item.label}</span>
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         {/* User Card & Logout Footer */}
-        <div className="p-3 border-t border-border">
-          <div className="flex items-center justify-between rounded-xl bg-surface-muted/60 p-2.5 border border-border/80">
+        <div className="p-3 border-t border-border/80">
+          <div className="flex items-center justify-between rounded-xl bg-surface-muted/70 p-2.5 border border-border/80">
             <Link
               href="/profile"
+              prefetch={true}
               className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-80 transition-opacity"
               title="View my profile"
             >
@@ -185,7 +259,7 @@ export function DashboardShell({
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col min-w-0">
         {/* Top Header Bar */}
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-surface/90 px-4 sm:px-6 backdrop-blur-sm">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border/80 bg-surface/85 px-4 sm:px-6 backdrop-blur-xl rim-highlight">
           <div className="flex items-center gap-3">
             {/* Mobile Nav Toggle */}
             <button
@@ -268,6 +342,61 @@ export function DashboardShell({
 
             {/* Notification Center */}
             <NotificationCenter />
+
+            {/* Theme Switcher Toggle */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="inline-flex size-8 items-center justify-center rounded-lg border border-border/80 bg-surface/80 text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-all duration-150 shadow-xs cursor-pointer active:scale-95"
+              title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              {isDark ? (
+                <Sun className="size-4 text-amber-400 hover:rotate-45 transition-transform duration-200" />
+              ) : (
+                <Moon className="size-4 text-primary hover:-rotate-12 transition-transform duration-200" />
+              )}
+            </button>
+
+            {/* User Profile Menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="flex items-center gap-2 p-0.5 rounded-full hover:ring-2 hover:ring-primary/30 transition-all focus-visible:outline-none cursor-pointer"
+                  title={`${user.name} (${user.role})`}
+                >
+                  <Avatar name={user.name} color={user.avatarColor} size="sm" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52 p-1.5 space-y-0.5">
+                <div className="px-2.5 py-2 border-b border-border/80 mb-1">
+                  <div className="font-semibold text-xs text-foreground truncate">{user.name}</div>
+                  <div className="text-[10.5px] text-muted-foreground truncate">{user.email}</div>
+                  <div className="mt-1.5 inline-flex items-center text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+                    {user.role}
+                  </div>
+                </div>
+                <DropdownMenuItem asChild>
+                  <Link href="/profile" prefetch={true} className="flex items-center gap-2.5 px-2.5 py-1.5 text-xs cursor-pointer rounded-md hover:bg-muted">
+                    <User className="size-3.5 text-muted-foreground" />
+                    <span>My Profile</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/settings" prefetch={true} className="flex items-center gap-2.5 px-2.5 py-1.5 text-xs cursor-pointer rounded-md hover:bg-muted">
+                    <Settings className="size-3.5 text-muted-foreground" />
+                    <span>Settings & Preferences</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="flex items-center gap-2.5 px-2.5 py-1.5 text-xs text-destructive hover:bg-destructive-soft cursor-pointer mt-1 border-t border-border/60 rounded-md"
+                >
+                  <LogOut className="size-3.5" />
+                  <span>Sign out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 
@@ -313,32 +442,43 @@ export function DashboardShell({
               Log Activity
             </Button>
 
-            <nav className="flex-1 space-y-1 overflow-y-auto">
-              {navItems.map((item) => {
-                const active = pathname === item.href
-                const Icon = item.icon
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setMobileNavOpen(false)}
-                    className={cn(
-                      'flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium',
-                      active
-                        ? 'bg-primary text-primary-foreground font-semibold'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                    )}
-                  >
-                    <Icon className="size-4" />
-                    <span>{item.label}</span>
-                  </Link>
-                )
-              })}
+            <nav className="flex-1 space-y-3 overflow-y-auto scrollbar-slim">
+              {navGroups.map((group) => (
+                <div key={group.title} className="space-y-1">
+                  <div className="px-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    {group.title}
+                  </div>
+                  <div className="space-y-0.5">
+                    {group.items.map((item) => {
+                      const active = pathname === item.href
+                      const Icon = item.icon
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          prefetch={true}
+                          onClick={() => setMobileNavOpen(false)}
+                          className={cn(
+                            'flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors',
+                            active
+                              ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
+                              : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                          )}
+                        >
+                          <Icon className="size-4 shrink-0" />
+                          <span>{item.label}</span>
+                        </Link>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
             </nav>
 
             <div className="pt-3 border-t border-border flex items-center justify-between">
               <Link
                 href="/profile"
+                prefetch={true}
                 onClick={() => setMobileNavOpen(false)}
                 className="text-xs font-semibold text-foreground hover:underline"
               >

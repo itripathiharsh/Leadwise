@@ -16,16 +16,16 @@ type Variant =
 type Size = 'xs' | 'sm' | 'md' | 'lg' | 'icon' | 'iconSm'
 
 const BASE =
-  'relative inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-lg font-medium transition-[background-color,border-color,color,box-shadow,transform] duration-150 outline-none focus-visible:ring-[2.5px] focus-visible:ring-ring/40 focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 active:translate-y-px [&_svg]:pointer-events-none [&_svg]:shrink-0'
+  'relative inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-lg font-medium transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98] [&_svg]:pointer-events-none [&_svg]:shrink-0'
 
 const VARIANTS: Record<Variant, string> = {
   primary:
-    'bg-primary text-primary-foreground shadow-xs hover:bg-primary-hover border border-transparent',
+    'bg-primary text-primary-foreground shadow-xs hover:bg-primary-hover border border-primary/20 hover:shadow-[0_0_18px_-3px_rgba(99,102,241,0.35)]',
   secondary:
     'bg-secondary text-secondary-foreground border border-border hover:bg-muted hover:border-border-strong shadow-xs',
   outline:
-    'border border-border bg-surface text-foreground hover:bg-muted hover:border-border-strong shadow-xs',
-  ghost: 'text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent',
+    'border border-border/90 bg-surface/90 backdrop-blur-sm text-foreground hover:bg-muted/90 hover:border-border-strong shadow-xs',
+  ghost: 'text-muted-foreground hover:bg-muted/80 hover:text-foreground border border-transparent',
   danger:
     'bg-destructive text-destructive-foreground shadow-xs hover:brightness-110 border border-transparent',
   dangerGhost:
@@ -48,6 +48,8 @@ export interface ButtonProps extends React.ComponentProps<'button'> {
   asChild?: boolean
   /** Shows a spinner and blocks interaction. */
   loading?: boolean
+  /** Optional text to display while loading (e.g. "Saving...") */
+  loadingText?: string
   /** Rendered before the label; hidden while loading. */
   icon?: React.ReactNode
 }
@@ -58,6 +60,7 @@ export function Button({
   size = 'md',
   asChild = false,
   loading = false,
+  loadingText,
   icon,
   children,
   disabled,
@@ -84,8 +87,17 @@ export function Button({
       aria-busy={loading || undefined}
       {...props}
     >
-      {loading ? <Loader2 className="animate-spin" aria-hidden /> : icon}
-      {children}
+      {loading ? (
+        <>
+          <Loader2 className="animate-spin" aria-hidden />
+          {loadingText ?? children}
+        </>
+      ) : (
+        <>
+          {icon}
+          {children}
+        </>
+      )}
     </button>
   )
 }

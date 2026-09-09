@@ -11,9 +11,14 @@ import {
   Building2,
   RefreshCw,
   Plus,
+  Star,
+  ExternalLink,
+  ChevronRight,
+  ShieldCheck,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { DecisionMakerBadge } from '@/components/domain/badges'
 import { LogActivityModal, type ActivityTypeTab } from '@/components/domain/log-activity-modal'
 import { CreateContactModal } from '@/components/domain/create-contact-modal'
 import { toast } from 'sonner'
@@ -81,19 +86,27 @@ export default function ContactsPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 p-4 sm:p-6 lg:p-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <Users className="size-6 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Contacts Directory</h1>
-            <Badge tone="slate" size="sm">
-              {total} Contacts
-            </Badge>
+      {/* Executive Command Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/80 pb-5">
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary shadow-xs">
+              <Users className="size-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2.5">
+                <h1 className="font-display font-extrabold text-2xl tracking-tight text-foreground">
+                  Contacts & Decision Makers
+                </h1>
+                <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-surface-elevated text-primary border border-primary/20 font-bold">
+                  {total} Key Stakeholders
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Institutional authority mapping, verified direct channels, and outreach logs.
+              </p>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Key stakeholders, decision-makers, and outreach targets across all organisations.
-          </p>
         </div>
 
         <div className="flex items-center gap-2.5">
@@ -102,6 +115,7 @@ export default function ContactsPage() {
             size="sm"
             onClick={fetchContacts}
             icon={<RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />}
+            className="border-border hover:bg-surface-elevated"
           >
             Refresh
           </Button>
@@ -110,125 +124,172 @@ export default function ContactsPage() {
             size="sm"
             onClick={() => setCreateContactOpen(true)}
             icon={<Plus className="size-4" />}
+            className="shadow-md shadow-primary/20 font-semibold"
           >
-            Add Lead / Contact
+            + Add Contact Person
           </Button>
         </div>
       </div>
 
-      {/* Search Filter Bar */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-        <input
-          type="text"
-          placeholder="Search by contact name, designation, email, phone..."
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value)
-            setPage(1)
-          }}
-          className="w-full rounded-xl border border-border bg-surface pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground shadow-xs outline-none focus:border-primary"
-        />
+      {/* Filter Control Bar */}
+      <div className="glass-panel rounded-2xl border border-border/80 bg-surface/70 backdrop-blur-xl p-3 shadow-sm">
+        <div className="relative max-w-md">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search by stakeholder name, designation, email, phone..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value)
+              setPage(1)
+            }}
+            className="w-full rounded-xl border border-border bg-surface-elevated/60 pl-10 pr-4 py-2 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary focus:bg-surface transition-all"
+          />
+        </div>
       </div>
 
-      {/* Contacts Table */}
-      <div className="rounded-xl border border-border bg-surface shadow-xs overflow-hidden">
+      {/* Contacts Intelligence Table */}
+      <div className="glass-card rounded-2xl border border-border/90 bg-surface/80 shadow-md overflow-hidden rim-highlight">
         {loading && contacts.length === 0 ? (
-          <div className="p-12 text-center text-xs text-muted-foreground">
-            Loading contacts...
+          <div className="p-16 text-center space-y-3">
+            <RefreshCw className="size-6 mx-auto text-primary animate-spin" />
+            <div className="font-semibold text-sm text-foreground">Syncing Stakeholders...</div>
+            <p className="text-xs text-muted-foreground">Fetching decision maker hierarchy and communication channels.</p>
           </div>
         ) : contacts.length === 0 ? (
-          <div className="p-12 text-center space-y-2">
-            <Users className="size-8 mx-auto text-muted-foreground/60" />
-            <p className="font-semibold text-sm">No contacts found</p>
-            <p className="text-xs text-muted-foreground">
-              Add contacts from any organisation detail page.
-            </p>
+          <div className="p-16 text-center space-y-4">
+            <div className="flex size-14 mx-auto items-center justify-center rounded-2xl bg-surface-elevated border border-border/80 text-muted-foreground">
+              <Users className="size-7" />
+            </div>
+            <div className="space-y-1">
+              <p className="font-display font-bold text-base text-foreground">No contacts yet</p>
+              <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
+                Add stakeholders or decision makers from any organization dossier to begin mapping authority.
+              </p>
+            </div>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setCreateContactOpen(true)}
+              icon={<Plus className="size-4" />}
+            >
+              + Add First Contact
+            </Button>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-left text-sm border-collapse">
               <thead>
-                <tr className="border-b border-border text-[11px] font-semibold text-muted-foreground uppercase tracking-wider bg-surface-muted/40">
-                  <th className="py-3 px-3">Contact</th>
-                  <th className="py-3 px-3">Designation / Role</th>
-                  <th className="py-3 px-3">Organisation</th>
-                  <th className="py-3 px-3">Decision Maker</th>
-                  <th className="py-3 px-3">Direct Phone</th>
-                  <th className="py-3 px-3">Direct Email</th>
-                  <th className="py-3 px-3 text-right">Quick Actions</th>
+                <tr className="border-b border-border/80 text-[11px] font-mono uppercase tracking-wider text-muted-foreground bg-surface-elevated/40">
+                  <th className="py-3.5 px-4">Contact</th>
+                  <th className="py-3.5 px-4">Role & Department</th>
+                  <th className="py-3.5 px-4">Entity</th>
+                  <th className="py-3.5 px-4">Authority Level</th>
+                  <th className="py-3.5 px-4">Direct Phone</th>
+                  <th className="py-3.5 px-4">Direct Email</th>
+                  <th className="py-3.5 px-4 text-right">Cadence Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
                 {contacts.map((contact) => (
-                  <tr key={contact.id} className="hover:bg-muted/40 transition-colors">
-                    <td className="py-3 px-3 font-semibold text-xs text-foreground">
-                      {contact.name}
+                  <tr
+                    key={contact.id}
+                    className="group hover:bg-surface-elevated/60 transition-colors duration-150"
+                  >
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary font-bold text-xs font-mono">
+                          {contact.name.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <span className="font-bold text-xs text-foreground block truncate">
+                            {contact.name}
+                          </span>
+                          {contact.linkedinUrl && (
+                            <a
+                              href={contact.linkedinUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[10px] text-sky-400 hover:underline inline-flex items-center gap-1 mt-0.5"
+                            >
+                              <Linkedin className="size-2.5" /> LinkedIn
+                            </a>
+                          )}
+                        </div>
+                      </div>
                     </td>
 
-                    <td className="py-3 px-3 text-xs text-muted-foreground">
-                      {contact.designation || '—'} {contact.department ? `(${contact.department})` : ''}
+                    <td className="py-3.5 px-4 text-xs text-muted-foreground">
+                      <div className="font-medium text-foreground/90">{contact.designation || '—'}</div>
+                      {contact.department && (
+                        <span className="font-mono text-[10px] text-muted-foreground">
+                          {contact.department}
+                        </span>
+                      )}
                     </td>
 
-                    <td className="py-3 px-3">
+                    <td className="py-3.5 px-4">
                       <Link
                         href={`/organisations/${contact.organisation.id}`}
-                        className="font-medium text-xs text-primary hover:underline flex items-center gap-1"
+                        className="font-semibold text-xs text-primary hover:underline flex items-center gap-1.5 truncate max-w-[170px]"
                       >
-                        <Building2 className="size-3 text-muted-foreground" />
-                        {contact.organisation.name}
+                        <Building2 className="size-3 text-muted-foreground shrink-0" />
+                        <span className="truncate">{contact.organisation.name}</span>
                       </Link>
                     </td>
 
-                    <td className="py-3 px-3">
+                    <td className="py-3.5 px-4">
                       {contact.isDecisionMaker ? (
-                        <Badge tone="amber" size="sm">
+                        <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                          <Star className="size-2.5 fill-amber-400 text-amber-400" />
                           Decision Maker
-                        </Badge>
+                        </span>
                       ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
+                        <span className="text-xs text-muted-foreground/60 font-mono text-[11px]">Staff</span>
                       )}
                     </td>
 
-                    <td className="py-3 px-3 text-xs font-mono">
+                    <td className="py-3.5 px-4 text-xs font-mono text-[11px]">
                       {contact.phone ? (
-                        <a href={`tel:${contact.phone}`} className="text-foreground hover:text-primary">
+                        <a href={`tel:${contact.phone}`} className="text-foreground hover:text-primary transition-colors">
                           {contact.phone}
                         </a>
                       ) : (
-                        <span className="text-muted-foreground">—</span>
+                        <span className="text-muted-foreground/60">—</span>
                       )}
                     </td>
 
-                    <td className="py-3 px-3 text-xs font-mono truncate max-w-[180px]">
+                    <td className="py-3.5 px-4 text-xs font-mono text-[11px] truncate max-w-[190px]">
                       {contact.email ? (
                         <a href={`mailto:${contact.email}`} className="text-primary hover:underline">
                           {contact.email}
                         </a>
                       ) : (
-                        <span className="text-muted-foreground">—</span>
+                        <span className="text-muted-foreground/60">—</span>
                       )}
                     </td>
 
-                    <td className="py-3 px-3 text-right whitespace-nowrap">
-                      <Button
-                        variant="ghost"
-                        size="xs"
-                        onClick={() => openLog(contact, 'CALL')}
-                        icon={<Phone className="size-3 text-blue-500" />}
-                        title="Log Call"
-                      >
-                        Call
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="xs"
-                        onClick={() => openLog(contact, 'EMAIL')}
-                        icon={<Mail className="size-3 text-indigo-500" />}
-                        title="Log Email"
-                      >
-                        Email
-                      </Button>
+                    <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="xs"
+                          onClick={() => openLog(contact, 'CALL')}
+                          icon={<Phone className="size-3 text-sky-400" />}
+                          className="hover:bg-primary/10 text-xs font-semibold"
+                        >
+                          Call
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="xs"
+                          onClick={() => openLog(contact, 'EMAIL')}
+                          icon={<Mail className="size-3 text-indigo-400" />}
+                          className="hover:bg-primary/10 text-xs font-semibold"
+                        >
+                          Email
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -237,12 +298,13 @@ export default function ContactsPage() {
           </div>
         )}
 
+        {/* Pagination footer */}
         {pageCount > 1 && (
-          <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
-            <div>
-              Page {page} of {pageCount} ({total} contacts)
+          <div className="flex items-center justify-between border-t border-border/80 px-4 py-3 text-xs text-muted-foreground bg-surface-elevated/30">
+            <div className="font-mono text-[11px]">
+              Showing page <span className="text-foreground font-bold">{page}</span> of {pageCount} ({total} contacts)
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="xs"

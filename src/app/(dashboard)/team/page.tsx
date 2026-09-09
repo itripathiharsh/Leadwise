@@ -11,6 +11,9 @@ import {
   Phone,
   Mail,
   Linkedin,
+  Shield,
+  Zap,
+  Award,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -109,7 +112,7 @@ export default function TeamPage() {
         return
       }
 
-      toast.success(`Created user ${name}`)
+      toast.success(`Created team account for ${name} ✓`)
       setCreateModalOpen(false)
       setName('')
       setEmail('')
@@ -123,21 +126,27 @@ export default function TeamPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 p-4 sm:p-6 lg:p-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <Users className="size-6 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Team Management & Analytics
-            </h1>
-            <Badge tone="slate" size="sm">
-              {users.length} Members
-            </Badge>
+      {/* Executive Command Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/80 pb-5">
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary shadow-xs">
+              <Users className="size-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2.5">
+                <h1 className="font-display font-extrabold text-2xl tracking-tight text-foreground">
+                  Team Operations & Velocity
+                </h1>
+                <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-surface-elevated text-primary border border-primary/20 font-bold">
+                  {users.length} Active Accounts
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Governance, RBAC privileges, and multi-channel 7-day outreach velocity matrix.
+              </p>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Manage team roles (Owner, Team Lead, Intern) and monitor 7-day outreach performance.
-          </p>
         </div>
 
         <div className="flex items-center gap-2.5">
@@ -146,6 +155,7 @@ export default function TeamPage() {
             size="sm"
             onClick={fetchData}
             icon={<RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />}
+            className="border-border hover:bg-surface-elevated"
           >
             Refresh
           </Button>
@@ -154,141 +164,147 @@ export default function TeamPage() {
             size="sm"
             onClick={() => setCreateModalOpen(true)}
             icon={<UserPlus className="size-4" />}
+            className="shadow-md shadow-primary/20 font-semibold"
           >
-            Add Team Member
+            + Add Team Member
           </Button>
         </div>
       </div>
 
       {/* 7-Day Team Performance Matrix */}
-      <Card className="border-border shadow-xs">
-        <CardHeader>
-          <div className="flex items-center gap-2">
+      <div className="glass-card rounded-2xl border border-border/90 bg-surface/80 shadow-md overflow-hidden rim-highlight space-y-3 p-6">
+        <div className="flex items-center justify-between border-b border-border/60 pb-3">
+          <div className="flex items-center gap-2.5">
             <BarChart3 className="size-5 text-primary" />
-            <CardTitle className="text-base">7-Day Team Outreach Matrix</CardTitle>
+            <div>
+              <h2 className="text-sm font-bold text-foreground">7-Day Team Outreach Leaderboard</h2>
+              <p className="text-xs text-muted-foreground">Comparative touchpoints, responses, and territory ownership across reps.</p>
+            </div>
           </div>
-          <CardDescription>
-            Performance metrics covering the last 7 days of outreach across all team members.
-          </CardDescription>
-        </CardHeader>
+          <span className="font-mono text-[10px] font-bold uppercase text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+            Real-time Metrics
+          </span>
+        </div>
 
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-border text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  <th className="py-3 px-3">Team Member</th>
-                  <th className="py-3 px-3">Role</th>
-                  <th className="py-3 px-3 text-right">Calls (7d)</th>
-                  <th className="py-3 px-3 text-right">Emails (7d)</th>
-                  <th className="py-3 px-3 text-right">LinkedIn (7d)</th>
-                  <th className="py-3 px-3 text-right">Responses (7d)</th>
-                  <th className="py-3 px-3 text-right">Interested (7d)</th>
-                  <th className="py-3 px-3 text-right">Held Orgs</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {performance.map((item) => (
-                  <tr key={item.id} className="hover:bg-muted/40 transition-colors">
-                    <td className="py-3 px-3">
-                      <div className="flex items-center gap-2.5">
-                        <Avatar name={item.name} color={item.avatarColor} size="sm" />
-                        <div>
-                          <div className="font-semibold text-xs text-foreground">{item.name}</div>
-                          <div className="text-[10px] text-muted-foreground">{item.email}</div>
-                        </div>
+        <div className="overflow-x-auto pt-2">
+          <table className="w-full text-left text-sm border-collapse">
+            <thead>
+              <tr className="border-b border-border/80 text-[11px] font-mono uppercase tracking-wider text-muted-foreground bg-surface-elevated/40">
+                <th className="py-3 px-3">Team Member</th>
+                <th className="py-3 px-3">Role</th>
+                <th className="py-3 px-3 text-right">Calls (7d)</th>
+                <th className="py-3 px-3 text-right">Emails (7d)</th>
+                <th className="py-3 px-3 text-right">LinkedIn (7d)</th>
+                <th className="py-3 px-3 text-right">Responses</th>
+                <th className="py-3 px-3 text-right">Interested</th>
+                <th className="py-3 px-3 text-right">Held Accounts</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/60">
+              {performance.map((item) => (
+                <tr key={item.id} className="hover:bg-surface-elevated/60 transition-colors">
+                  <td className="py-3.5 px-3">
+                    <div className="flex items-center gap-3">
+                      <Avatar name={item.name} color={item.avatarColor} size="sm" />
+                      <div>
+                        <div className="font-bold text-xs text-foreground">{item.name}</div>
+                        <div className="font-mono text-[10px] text-muted-foreground">{item.email}</div>
                       </div>
-                    </td>
+                    </div>
+                  </td>
 
-                    <td className="py-3 px-3">
-                      <Badge
-                        tone={
-                          item.role === 'OWNER'
-                            ? 'violet'
-                            : item.role === 'TL'
-                              ? 'teal'
-                              : 'blue'
-                        }
-                        size="sm"
-                      >
-                        {item.role}
-                      </Badge>
-                    </td>
+                  <td className="py-3.5 px-3">
+                    <Badge
+                      tone={
+                        item.role === 'OWNER'
+                          ? 'violet'
+                          : item.role === 'TL'
+                            ? 'teal'
+                            : 'blue'
+                      }
+                      size="sm"
+                    >
+                      {item.role}
+                    </Badge>
+                  </td>
 
-                    <td className="py-3 px-3 text-right font-mono text-xs">{item.week.calls}</td>
-                    <td className="py-3 px-3 text-right font-mono text-xs">{item.week.emails}</td>
-                    <td className="py-3 px-3 text-right font-mono text-xs">{item.week.linkedin}</td>
-                    <td className="py-3 px-3 text-right font-mono text-xs font-semibold text-teal-600">
-                      {item.week.responses}
-                    </td>
-                    <td className="py-3 px-3 text-right font-mono text-xs font-semibold text-amber-600">
-                      {item.week.interested}
-                    </td>
-                    <td className="py-3 px-3 text-right font-medium text-xs">
-                      {item.assignedOrganisations}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+                  <td className="py-3.5 px-3 text-right font-mono text-xs text-foreground/90">{item.week.calls}</td>
+                  <td className="py-3.5 px-3 text-right font-mono text-xs text-foreground/90">{item.week.emails}</td>
+                  <td className="py-3.5 px-3 text-right font-mono text-xs text-foreground/90">{item.week.linkedin}</td>
+                  <td className="py-3.5 px-3 text-right font-mono text-xs font-bold text-teal-400">
+                    {item.week.responses}
+                  </td>
+                  <td className="py-3.5 px-3 text-right font-mono text-xs font-bold text-amber-400">
+                    {item.week.interested}
+                  </td>
+                  <td className="py-3.5 px-3 text-right font-mono font-bold text-xs text-foreground">
+                    {item.assignedOrganisations}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {/* Users List & Accounts */}
-      <Card className="border-border shadow-xs">
-        <CardHeader>
-          <CardTitle className="text-base">Team Accounts & Access</CardTitle>
-          <CardDescription>Active login credentials and access levels.</CardDescription>
-        </CardHeader>
-
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-border text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  <th className="py-2.5 px-3">Name</th>
-                  <th className="py-2.5 px-3">Email</th>
-                  <th className="py-2.5 px-3">Phone</th>
-                  <th className="py-2.5 px-3">Role</th>
-                  <th className="py-2.5 px-3">Status</th>
-                  <th className="py-2.5 px-3">Last Active</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {users.map((u) => (
-                  <tr key={u.id} className="hover:bg-muted/40 transition-colors">
-                    <td className="py-3 px-3 font-semibold text-xs text-foreground">
-                      {u.name}
-                    </td>
-                    <td className="py-3 px-3 text-xs text-muted-foreground">{u.email}</td>
-                    <td className="py-3 px-3 text-xs text-muted-foreground">{u.phone || '—'}</td>
-                    <td className="py-3 px-3">
-                      <Badge tone="slate" size="sm">
-                        {u.role}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-3">
-                      {u.isActive ? (
-                        <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium">
-                          <CheckCircle2 className="size-3.5" /> Active
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-xs text-rose-600 font-medium">
-                          <XCircle className="size-3.5" /> Deactivated
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3 px-3 text-xs text-muted-foreground">
-                      {u.lastLoginAt ? formatDateTime(u.lastLoginAt) : 'Never logged in'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <div className="glass-card rounded-2xl border border-border/90 bg-surface/80 shadow-md overflow-hidden rim-highlight space-y-3 p-6">
+        <div className="flex items-center justify-between border-b border-border/60 pb-3">
+          <div className="flex items-center gap-2.5">
+            <Shield className="size-5 text-primary" />
+            <div>
+              <h2 className="text-sm font-bold text-foreground">Authorized Accounts & Security State</h2>
+              <p className="text-xs text-muted-foreground">Configured roles, session audit timestamps, and operational status.</p>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        <div className="overflow-x-auto pt-2">
+          <table className="w-full text-left text-sm border-collapse">
+            <thead>
+              <tr className="border-b border-border/80 text-[11px] font-mono uppercase tracking-wider text-muted-foreground bg-surface-elevated/40">
+                <th className="py-3 px-3">Name</th>
+                <th className="py-3 px-3">Email Address</th>
+                <th className="py-3 px-3">Phone</th>
+                <th className="py-3 px-3">Role</th>
+                <th className="py-3 px-3">Account State</th>
+                <th className="py-3 px-3">Last Active</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/60">
+              {users.map((u) => (
+                <tr key={u.id} className="hover:bg-surface-elevated/60 transition-colors">
+                  <td className="py-3.5 px-3 font-bold text-xs text-foreground">
+                    {u.name}
+                  </td>
+                  <td className="py-3.5 px-3 text-xs font-mono text-muted-foreground">{u.email}</td>
+                  <td className="py-3.5 px-3 text-xs font-mono text-muted-foreground">{u.phone || '—'}</td>
+                  <td className="py-3.5 px-3">
+                    <Badge tone="slate" size="sm">
+                      {u.role}
+                    </Badge>
+                  </td>
+                  <td className="py-3.5 px-3">
+                    {u.isActive ? (
+                      <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                        <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        Active
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 font-mono text-[11px] text-rose-400 font-semibold">
+                        <XCircle className="size-3" /> Deactivated
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-3.5 px-3 text-xs font-mono text-muted-foreground">
+                    {u.lastLoginAt ? formatDateTime(u.lastLoginAt) : 'Never logged in'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {/* Add User Modal */}
       <Dialog open={createModalOpen} onOpenChange={setCreateModalOpen}>
@@ -304,7 +320,7 @@ export default function TeamPage() {
             <DialogBody className="space-y-4">
               <Field label="Full Name" required>
                 <Input
-                  placeholder="e.g. Rahul Sharma"
+                  placeholder="e.g. Maya Lin"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -312,10 +328,10 @@ export default function TeamPage() {
                 />
               </Field>
 
-              <Field label="Email Address" required>
+              <Field label="Corporate Email" required>
                 <Input
                   type="email"
-                  placeholder="rahul@leadwise.com"
+                  placeholder="e.g. maya@sentiomind.com"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -323,22 +339,22 @@ export default function TeamPage() {
                 />
               </Field>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Role" required>
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="System Role" required>
                   <select
                     value={role}
                     onChange={(e) => setRole(e.target.value)}
                     className="h-10 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-xs transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                   >
-                    <option value="INTERN">Intern (Outreach Rep)</option>
-                    <option value="TL">Team Lead (Operational Lead)</option>
-                    <option value="OWNER">Owner (Full Administrator)</option>
+                    <option value="INTERN">Intern / Outreach Rep</option>
+                    <option value="TL">Team Lead (TL)</option>
+                    <option value="OWNER">Owner / Admin</option>
                   </select>
                 </Field>
 
-                <Field label="Phone">
+                <Field label="Direct Phone">
                   <Input
-                    placeholder="+91 98765 43210"
+                    placeholder="+1 (555) 000-0000"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     className="h-10"
@@ -348,11 +364,11 @@ export default function TeamPage() {
 
               <Field label="Initial Password" required>
                 <Input
-                  type="password"
+                  type="text"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="h-10"
+                  className="h-10 font-mono text-xs"
                 />
               </Field>
             </DialogBody>
@@ -361,7 +377,7 @@ export default function TeamPage() {
               <Button variant="ghost" type="button" onClick={() => setCreateModalOpen(false)}>
                 Cancel
               </Button>
-              <Button variant="primary" type="submit" loading={creating}>
+              <Button variant="primary" type="submit" loading={creating} className="font-bold">
                 Create Account
               </Button>
             </DialogFooter>

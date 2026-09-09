@@ -31,6 +31,18 @@ import { CreateContactModal } from './create-contact-modal'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
+export const CATEGORY_OPTIONS = [
+  'Healthcare',
+  'Mental Health',
+  'Education',
+  'Rehabilitation & Recovery',
+  'Wellness & Fitness',
+  'NGO / Non-Profit',
+  'Corporate',
+  'Technology',
+  'Other',
+] as const
+
 // Predefined option lists according to CRM specification
 export const DOMAIN_OPTIONS = [
   'Mental Health',
@@ -335,6 +347,8 @@ export function CreateOrganisationModal({
 }: CreateOrganisationModalProps) {
   // ── Section 1: Organization Information ──
   const [name, setName] = React.useState('')
+  const [category, setCategory] = React.useState('Healthcare')
+  const [customCategory, setCustomCategory] = React.useState('')
   const [domain, setDomain] = React.useState('Mental Health')
   const [customDomain, setCustomDomain] = React.useState('')
   const [website, setWebsite] = React.useState('')
@@ -420,6 +434,8 @@ export function CreateOrganisationModal({
     if (!open) {
       // Reset form
       setName('')
+      setCategory('Healthcare')
+      setCustomCategory('')
       setDomain('Mental Health')
       setCustomDomain('')
       setWebsite('')
@@ -484,6 +500,13 @@ export function CreateOrganisationModal({
       errs.name = 'Organization name is required.'
     } else if (name.trim().length < 2) {
       errs.name = 'Organization name must be at least 2 characters.'
+    }
+
+    // Required: Category
+    if (!category) {
+      errs.category = 'Category is required.'
+    } else if (category === 'Other' && !customCategory.trim()) {
+      errs.customCategory = 'Please specify the category.'
     }
 
     // Required: Domain
@@ -568,6 +591,7 @@ export function CreateOrganisationModal({
 
     setLoading(true)
     try {
+      const finalCategory = category === 'Other' ? customCategory.trim() : category
       const finalDomain = domain === 'Other' ? customDomain.trim() : domain
       const finalLeadSource = leadSource === 'Other' ? customLeadSource.trim() : leadSource
       const finalOrgType = orgType === 'Other' ? customOrgType.trim() : (orgType || undefined)
@@ -578,6 +602,7 @@ export function CreateOrganisationModal({
 
       const payload: Record<string, any> = {
         name: name.trim(),
+        category: finalCategory || undefined,
         domain: finalDomain,
         leadSource: finalLeadSource,
         website: website.trim() || undefined,
@@ -761,8 +786,56 @@ export function CreateOrganisationModal({
                 {errors.name && <p className="text-[11px] font-medium text-destructive mt-1">{errors.name}</p>}
               </div>
 
-              {/* Row 2: Domain & Organization Type */}
+              {/* Row 2: Category & Domain */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Category */}
+                <div>
+                  <label htmlFor="org-category" className="block text-xs font-semibold text-foreground mb-1.5">
+                    Category <span className="text-destructive">*</span>
+                  </label>
+                  <SearchableSelect
+                    id="org-category"
+                    value={category}
+                    onChange={(val) => {
+                      setCategory(val)
+                      clearError('category')
+                    }}
+                    options={CATEGORY_OPTIONS}
+                    placeholder="Select Category"
+                    searchPlaceholder="Search categories..."
+                    error={!!errors.category}
+                  />
+                  {errors.category && <p className="text-[11px] font-medium text-destructive mt-1">{errors.category}</p>}
+
+                  {/* Specify category if Other */}
+                  {category === 'Other' && (
+                    <div className="mt-2.5 animate-[fade-in_0.18s_ease-out]">
+                      <label htmlFor="custom-category" className="block text-xs font-medium text-muted-foreground mb-1">
+                        Specify category <span className="text-destructive">*</span>
+                      </label>
+                      <input
+                        id="custom-category"
+                        type="text"
+                        placeholder="Enter custom category"
+                        value={customCategory}
+                        onChange={(e) => {
+                          setCustomCategory(e.target.value)
+                          clearError('customCategory')
+                        }}
+                        className={cn(
+                          'h-9.5 w-full rounded-lg border bg-surface px-3 py-2 text-xs text-foreground shadow-xs transition-colors outline-none',
+                          'placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20',
+                          errors.customCategory ? 'border-destructive focus:border-destructive focus:ring-destructive/20' : 'border-border',
+                        )}
+                        autoFocus
+                      />
+                      {errors.customCategory && (
+                        <p className="text-[11px] font-medium text-destructive mt-1">{errors.customCategory}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {/* Domain */}
                 <div>
                   <label htmlFor="org-domain" className="block text-xs font-semibold text-foreground mb-1.5">
@@ -810,7 +883,10 @@ export function CreateOrganisationModal({
                     </div>
                   )}
                 </div>
+              </div>
 
+              {/* Row 3: Organization Type & Website */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Organization Type */}
                 <div>
                   <label htmlFor="org-type" className="block text-xs font-semibold text-foreground mb-1.5">

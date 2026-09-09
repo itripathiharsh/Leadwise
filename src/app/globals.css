@@ -68,6 +68,24 @@
   --warning-foreground: oklch(0.26 0.06 68);
   --warning-soft: oklch(0.965 0.045 78);
 
+  /* ── Multi-Tier Surfaces ── */
+  --surface-hover: oklch(0.962 0.005 285);
+  --surface-active: oklch(0.945 0.012 285);
+
+  /* ── Semantic Outreach Channels & Relationships ── */
+  --channel-call: oklch(0.55 0.18 255);
+  --channel-call-soft: oklch(0.96 0.03 255);
+  --channel-email: oklch(0.58 0.16 220);
+  --channel-email-soft: oklch(0.96 0.03 220);
+  --channel-whatsapp: oklch(0.56 0.16 155);
+  --channel-whatsapp-soft: oklch(0.96 0.035 155);
+  --channel-linkedin: oklch(0.52 0.15 240);
+  --channel-linkedin-soft: oklch(0.955 0.03 240);
+  --channel-meeting: oklch(0.65 0.18 60);
+  --channel-meeting-soft: oklch(0.965 0.04 60);
+  --decision-maker: oklch(0.68 0.17 75);
+  --decision-maker-soft: oklch(0.965 0.04 75);
+
   /* ── Radii ── */
   --radius: 0.625rem;
 
@@ -80,58 +98,77 @@
 }
 
 .dark {
-  --background: oklch(0.178 0.014 285);
-  --foreground: oklch(0.955 0.005 285);
+  /* ── Deep Obsidian Canvas & Surfaces ── */
+  --background: oklch(0.125 0.016 285);
+  --foreground: oklch(0.965 0.005 285);
 
-  --surface: oklch(0.216 0.016 285);
-  --surface-muted: oklch(0.245 0.017 285);
-  --surface-raised: oklch(0.245 0.017 285);
+  --surface: oklch(0.165 0.018 285);
+  --surface-muted: oklch(0.195 0.02 285);
+  --surface-raised: oklch(0.215 0.022 285);
 
-  --card: oklch(0.216 0.016 285);
-  --card-foreground: oklch(0.955 0.005 285);
+  --card: oklch(0.165 0.018 285);
+  --card-foreground: oklch(0.965 0.005 285);
 
-  --popover: oklch(0.238 0.017 285);
-  --popover-foreground: oklch(0.955 0.005 285);
+  --popover: oklch(0.185 0.02 285);
+  --popover-foreground: oklch(0.965 0.005 285);
 
-  --muted: oklch(0.262 0.017 285);
-  --muted-foreground: oklch(0.706 0.015 285);
-  --subtle-foreground: oklch(0.615 0.015 285);
+  --muted: oklch(0.22 0.02 285);
+  --muted-foreground: oklch(0.68 0.018 285);
+  --subtle-foreground: oklch(0.55 0.016 285);
 
-  --border: oklch(0.298 0.018 285);
-  --border-strong: oklch(0.37 0.02 285);
-  --input: oklch(0.32 0.019 285);
-  --ring: oklch(0.66 0.16 285);
+  --border: oklch(0.245 0.02 285);
+  --border-strong: oklch(0.32 0.025 285);
+  --input: oklch(0.25 0.02 285);
+  --ring: oklch(0.66 0.18 285);
 
-  --primary: oklch(0.635 0.185 285);
-  --primary-hover: oklch(0.685 0.175 285);
-  --primary-foreground: oklch(0.155 0.02 285);
-  --primary-soft: oklch(0.285 0.055 285);
-  --primary-soft-foreground: oklch(0.845 0.09 285);
-  --primary-border: oklch(0.365 0.075 285);
+  --primary: oklch(0.635 0.195 285);
+  --primary-hover: oklch(0.685 0.185 285);
+  --primary-foreground: oklch(0.125 0.02 285);
+  --primary-soft: oklch(0.24 0.05 285);
+  --primary-soft-foreground: oklch(0.88 0.08 285);
+  --primary-border: oklch(0.34 0.07 285);
 
   --accent: oklch(0.288 0.045 195);
   --accent-foreground: oklch(0.83 0.09 195);
 
-  --secondary: oklch(0.268 0.017 285);
+  --secondary: oklch(0.22 0.018 285);
   --secondary-foreground: oklch(0.94 0.006 285);
 
-  --destructive: oklch(0.645 0.195 22);
-  --destructive-foreground: oklch(0.16 0.02 22);
-  --destructive-soft: oklch(0.302 0.075 22);
+  --destructive: oklch(0.645 0.205 22);
+  --destructive-foreground: oklch(0.14 0.02 22);
+  --destructive-soft: oklch(0.25 0.065 22);
 
-  --success: oklch(0.66 0.135 158);
-  --success-foreground: oklch(0.16 0.02 158);
-  --success-soft: oklch(0.288 0.06 158);
+  --success: oklch(0.68 0.145 158);
+  --success-foreground: oklch(0.14 0.02 158);
+  --success-soft: oklch(0.24 0.05 158);
 
-  --warning: oklch(0.775 0.15 72);
-  --warning-foreground: oklch(0.19 0.03 72);
-  --warning-soft: oklch(0.315 0.065 72);
+  --warning: oklch(0.78 0.155 72);
+  --warning-foreground: oklch(0.18 0.03 72);
+  --warning-soft: oklch(0.26 0.06 72);
 
-  --shadow-xs: 0 1px 2px 0 oklch(0 0 0 / 0.3);
-  --shadow-sm: 0 1px 2px 0 oklch(0 0 0 / 0.35), 0 1px 3px 0 oklch(0 0 0 / 0.25);
-  --shadow-md: 0 2px 4px -1px oklch(0 0 0 / 0.35), 0 4px 12px -2px oklch(0 0 0 / 0.4);
-  --shadow-lg: 0 4px 8px -2px oklch(0 0 0 / 0.4), 0 12px 28px -6px oklch(0 0 0 / 0.5);
-  --shadow-pop: 0 8px 16px -4px oklch(0 0 0 / 0.45), 0 20px 44px -12px oklch(0 0 0 / 0.55);
+  /* ── Dark Multi-Tier Surfaces ── */
+  --surface-hover: oklch(0.20 0.02 285);
+  --surface-active: oklch(0.23 0.025 285);
+
+  /* ── Dark Semantic Outreach Channels & Relationships ── */
+  --channel-call: oklch(0.72 0.16 255);
+  --channel-call-soft: oklch(0.24 0.05 255);
+  --channel-email: oklch(0.72 0.14 220);
+  --channel-email-soft: oklch(0.23 0.045 220);
+  --channel-whatsapp: oklch(0.70 0.15 155);
+  --channel-whatsapp-soft: oklch(0.23 0.045 155);
+  --channel-linkedin: oklch(0.68 0.14 240);
+  --channel-linkedin-soft: oklch(0.24 0.045 240);
+  --channel-meeting: oklch(0.78 0.16 60);
+  --channel-meeting-soft: oklch(0.25 0.055 60);
+  --decision-maker: oklch(0.82 0.16 75);
+  --decision-maker-soft: oklch(0.26 0.06 75);
+
+  --shadow-xs: 0 1px 2px 0 oklch(0 0 0 / 0.4);
+  --shadow-sm: 0 1px 3px 0 oklch(0 0 0 / 0.45), 0 1px 2px -1px oklch(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px oklch(0 0 0 / 0.45), 0 2px 4px -2px oklch(0 0 0 / 0.4);
+  --shadow-lg: 0 10px 15px -3px oklch(0 0 0 / 0.5), 0 4px 6px -4px oklch(0 0 0 / 0.45);
+  --shadow-pop: 0 20px 25px -5px oklch(0 0 0 / 0.55), 0 8px 10px -6px oklch(0 0 0 / 0.5);
 }
 
 @theme inline {
@@ -141,6 +178,21 @@
   --color-surface: var(--surface);
   --color-surface-muted: var(--surface-muted);
   --color-surface-raised: var(--surface-raised);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-active: var(--surface-active);
+
+  --color-channel-call: var(--channel-call);
+  --color-channel-call-soft: var(--channel-call-soft);
+  --color-channel-email: var(--channel-email);
+  --color-channel-email-soft: var(--channel-email-soft);
+  --color-channel-whatsapp: var(--channel-whatsapp);
+  --color-channel-whatsapp-soft: var(--channel-whatsapp-soft);
+  --color-channel-linkedin: var(--channel-linkedin);
+  --color-channel-linkedin-soft: var(--channel-linkedin-soft);
+  --color-channel-meeting: var(--channel-meeting);
+  --color-channel-meeting-soft: var(--channel-meeting-soft);
+  --color-decision-maker: var(--decision-maker);
+  --color-decision-maker-soft: var(--decision-maker-soft);
 
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
@@ -292,8 +344,8 @@
     scrollbar-color: var(--border-strong) transparent;
   }
   .scrollbar-slim::-webkit-scrollbar {
-    width: 9px;
-    height: 9px;
+    width: 7px;
+    height: 7px;
   }
   .scrollbar-slim::-webkit-scrollbar-track {
     background: transparent;
@@ -313,9 +365,66 @@
     box-shadow: inset 0 -1px 0 0 var(--border);
   }
 
+  /* Subtle top-lit rim highlight for executive cards & panels */
+  .rim-highlight {
+    box-shadow: inset 0 1px 0 0 oklch(1 0 0 / 0.1);
+  }
+
+  /* Command Center Glass Surfaces */
+  .glass-panel {
+    background-color: color-mix(in oklab, var(--surface) 80%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+  }
+
+  .glass-card {
+    background-color: color-mix(in oklab, var(--card) 85%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    box-shadow: inset 0 1px 0 0 oklch(1 0 0 / 0.08), var(--shadow-sm);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .glass-card:hover {
+    border-color: color-mix(in oklab, var(--primary) 40%, var(--border));
+    transform: translateY(-1px);
+    box-shadow: inset 0 1px 0 0 oklch(1 0 0 / 0.12), var(--shadow-md);
+  }
+
+  /* Atmospheric Radial Mesh Background Lighting */
+  .radial-mesh-hero {
+    background-image: 
+      radial-gradient(at 0% 0%, color-mix(in oklab, var(--primary) 12%, transparent) 0px, transparent 55%),
+      radial-gradient(at 100% 0%, color-mix(in oklab, var(--channel-call) 10%, transparent) 0px, transparent 55%),
+      radial-gradient(at 50% 100%, color-mix(in oklab, var(--channel-whatsapp) 6%, transparent) 0px, transparent 50%);
+  }
+
+  /* Pulsing live radar beacon */
+  .radar-beacon {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .radar-beacon::before {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 9999px;
+    background-color: currentColor;
+    opacity: 0.4;
+    animation: radar-pulse 2s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+  }
+
+  @keyframes radar-pulse {
+    0% { transform: scale(0.8); opacity: 0.8; }
+    100% { transform: scale(2.4); opacity: 0; }
+  }
+
   /* Subtle top-lit gradient for hero/metric cards — one stop, not a rainbow. */
   .surface-sheen {
-    background-image: linear-gradient(180deg, color-mix(in oklab, var(--primary) 4%, transparent), transparent 42%);
+    background-image: linear-gradient(180deg, color-mix(in oklab, var(--primary) 6%, transparent), transparent 48%);
   }
 
   .text-balance {
@@ -330,7 +439,7 @@
     background-image:
       linear-gradient(to right, var(--border) 1px, transparent 1px),
       linear-gradient(to bottom, var(--border) 1px, transparent 1px);
-    background-size: 44px 44px;
+    background-size: 40px 40px;
   }
 
   .animate-in-fast {

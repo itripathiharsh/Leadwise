@@ -129,11 +129,14 @@ export function DecisionMakerBadge({
     <Badge
       tone="amber"
       size={size}
-      className={cn('font-semibold', className)}
-      icon={<Star className="size-3 fill-current" />}
-      title="Decision maker"
+      className={cn(
+        'font-semibold border-amber-300/70 bg-gradient-to-r from-amber-500/15 to-amber-500/10 text-amber-800 dark:text-amber-200 dark:border-amber-400/40 shadow-xs tracking-tight',
+        className,
+      )}
+      icon={<Star className="size-3 fill-amber-500 text-amber-600 dark:text-amber-400" />}
+      title="Decision maker with partnership authority"
     >
-      Decision maker
+      Decision Maker
     </Badge>
   )
 }

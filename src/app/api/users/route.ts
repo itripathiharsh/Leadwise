@@ -9,18 +9,26 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  if (user.role !== 'OWNER' && user.role !== 'TL') {
-    return NextResponse.json({ error: 'Forbidden: Only Owner and Team Lead have access to team works.' }, { status: 403 })
-  }
-
   const { searchParams } = new URL(req.url)
-  if (searchParams.get('performance') === 'true') {
+  const wantsPerformance = searchParams.get('performance') === 'true'
+
+  if (wantsPerformance) {
+    if (user.role !== 'OWNER' && user.role !== 'TL') {
+      return NextResponse.json({ error: 'Forbidden: Only Owner and Team Lead have access to team performance.' }, { status: 403 })
+    }
     const performance = await getTeamPerformance(user)
     return NextResponse.json({ performance })
   }
 
-  const users = await listUsers(user)
-  return NextResponse.json({ users })
+  // If user is Owner or TL, give full team member stats, otherwise return lightweight assignable list
+  if (user.role === 'OWNER' || user.role === 'TL') {
+    const users = await listUsers(user)
+    return NextResponse.json({ users })
+  } else {
+    const { listAssignableUsers } = await import('@/server/services/users')
+    const users = await listAssignableUsers()
+    return NextResponse.json({ users })
+  }
 }
 
 export async function POST(req: Request) {

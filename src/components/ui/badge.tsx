@@ -72,7 +72,12 @@ export function Badge({
       )}
       {...props}
     >
-      {dot && <span className={cn('size-1.5 shrink-0 rounded-full', DOT[tone])} aria-hidden />}
+      {dot && (
+        <span className="relative flex size-1.5 shrink-0 items-center justify-center" aria-hidden>
+          <span className={cn('absolute -inset-0.5 animate-ping rounded-full opacity-50', DOT[tone])} />
+          <span className={cn('relative size-1.5 rounded-full', DOT[tone])} />
+        </span>
+      )}
       {icon}
       {children}
     </span>

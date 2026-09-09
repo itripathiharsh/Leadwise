@@ -18,6 +18,7 @@ export function MetricCard({
   icon,
   tone = 'slate',
   hint,
+  trend,
   href,
   emphasis = false,
   className,
@@ -28,6 +29,7 @@ export function MetricCard({
   icon?: string
   tone?: Tone
   hint?: React.ReactNode
+  trend?: { value: string; positive?: boolean }
   href?: string
   /** Raises visual weight — used for the single most important number. */
   emphasis?: boolean
@@ -39,14 +41,28 @@ export function MetricCard({
         <p className="text-[12px] leading-4.5 font-medium text-muted-foreground">{label}</p>
         {icon && <IconTile name={icon} tone={tone} size="sm" className="-mt-0.5" />}
       </div>
-      <p
-        className={cn(
-          'tabular font-display mt-2.5 font-semibold tracking-[-0.03em] text-foreground',
-          emphasis ? 'text-[30px] leading-9' : 'text-[26px] leading-8',
+      <div className="mt-2.5 flex items-baseline gap-2">
+        <p
+          className={cn(
+            'tabular font-display font-semibold tracking-[-0.03em] text-foreground',
+            emphasis ? 'text-[32px] leading-9' : 'text-[26px] leading-8',
+          )}
+        >
+          {value}
+        </p>
+        {trend && (
+          <span
+            className={cn(
+              'text-[11px] font-semibold tabular px-1.5 py-0.5 rounded-md',
+              trend.positive
+                ? 'text-emerald-700 bg-emerald-500/10 dark:text-emerald-300'
+                : 'text-rose-700 bg-rose-500/10 dark:text-rose-300',
+            )}
+          >
+            {trend.value}
+          </span>
         )}
-      >
-        {value}
-      </p>
+      </div>
       {hint && (
         <p className="mt-1.5 flex items-center gap-1 text-[11.5px] leading-4 text-muted-foreground">
           {hint}
@@ -55,10 +71,23 @@ export function MetricCard({
     </>
   )
 
+  const toneGlows: Partial<Record<Tone, string>> = {
+    slate: 'hover:border-border-strong',
+    indigo: 'hover:border-primary/50 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.2)]',
+    blue: 'hover:border-blue-500/50 hover:shadow-[0_4px_20px_-4px_rgba(59,130,246,0.2)]',
+    cyan: 'hover:border-accent/50 hover:shadow-[0_4px_20px_-4px_rgba(6,182,212,0.2)]',
+    emerald: 'hover:border-emerald-500/50 hover:shadow-[0_4px_20px_-4px_rgba(16,185,129,0.2)]',
+    amber: 'hover:border-amber-500/50 hover:shadow-[0_4px_20px_-4px_rgba(245,158,11,0.2)]',
+    rose: 'hover:border-rose-500/50 hover:shadow-[0_4px_20px_-4px_rgba(244,63,94,0.2)]',
+  }
+
   const shell = cn(
-    'group relative flex flex-col rounded-xl border bg-card p-4 shadow-xs transition-[border-color,box-shadow] duration-150',
-    emphasis ? 'border-primary-border bg-primary-soft/25' : 'border-border',
-    href && 'hover:border-border-strong hover:shadow-sm',
+    'group relative flex flex-col rounded-xl border bg-card/90 backdrop-blur-md p-4.5 shadow-xs rim-highlight transition-all duration-200 ease-out',
+    emphasis
+      ? 'border-primary/40 bg-gradient-to-b from-primary-soft/25 to-card'
+      : 'border-border/80',
+    href && 'cursor-pointer hover:-translate-y-0.5 active:translate-y-0',
+    href && (toneGlows[tone] || 'hover:border-primary/40 hover:shadow-md'),
     className,
   )
 

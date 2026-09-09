@@ -9,6 +9,8 @@ import {
   Flame,
   AlertTriangle,
   Snowflake,
+  Layers,
+  Sparkles,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -67,23 +69,29 @@ export default function PipelinePage() {
 
   return (
     <div className="max-w-full mx-auto space-y-5 p-4 sm:p-6 lg:p-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <Kanban className="size-6 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Lead Pipeline & Stages
-            </h1>
-            {board && (
-              <Badge tone="slate" size="sm">
-                {board.total} Targets
-              </Badge>
-            )}
+      {/* Executive Command Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/80 pb-5">
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary shadow-xs">
+              <Kanban className="size-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2.5">
+                <h1 className="font-display font-extrabold text-2xl tracking-tight text-foreground">
+                  Partnership Pipeline Board
+                </h1>
+                {board && (
+                  <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-surface-elevated text-primary border border-primary/20 font-bold">
+                    {board.total} Live Targets
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Multi-stage momentum, drag-and-drop progression, and health status indicators.
+              </p>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Visual stage progression, health indicators (Active/Attention/Cold), and next action guidance.
-          </p>
         </div>
 
         <div className="flex items-center gap-2.5">
@@ -92,8 +100,9 @@ export default function PipelinePage() {
             size="sm"
             onClick={fetchBoard}
             icon={<RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />}
+            className="border-border hover:bg-surface-elevated"
           >
-            Refresh
+            Refresh Board
           </Button>
 
           <Button
@@ -101,25 +110,26 @@ export default function PipelinePage() {
             size="sm"
             onClick={() => setCreateModalOpen(true)}
             icon={<Plus className="size-4" />}
+            className="shadow-md shadow-primary/20 font-semibold"
           >
-            Add Lead
+            + Add Target Entity
           </Button>
         </div>
       </div>
 
-      {/* Filter Controls */}
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface p-3 shadow-xs">
-        <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground mr-1">
-          <Filter className="size-3.5" /> Filters:
+      {/* Filter Control Panel */}
+      <div className="glass-panel rounded-2xl border border-border/80 bg-surface/70 backdrop-blur-xl p-3 shadow-sm flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground mr-1 uppercase tracking-wider font-mono">
+          <Filter className="size-3.5 text-primary" /> Filter Board:
         </div>
 
         {/* Assignee Filter */}
         <select
           value={assigneeFilter}
           onChange={(e) => setAssigneeFilter(e.target.value)}
-          className="rounded-lg border border-border bg-surface px-3 py-1.5 text-xs text-foreground font-medium shadow-xs focus:border-primary focus:outline-none"
+          className="rounded-xl border border-border bg-surface-elevated/70 px-3 py-1.5 text-xs text-foreground font-medium shadow-xs focus:border-primary focus:outline-none transition-all"
         >
-          <option value="">All Assignees</option>
+          <option value="">All Account Owners</option>
           <option value="UNASSIGNED">Unassigned Only</option>
           {usersList.map((u) => (
             <option key={u.id} value={u.id}>
@@ -132,10 +142,10 @@ export default function PipelinePage() {
         <select
           value={priorityFilter}
           onChange={(e) => setPriorityFilter(e.target.value as Priority | '')}
-          className="rounded-lg border border-border bg-surface px-3 py-1.5 text-xs text-foreground font-medium shadow-xs focus:border-primary focus:outline-none"
+          className="rounded-xl border border-border bg-surface-elevated/70 px-3 py-1.5 text-xs text-foreground font-medium shadow-xs focus:border-primary focus:outline-none transition-all"
         >
           <option value="">All Priorities</option>
-          <option value="HIGH">High Priority</option>
+          <option value="HIGH">High Priority Only</option>
           <option value="MEDIUM">Medium Priority</option>
           <option value="LOW">Low Priority</option>
         </select>
@@ -144,19 +154,35 @@ export default function PipelinePage() {
         <select
           value={healthFilter}
           onChange={(e) => setHealthFilter(e.target.value as LeadHealth | '')}
-          className="rounded-lg border border-border bg-surface px-3 py-1.5 text-xs text-foreground font-medium shadow-xs focus:border-primary focus:outline-none"
+          className="rounded-xl border border-border bg-surface-elevated/70 px-3 py-1.5 text-xs text-foreground font-medium shadow-xs focus:border-primary focus:outline-none transition-all"
         >
-          <option value="">All Health Statuses</option>
-          <option value="ACTIVE">🔥 Active Only</option>
+          <option value="">All Lead Health</option>
+          <option value="ACTIVE">🔥 Active Cadence</option>
           <option value="ATTENTION">⚠️ Needs Attention</option>
           <option value="GOING_COLD">❄️ Going Cold</option>
         </select>
+
+        {(assigneeFilter || priorityFilter || healthFilter) && (
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={() => {
+              setAssigneeFilter('')
+              setPriorityFilter('')
+              setHealthFilter('')
+            }}
+            className="text-xs text-muted-foreground hover:text-foreground"
+          >
+            Clear Filters
+          </Button>
+        )}
       </div>
 
       {/* Kanban Board */}
       {loading && !board ? (
-        <div className="flex h-96 items-center justify-center text-xs text-muted-foreground">
-          Loading pipeline stages...
+        <div className="flex h-96 flex-col items-center justify-center gap-3 text-xs text-muted-foreground">
+          <RefreshCw className="size-6 text-primary animate-spin" />
+          <span>Synchronizing pipeline stages and health indices...</span>
         </div>
       ) : board ? (
         <PipelineKanban initialData={board} onRefresh={fetchBoard} />

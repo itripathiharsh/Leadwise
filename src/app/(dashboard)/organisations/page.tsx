@@ -8,6 +8,17 @@ import {
   Plus,
   ChevronRight,
   RefreshCw,
+  SlidersHorizontal,
+  ExternalLink,
+  MessageSquarePlus,
+  Calendar,
+  Sparkles,
+  ArrowUpDown,
+  Filter,
+  Users,
+  CheckSquare,
+  Shield,
+  Layers,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -88,8 +99,11 @@ export default function OrganisationsPage() {
 
   // Fetch users for assignment filter
   React.useEffect(() => {
-    fetch('/api/search?take=50')
+    fetch('/api/users')
       .then((r) => r.json())
+      .then((d) => {
+        if (d?.users) setUsersList(d.users)
+      })
       .catch(() => {})
   }, [])
 
@@ -138,21 +152,27 @@ export default function OrganisationsPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 p-4 sm:p-6 lg:p-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <Building2 className="size-6 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Organisations
-            </h1>
-            <Badge tone="slate" size="sm">
-              {total} Total
-            </Badge>
+      {/* Executive Command Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/80 pb-5">
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary shadow-xs">
+              <Building2 className="size-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2.5">
+                <h1 className="font-display font-extrabold text-2xl tracking-tight text-foreground">
+                  Organizations
+                </h1>
+                <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-surface-elevated text-primary border border-primary/20 font-bold">
+                  {total} Active Entities
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Manage your partnership pipeline, domain intelligence, verified decision makers, and outreach stages.
+              </p>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Manage partnership targets, domains, assignment ownership, and interaction stages.
-          </p>
         </div>
 
         <div className="flex items-center gap-2.5">
@@ -161,87 +181,136 @@ export default function OrganisationsPage() {
             size="sm"
             onClick={fetchOrganisations}
             icon={<RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />}
+            className="hover:bg-surface-elevated border-border"
           >
-            Refresh
+            Refresh Data
           </Button>
           <Button
             variant="primary"
             size="sm"
             onClick={() => setCreateModalOpen(true)}
             icon={<Plus className="size-4" />}
+            className="shadow-md shadow-primary/20"
           >
-            Add Organisation
+            + Add Organization
           </Button>
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface p-3 shadow-xs">
-        {/* Search */}
-        <div className="relative flex-1 min-w-[220px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Filter by name, domain, location..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              setPage(1)
-            }}
-            className="w-full rounded-lg border border-border bg-surface-muted/50 pl-9 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary focus:bg-surface"
-          />
+      {/* Filter Control Bar */}
+      <div className="glass-panel rounded-2xl border border-border/80 bg-surface/70 backdrop-blur-xl p-3.5 shadow-sm space-y-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Search */}
+          <div className="relative flex-1 min-w-[260px]">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search by organization name, domain, location, category..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(1)
+              }}
+              className="w-full rounded-xl border border-border bg-surface-elevated/60 pl-10 pr-4 py-2 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary focus:bg-surface transition-all"
+            />
+          </div>
+
+          {/* Status Filter */}
+          <div className="flex items-center gap-1.5">
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value)
+                setPage(1)
+              }}
+              className="rounded-xl border border-border bg-surface-elevated/70 px-3 py-2 text-xs text-foreground font-medium shadow-xs focus:border-primary focus:outline-none transition-all"
+            >
+              <option value="">All Partnership Stages</option>
+              <option value="NEW">New Target</option>
+              <option value="ASSIGNED">Assigned</option>
+              <option value="CONTACTED">Contacted</option>
+              <option value="RESPONDED">Responded</option>
+              <option value="INTERESTED">Interested / Warm</option>
+              <option value="MEETING">Meeting Scheduled</option>
+              <option value="PARTNERSHIP">Partnership Signed</option>
+              <option value="REJECTED">Disqualified</option>
+            </select>
+          </div>
+
+          {/* Priority Filter */}
+          <div className="flex items-center gap-1.5">
+            <select
+              value={priorityFilter}
+              onChange={(e) => {
+                setPriorityFilter(e.target.value)
+                setPage(1)
+              }}
+              className="rounded-xl border border-border bg-surface-elevated/70 px-3 py-2 text-xs text-foreground font-medium shadow-xs focus:border-primary focus:outline-none transition-all"
+            >
+              <option value="">All Priorities</option>
+              <option value="HIGH">High Priority (Urgent)</option>
+              <option value="MEDIUM">Medium Priority</option>
+              <option value="LOW">Low Priority</option>
+            </select>
+          </div>
+
+          {/* Owner Filter */}
+          <div className="flex items-center gap-1.5">
+            <select
+              value={assigneeFilter}
+              onChange={(e) => {
+                setAssigneeFilter(e.target.value)
+                setPage(1)
+              }}
+              className="rounded-xl border border-border bg-surface-elevated/70 px-3 py-2 text-xs text-foreground font-medium shadow-xs focus:border-primary focus:outline-none transition-all"
+            >
+              <option value="">All Owners</option>
+              {usersList.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {(search || statusFilter || priorityFilter || assigneeFilter) && (
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={() => {
+                setSearch('')
+                setStatusFilter('')
+                setPriorityFilter('')
+                setAssigneeFilter('')
+                setPage(1)
+              }}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              Clear Filters
+            </Button>
+          )}
         </div>
-
-        {/* Status Filter */}
-        <select
-          value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value)
-            setPage(1)
-          }}
-          className="rounded-lg border border-border bg-surface px-3 py-1.5 text-xs text-foreground font-medium shadow-xs focus:border-primary focus:outline-none"
-        >
-          <option value="">All Statuses</option>
-          <option value="NEW">New</option>
-          <option value="ASSIGNED">Assigned</option>
-          <option value="CONTACTED">Contacted</option>
-          <option value="RESPONDED">Responded</option>
-          <option value="INTERESTED">Interested</option>
-          <option value="MEETING">Meeting</option>
-          <option value="PARTNERSHIP">Partnership</option>
-          <option value="REJECTED">Rejected</option>
-        </select>
-
-        {/* Priority Filter */}
-        <select
-          value={priorityFilter}
-          onChange={(e) => {
-            setPriorityFilter(e.target.value)
-            setPage(1)
-          }}
-          className="rounded-lg border border-border bg-surface px-3 py-1.5 text-xs text-foreground font-medium shadow-xs focus:border-primary focus:outline-none"
-        >
-          <option value="">All Priorities</option>
-          <option value="HIGH">High Priority</option>
-          <option value="MEDIUM">Medium Priority</option>
-          <option value="LOW">Low Priority</option>
-        </select>
       </div>
 
-      {/* Bulk Action Toolbar */}
+      {/* High Density Bulk Selection Floating Bar */}
       {selectedIds.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary-soft/30 p-3 animate-in fade-in">
-          <span className="text-xs font-semibold text-primary-foreground bg-primary px-2 py-0.5 rounded-md">
-            {selectedIds.length} selected
-          </span>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/40 bg-primary/10 backdrop-blur-xl p-3 shadow-lg animate-in fade-in slide-in-from-top-1">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-white bg-primary px-2.5 py-0.5 rounded-full shadow-xs">
+              {selectedIds.length} Selected
+            </span>
+            <span className="text-xs text-muted-foreground">
+              Choose an owner to assign this batch of entities:
+            </span>
+          </div>
 
           <div className="flex items-center gap-2">
             <select
               value={bulkAssignee}
               onChange={(e) => setBulkAssignee(e.target.value)}
-              className="rounded-md border border-border bg-surface px-2.5 py-1 text-xs text-foreground font-medium"
+              className="rounded-lg border border-border bg-surface px-3 py-1.5 text-xs text-foreground font-medium"
             >
-              <option value="">Choose Assignee...</option>
+              <option value="">Select Target Owner...</option>
               <option value="UNASSIGNED">Unassign</option>
               {usersList.map((u) => (
                 <option key={u.id} value={u.id}>
@@ -256,6 +325,7 @@ export default function OrganisationsPage() {
               onClick={handleBulkAssign}
               loading={bulkAssigning}
               disabled={!bulkAssignee}
+              className="font-semibold shadow-xs"
             >
               Assign Selected
             </Button>
@@ -263,43 +333,57 @@ export default function OrganisationsPage() {
         </div>
       )}
 
-      {/* Organisations Table */}
-      <div className="rounded-xl border border-border bg-surface shadow-xs overflow-hidden">
+      {/* Organizations Intelligence Table */}
+      <div className="glass-card rounded-2xl border border-border/90 bg-surface/80 shadow-md overflow-hidden rim-highlight">
         {loading && organisations.length === 0 ? (
-          <div className="p-12 text-center text-xs text-muted-foreground">
-            Loading organisations...
+          <div className="p-16 text-center space-y-3">
+            <RefreshCw className="size-6 mx-auto text-primary animate-spin" />
+            <div className="font-semibold text-sm text-foreground">Syncing Organizations...</div>
+            <p className="text-xs text-muted-foreground">Fetching live pipeline records and contact mappings.</p>
           </div>
         ) : organisations.length === 0 ? (
-          <div className="p-12 text-center space-y-2">
-            <Building2 className="size-8 mx-auto text-muted-foreground/60" />
-            <p className="font-semibold text-sm">No organisations found</p>
-            <p className="text-xs text-muted-foreground">
-              Try adjusting your search filters or click &ldquo;Add Organisation&rdquo;.
-            </p>
+          <div className="p-16 text-center space-y-4">
+            <div className="flex size-14 mx-auto items-center justify-center rounded-2xl bg-surface-elevated border border-border/80 text-muted-foreground">
+              <Building2 className="size-7" />
+            </div>
+            <div className="space-y-1">
+              <p className="font-display font-bold text-base text-foreground">No organizations yet</p>
+              <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
+                Your partnership pipeline starts here. Add your first clinical target, corporate enterprise, or health entity to begin tracking outreach.
+              </p>
+            </div>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setCreateModalOpen(true)}
+              icon={<Plus className="size-4" />}
+            >
+              + Add Organization
+            </Button>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-left text-sm border-collapse">
               <thead>
-                <tr className="border-b border-border text-[11px] font-semibold text-muted-foreground uppercase tracking-wider bg-surface-muted/40">
-                  <th className="py-3 px-3 w-8">
+                <tr className="border-b border-border/80 text-[11px] font-mono uppercase tracking-wider text-muted-foreground bg-surface-elevated/40">
+                  <th className="py-3.5 px-4 w-10">
                     <input
                       type="checkbox"
                       checked={
                         selectedIds.length > 0 && selectedIds.length === organisations.length
                       }
                       onChange={(e) => handleSelectAll(e.target.checked)}
-                      className="size-3.5 rounded border-border text-primary"
+                      className="size-3.5 rounded border-border text-primary bg-surface"
                     />
                   </th>
-                  <th className="py-3 px-3">Organisation</th>
-                  <th className="py-3 px-3">Category / Domain</th>
-                  <th className="py-3 px-3">Status</th>
-                  <th className="py-3 px-3">Priority</th>
-                  <th className="py-3 px-3">Assigned To</th>
-                  <th className="py-3 px-3">Last Contacted</th>
-                  <th className="py-3 px-3">Next Follow-up</th>
-                  <th className="py-3 px-3 text-right">Actions</th>
+                  <th className="py-3.5 px-4">Organization & Contacts</th>
+                  <th className="py-3.5 px-4">Domain & Category</th>
+                  <th className="py-3.5 px-4">Stage</th>
+                  <th className="py-3.5 px-4">Priority</th>
+                  <th className="py-3.5 px-4">Assigned Owner</th>
+                  <th className="py-3.5 px-4">Last Activity</th>
+                  <th className="py-3.5 px-4">Next Action</th>
+                  <th className="py-3.5 px-4 text-right">Quick Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
@@ -309,42 +393,58 @@ export default function OrganisationsPage() {
                     <tr
                       key={org.id}
                       className={cn(
-                        'hover:bg-muted/40 transition-colors',
-                        isSelected && 'bg-primary-soft/15',
+                        'group hover:bg-surface-elevated/60 transition-colors duration-150',
+                        isSelected && 'bg-primary/5',
                       )}
                     >
-                      <td className="py-3 px-3">
+                      <td className="py-3.5 px-4">
                         <input
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => handleToggleSelect(org.id)}
-                          className="size-3.5 rounded border-border text-primary"
+                          className="size-3.5 rounded border-border text-primary bg-surface"
                         />
                       </td>
 
-                      <td className="py-3 px-3">
-                        <Link
-                          href={`/organisations/${org.id}`}
-                          className="font-semibold text-xs text-foreground hover:text-primary transition-colors flex items-center gap-1.5"
-                        >
-                          {org.name}
-                          <ChevronRight className="size-3 text-muted-foreground opacity-0 group-hover:opacity-100" />
-                        </Link>
-                        <div className="text-[11px] text-muted-foreground">
-                          {org._count.contacts} contact(s) · {org.activityCount} activities
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary font-bold text-xs font-mono">
+                            {org.name.slice(0, 2).toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <Link
+                              href={`/organisations/${org.id}`}
+                              className="font-bold text-xs text-foreground hover:text-primary transition-colors flex items-center gap-1.5"
+                            >
+                              <span className="truncate">{org.name}</span>
+                              <ChevronRight className="size-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </Link>
+                            <div className="text-[11px] text-muted-foreground flex items-center gap-2 mt-0.5">
+                              <span className="flex items-center gap-1">
+                                <Users className="size-3" />
+                                {org._count.contacts} {org._count.contacts === 1 ? 'contact' : 'contacts'}
+                              </span>
+                              <span>·</span>
+                              <span>{org.activityCount} touchpoints</span>
+                            </div>
+                          </div>
                         </div>
                       </td>
 
-                      <td className="py-3 px-3 text-xs text-muted-foreground">
-                        <div>{org.category || '—'}</div>
-                        {org.domain && (
-                          <span className="font-mono text-[10px] text-foreground/70">
+                      <td className="py-3.5 px-4 text-xs">
+                        <div className="font-medium text-foreground/90">{org.category || 'General Health'}</div>
+                        {org.domain ? (
+                          <div className="font-mono text-[10px] text-muted-foreground tracking-tight">
                             {org.domain}
-                          </span>
-                        )}
+                          </div>
+                        ) : org.location ? (
+                          <div className="text-[10px] text-muted-foreground">
+                            {org.location}
+                          </div>
+                        ) : null}
                       </td>
 
-                      <td className="py-3 px-3">
+                      <td className="py-3.5 px-4">
                         <Badge
                           tone={
                             org.status === 'PARTNERSHIP'
@@ -358,12 +458,13 @@ export default function OrganisationsPage() {
                                     : 'slate'
                           }
                           size="sm"
+                          dot
                         >
                           {org.status}
                         </Badge>
                       </td>
 
-                      <td className="py-3 px-3">
+                      <td className="py-3.5 px-4">
                         <Badge
                           tone={
                             org.priority === 'HIGH'
@@ -378,56 +479,63 @@ export default function OrganisationsPage() {
                         </Badge>
                       </td>
 
-                      <td className="py-3 px-3">
+                      <td className="py-3.5 px-4">
                         {org.assignedTo ? (
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-2">
                             <Avatar
                               name={org.assignedTo.name}
                               color={org.assignedTo.avatarColor}
                               size="xs"
                             />
-                            <span className="text-xs font-medium text-foreground">
+                            <span className="text-xs font-medium text-foreground truncate max-w-[110px]">
                               {org.assignedTo.name}
                             </span>
                           </div>
                         ) : (
-                          <span className="text-xs text-muted-foreground italic">
+                          <span className="text-xs text-muted-foreground italic font-mono text-[11px]">
                             Unassigned
                           </span>
                         )}
                       </td>
 
-                      <td className="py-3 px-3 text-xs text-muted-foreground whitespace-nowrap">
-                        {org.lastContactedAt ? formatDate(org.lastContactedAt) : 'Never'}
+                      <td className="py-3.5 px-4 text-xs text-muted-foreground whitespace-nowrap font-mono text-[11px]">
+                        {org.lastContactedAt ? formatDate(org.lastContactedAt) : 'No outreach'}
                       </td>
 
-                      <td className="py-3 px-3 text-xs whitespace-nowrap">
+                      <td className="py-3.5 px-4 text-xs whitespace-nowrap">
                         {org.nextFollowupAt ? (
-                          <span className="font-medium text-amber-600 dark:text-amber-400">
+                          <span className="font-semibold text-amber-500 font-mono text-[11px] flex items-center gap-1">
+                            <Calendar className="size-3 text-amber-500" />
                             {formatDate(org.nextFollowupAt)}
                           </span>
                         ) : (
-                          <span className="text-muted-foreground">—</span>
+                          <span className="text-muted-foreground/60 text-[11px]">—</span>
                         )}
                       </td>
 
-                      <td className="py-3 px-3 text-right whitespace-nowrap">
-                        <Button
-                          variant="ghost"
-                          size="xs"
-                          onClick={() => {
-                            setActiveOrgForLog({ id: org.id, name: org.name })
-                            setLogModalOpen(true)
-                          }}
-                          className="mr-1 text-primary hover:bg-primary-soft/40"
-                        >
-                          + Log
-                        </Button>
-                        <Link href={`/organisations/${org.id}`}>
-                          <Button variant="ghost" size="xs">
-                            View
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="ghost"
+                            size="xs"
+                            onClick={() => {
+                              setActiveOrgForLog({ id: org.id, name: org.name })
+                              setLogModalOpen(true)
+                            }}
+                            className="text-xs text-primary hover:bg-primary/10 font-semibold"
+                          >
+                            + Touchpoint
                           </Button>
-                        </Link>
+                          <Link href={`/organisations/${org.id}`}>
+                            <Button
+                              variant="outline"
+                              size="xs"
+                              className="text-xs border-border/80 hover:bg-surface-elevated"
+                            >
+                              Dossier
+                            </Button>
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   )
@@ -439,11 +547,11 @@ export default function OrganisationsPage() {
 
         {/* Pagination footer */}
         {pageCount > 1 && (
-          <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
-            <div>
-              Page {page} of {pageCount} ({total} organisations)
+          <div className="flex items-center justify-between border-t border-border/80 px-4 py-3 text-xs text-muted-foreground bg-surface-elevated/30">
+            <div className="font-mono text-[11px]">
+              Showing page <span className="text-foreground font-bold">{page}</span> of {pageCount} ({total} entities)
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="xs"
