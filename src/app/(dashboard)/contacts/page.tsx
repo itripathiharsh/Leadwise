@@ -15,6 +15,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { LogActivityModal, type ActivityTypeTab } from '@/components/domain/log-activity-modal'
+import { CreateContactModal } from '@/components/domain/create-contact-modal'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
@@ -45,6 +46,7 @@ export default function ContactsPage() {
   const [logModalOpen, setLogModalOpen] = React.useState(false)
   const [logType, setLogType] = React.useState<ActivityTypeTab>('CALL')
   const [activeContact, setActiveContact] = React.useState<ContactItem | null>(null)
+  const [createContactOpen, setCreateContactOpen] = React.useState(false)
 
   const fetchContacts = React.useCallback(async () => {
     setLoading(true)
@@ -94,14 +96,24 @@ export default function ContactsPage() {
           </p>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={fetchContacts}
-          icon={<RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />}
-        >
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchContacts}
+            icon={<RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />}
+          >
+            Refresh
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setCreateContactOpen(true)}
+            icon={<Plus className="size-4" />}
+          >
+            Add Lead / Contact
+          </Button>
+        </div>
       </div>
 
       {/* Search Filter Bar */}
@@ -262,6 +274,12 @@ export default function ContactsPage() {
           onSuccess={fetchContacts}
         />
       )}
+
+      <CreateContactModal
+        open={createContactOpen}
+        onOpenChange={setCreateContactOpen}
+        onSuccess={fetchContacts}
+      />
     </div>
   )
 }

@@ -167,6 +167,18 @@ export default async function DashboardPage() {
                       {item.score}/100
                     </Badge>
                   </div>
+
+                  {!item.isAssignedToCurrentUser && item.assignedToName ? (
+                    <div className="flex items-center gap-1 text-[10px] text-amber-700 dark:text-amber-300 font-semibold truncate bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                      <span>⚠️ Assigned to {item.assignedToName}</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium truncate">
+                      <span className="size-1.5 rounded-full bg-emerald-500" />
+                      <span>Your Account</span>
+                    </div>
+                  )}
+
                   <div className="font-bold text-xs text-foreground group-hover:text-primary transition-colors line-clamp-1">
                     {item.orgName}
                   </div>

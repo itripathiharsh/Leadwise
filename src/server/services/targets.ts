@@ -87,7 +87,7 @@ export async function getTeamTargetsAndProgress(
   const end = endOfDayUtc(dayKey)
 
   // Interns only see their own target; Owner/TL see whole team
-  const isManagement = can(currentUser, 'user:manage')
+  const isManagement = can(currentUser, 'team:view')
   const userFilter = isManagement
     ? { isActive: true, deletedAt: null }
     : { id: currentUser.id, isActive: true, deletedAt: null }

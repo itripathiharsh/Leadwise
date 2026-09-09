@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/current-user'
 import {
@@ -6,6 +7,15 @@ import {
   markNotificationAsRead,
 } from '@/server/services/notifications'
 
+const notificationPatchSchema = z.union([
+  z.object({
+    all: z.literal(true),
+  }),
+  z.object({
+    id: z.string().min(1, 'Notification ID is required').max(64),
+  }),
+])
+
 export async function GET(req: Request) {
   const user = await getCurrentUser()
   if (!user) {
@@ -13,7 +23,8 @@ export async function GET(req: Request) {
   }
 
   const { searchParams } = new URL(req.url)
-  const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!, 10) : 30
+  const limitParam = searchParams.get('limit')
+  const limit = limitParam ? Math.min(Math.max(parseInt(limitParam, 10) || 30, 1), 100) : 30
   const onlyUnread = searchParams.get('onlyUnread') === 'true'
 
   const items = await getUserNotifications(user.id, { limit, onlyUnread })
@@ -26,17 +37,27 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const body = await req.json().catch(() => ({}))
+  try {
+    const rawBody = await req.json()
+    const parsed = notificationPatchSchema.safeParse(rawBody)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid request body', details: parsed.error.flatten() }, { status: 400 })
+    }
 
-  if (body.all) {
-    await markAllNotificationsAsRead(user.id)
-    return NextResponse.json({ success: true, markedAll: true })
+    const body = parsed.data
+    if ('all' in body && body.all) {
+      await markAllNotificationsAsRead(user.id)
+      return NextResponse.json({ success: true, markedAll: true })
+    }
+
+    if ('id' in body && body.id) {
+      await markNotificationAsRead(user.id, body.id)
+      return NextResponse.json({ success: true, id: body.id })
+    }
+
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err)
+    return NextResponse.json({ error: msg }, { status: 400 })
   }
-
-  if (body.id) {
-    await markNotificationAsRead(user.id, body.id)
-    return NextResponse.json({ success: true, id: body.id })
-  }
-
-  return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
 }

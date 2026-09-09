@@ -22,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Field, Input } from '@/components/ui/field'
@@ -50,6 +51,12 @@ export default function TeamPage() {
         fetch('/api/users?performance=true'),
       ])
 
+      if (uRes.status === 403 || pRes.status === 403) {
+        toast.error('Access Denied: Team management is reserved for Owner and Team Lead.')
+        window.location.href = '/dashboard?denied=1'
+        return
+      }
+
       if (uRes.ok) {
         const ud = await uRes.json()
         setUsers(ud.users ?? [])
@@ -66,6 +73,15 @@ export default function TeamPage() {
   }, [])
 
   React.useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.user && d.user.role !== 'OWNER' && d.user.role !== 'TL') {
+          toast.error('Access Denied: Team management is reserved for Owner and Team Lead.')
+          window.location.href = '/dashboard?denied=1'
+        }
+      })
+      .catch(() => {})
     fetchData()
   }, [fetchData])
 
@@ -284,56 +300,62 @@ export default function TeamPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleCreateUser} className="space-y-4 py-2">
-            <Field label="Full Name" required>
-              <Input
-                placeholder="e.g. Rahul Sharma"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </Field>
-
-            <Field label="Email Address" required>
-              <Input
-                type="email"
-                placeholder="rahul@leadwise.com"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </Field>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Role" required>
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-xs focus:border-primary focus:outline-none"
-                >
-                  <option value="INTERN">Intern (Outreach Rep)</option>
-                  <option value="TL">Team Lead (Operational Lead)</option>
-                  <option value="OWNER">Owner (Full Administrator)</option>
-                </select>
-              </Field>
-
-              <Field label="Phone">
+          <form onSubmit={handleCreateUser} className="flex flex-col flex-1 overflow-hidden">
+            <DialogBody className="space-y-4">
+              <Field label="Full Name" required>
                 <Input
-                  placeholder="+91 98765 43210"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="e.g. Rahul Sharma"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="h-10"
                 />
               </Field>
-            </div>
 
-            <Field label="Initial Password" required>
-              <Input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </Field>
+              <Field label="Email Address" required>
+                <Input
+                  type="email"
+                  placeholder="rahul@leadwise.com"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="h-10"
+                />
+              </Field>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Role" required>
+                  <select
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                    className="h-10 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-xs transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  >
+                    <option value="INTERN">Intern (Outreach Rep)</option>
+                    <option value="TL">Team Lead (Operational Lead)</option>
+                    <option value="OWNER">Owner (Full Administrator)</option>
+                  </select>
+                </Field>
+
+                <Field label="Phone">
+                  <Input
+                    placeholder="+91 98765 43210"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="h-10"
+                  />
+                </Field>
+              </div>
+
+              <Field label="Initial Password" required>
+                <Input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="h-10"
+                />
+              </Field>
+            </DialogBody>
 
             <DialogFooter>
               <Button variant="ghost" type="button" onClick={() => setCreateModalOpen(false)}>

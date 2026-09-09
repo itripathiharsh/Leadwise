@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/current-user'
 import { logActivity, listActivities } from '@/server/services/activities'
+import { activityCreateSchema, pageSchema, pageSizeSchema } from '@/lib/validation'
 import type { ActivityType } from '@prisma/client'
 
 export async function GET(req: Request) {
@@ -12,8 +13,8 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const type = searchParams.get('type') as ActivityType | null
   const performer = searchParams.get('performer') || undefined
-  const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1
-  const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 25
+  const page = pageSchema.parse(searchParams.get('page') || undefined)
+  const pageSize = pageSizeSchema.parse(searchParams.get('pageSize') || undefined)
 
   const result = await listActivities(user, {
     type: type ? [type] : undefined,
@@ -32,8 +33,12 @@ export async function POST(req: Request) {
   }
 
   try {
-    const body = await req.json()
-    const result = await logActivity(user, body)
+    const rawBody = await req.json()
+    const parsed = activityCreateSchema.safeParse(rawBody)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid activity input', details: parsed.error.flatten() }, { status: 400 })
+    }
+    const result = await logActivity(user, parsed.data)
     return NextResponse.json({ success: true, ...result })
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)

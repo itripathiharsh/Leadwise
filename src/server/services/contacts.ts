@@ -210,12 +210,21 @@ export async function createContact(
     if (duplicates.length > 0) return { status: 'DUPLICATE', duplicates }
   }
 
-  // Whoever works the organisation works its contacts unless told otherwise.
+  // Whoever works the organisation works its contacts unless told otherwise by TL/Owner.
+  // Whosoever gets/creates the lead handles the person throughout.
   const assignedToId = can(user, 'org:assign')
-    ? (input.assignedToId ?? org.assignedToId ?? null)
+    ? (input.assignedToId ?? org.assignedToId ?? user.id)
     : (org.assignedToId ?? user.id)
 
   const contact = await prisma.$transaction(async (tx) => {
+    // If the organisation had no handler, assign it to this creator so they handle the lead throughout
+    if (!org.assignedToId && assignedToId) {
+      await tx.organisation.update({
+        where: { id: org.id },
+        data: { assignedToId, status: 'ASSIGNED' },
+      })
+    }
+
     const created = await tx.contact.create({
       data: {
         organisationId: input.organisationId,

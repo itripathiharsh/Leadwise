@@ -1,6 +1,16 @@
+import { z } from 'zod'
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/current-user'
 import { getTeamTargetsAndProgress, setUserTarget, getUserTarget } from '@/server/services/targets'
+
+const targetSetSchema = z.object({
+  userId: z.string().min(1, 'userId is required').max(64),
+  dailyOrganisations: z.number().int().nonnegative().optional(),
+  dailyCalls: z.number().int().nonnegative().optional(),
+  dailyEmails: z.number().int().nonnegative().optional(),
+  dailyLinkedin: z.number().int().nonnegative().optional(),
+  dailyMeetings: z.number().int().nonnegative().optional(),
+})
 
 export async function GET(req: Request) {
   const user = await getCurrentUser()
@@ -13,6 +23,9 @@ export async function GET(req: Request) {
   const userId = searchParams.get('userId') || undefined
 
   if (userId) {
+    if (user.role === 'INTERN' && userId !== user.id) {
+      return NextResponse.json({ error: 'Forbidden: Interns can only view their own targets.' }, { status: 403 })
+    }
     const target = await getUserTarget(userId)
     return NextResponse.json({ target })
   }
@@ -28,13 +41,12 @@ export async function POST(req: Request) {
   }
 
   try {
-    const body = await req.json()
-    const { userId, ...targets } = body
-
-    if (!userId) {
-      return NextResponse.json({ error: 'userId is required' }, { status: 400 })
+    const rawBody = await req.json()
+    const parsed = targetSetSchema.safeParse(rawBody)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid target input', details: parsed.error.flatten() }, { status: 400 })
     }
-
+    const { userId, ...targets } = parsed.data
     const updated = await setUserTarget(user, userId, targets)
     return NextResponse.json({ success: true, target: updated })
   } catch (err: unknown) {

@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -133,11 +134,11 @@ export function ManualBackupModal({ open, onOpenChange, onSuccess }: ManualBacku
           </DialogDescription>
         </DialogHeader>
 
-        <div className="py-4">
+        <DialogBody className="space-y-4">
           {stage === 'IDLE' ? (
-            <div className="rounded-lg border border-border/80 bg-muted/40 p-4 text-sm text-muted-foreground space-y-2">
-              <p>This will export complete business data into separate Excel sheets:</p>
-              <ul className="grid grid-cols-2 gap-1.5 text-xs text-foreground/80 pl-2">
+            <div className="rounded-xl border border-border/80 bg-muted/40 p-4 text-sm text-muted-foreground space-y-2.5">
+              <p className="font-medium text-foreground">This will export complete business data into separate Excel sheets:</p>
+              <ul className="grid grid-cols-2 gap-2 text-xs text-foreground/80 pl-2">
                 <li>• Organisations (with IDs)</li>
                 <li>• Contacts & Designations</li>
                 <li>• Activities & Outcomes</li>
@@ -152,7 +153,7 @@ export function ManualBackupModal({ open, onOpenChange, onSuccess }: ManualBacku
               </p>
             </div>
           ) : (
-            <div className="rounded-lg border border-border bg-surface p-4 space-y-1">
+            <div className="rounded-xl border border-border bg-surface p-4 space-y-2">
               {renderStep('PREPARING', 'Preparing database export...', stage)}
               {renderStep('EXPORTING', 'Exporting organisations, contacts & activities...', stage)}
               {renderStep('VALIDATING', 'Validating multi-sheet relational integrity...', stage)}
@@ -163,7 +164,7 @@ export function ManualBackupModal({ open, onOpenChange, onSuccess }: ManualBacku
 
           {/* Success summary */}
           {stage === 'DONE' && result && (
-            <div className="mt-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 space-y-3">
+            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-sm text-emerald-700 dark:text-emerald-300">
                   {result.status === 'SUCCESS' ? '✓ Backup Completed & Uploaded' : '✓ Backup Generated (Local Fallback)'}
@@ -218,12 +219,12 @@ export function ManualBackupModal({ open, onOpenChange, onSuccess }: ManualBacku
 
           {/* Error notice */}
           {stage === 'ERROR' && error && (
-            <div className="mt-4 rounded-lg border border-rose-500/30 bg-rose-500/10 p-3.5 text-xs text-rose-700 dark:text-rose-300">
+            <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3.5 text-xs text-rose-700 dark:text-rose-300">
               <p className="font-semibold mb-1">Backup Failed</p>
               <p>{error}</p>
             </div>
           )}
-        </div>
+        </DialogBody>
 
         <DialogFooter>
           {stage === 'IDLE' ? (

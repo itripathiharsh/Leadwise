@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -89,59 +90,61 @@ export function AiOutreachGeneratorModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="lg">
         <DialogHeader>
-          <div className="flex items-center gap-2">
-            <div className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
-              <Sparkles className="size-4" />
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Sparkles className="size-5" />
             </div>
-            <DialogTitle>AI Outreach Message Generator</DialogTitle>
+            <div>
+              <DialogTitle>AI Outreach Message Generator</DialogTitle>
+              <DialogDescription>
+                Context-aware outreach drafts for <strong>{contactName}</strong> at <strong>{orgName}</strong>.
+              </DialogDescription>
+            </div>
           </div>
-          <DialogDescription>
-            Context-aware outreach drafts for <strong>{contactName}</strong> at <strong>{orgName}</strong>.
-          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
+        <DialogBody className="space-y-4">
           {/* Controls Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/80 pb-4">
             <div className="flex items-center gap-1.5 bg-surface-muted/60 p-1 rounded-xl border border-border">
               <button
                 type="button"
                 onClick={() => setChannel('EMAIL')}
                 className={cn(
-                  'px-3 py-1 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5',
+                  'px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5',
                   channel === 'EMAIL' ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground',
                 )}
               >
-                <Mail className="size-3" /> Email
+                <Mail className="size-3.5" /> Email
               </button>
               <button
                 type="button"
                 onClick={() => setChannel('LINKEDIN')}
                 className={cn(
-                  'px-3 py-1 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5',
+                  'px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5',
                   channel === 'LINKEDIN' ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground',
                 )}
               >
-                <Linkedin className="size-3" /> LinkedIn
+                <Linkedin className="size-3.5" /> LinkedIn
               </button>
               <button
                 type="button"
                 onClick={() => setChannel('WHATSAPP')}
                 className={cn(
-                  'px-3 py-1 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5',
+                  'px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5',
                   channel === 'WHATSAPP' ? 'bg-primary text-primary-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground',
                 )}
               >
-                <MessageSquare className="size-3" /> WhatsApp
+                <MessageSquare className="size-3.5" /> WhatsApp
               </button>
             </div>
 
-            <div className="flex items-center gap-1 text-xs">
+            <div className="flex items-center gap-2 text-xs">
               <span className="text-muted-foreground font-medium">Goal:</span>
               <select
                 value={purpose}
                 onChange={(e) => setPurpose(e.target.value as any)}
-                className="rounded-lg border border-border bg-surface px-2.5 py-1 text-xs font-medium text-foreground focus:outline-none focus:border-primary"
+                className="h-9 rounded-lg border border-border bg-surface px-3 text-xs font-medium text-foreground focus:outline-none focus:border-primary"
               >
                 <option value="FOLLOWUP">Follow-up Check-in</option>
                 <option value="INTRO">Introductory Cold Outreach</option>
@@ -151,14 +154,14 @@ export function AiOutreachGeneratorModal({
           </div>
 
           {/* Editable Draft Area */}
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-foreground">Generated Draft (Editable):</span>
               <Button
                 variant="ghost"
                 size="xs"
                 onClick={generate}
-                icon={<RefreshCw className={cn('size-3', loading && 'animate-spin')} />}
+                icon={<RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />}
               >
                 Regenerate
               </Button>
@@ -167,37 +170,37 @@ export function AiOutreachGeneratorModal({
               rows={8}
               value={generatedText}
               onChange={(e) => setGeneratedText(e.target.value)}
-              className="w-full rounded-xl border border-border bg-surface p-3.5 text-xs text-foreground font-sans placeholder:text-muted-foreground shadow-xs focus:border-primary focus:outline-none leading-relaxed"
+              className="w-full rounded-xl border border-border bg-surface p-4 text-xs text-foreground font-sans placeholder:text-muted-foreground shadow-xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 leading-relaxed resize-y"
             />
           </div>
+        </DialogBody>
 
-          <DialogFooter>
-            <Button variant="ghost" type="button" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
+        <DialogFooter>
+          <Button variant="ghost" type="button" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="outline"
+            type="button"
+            onClick={copyToClipboard}
+            icon={copied ? <Check className="size-3.5 text-emerald-600" /> : <Copy className="size-3.5" />}
+          >
+            {copied ? 'Copied' : 'Copy Message'}
+          </Button>
+          {onUseMessage && (
             <Button
-              variant="outline"
+              variant="primary"
               type="button"
-              onClick={copyToClipboard}
-              icon={copied ? <Check className="size-3.5 text-emerald-600" /> : <Copy className="size-3.5" />}
+              onClick={() => {
+                onUseMessage(generatedText)
+                onOpenChange(false)
+              }}
+              icon={<Send className="size-3.5" />}
             >
-              {copied ? 'Copied' : 'Copy Message'}
+              Insert Into Activity Logger
             </Button>
-            {onUseMessage && (
-              <Button
-                variant="primary"
-                type="button"
-                onClick={() => {
-                  onUseMessage(generatedText)
-                  onOpenChange(false)
-                }}
-                icon={<Send className="size-3.5" />}
-              >
-                Insert Into Activity Logger
-              </Button>
-            )}
-          </DialogFooter>
-        </div>
+          )}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

@@ -15,9 +15,10 @@ import {
   FileText,
   TrendingUp,
   BarChart3,
-  Upload,
   Settings,
+  User,
   Plus,
+  ChevronDown,
   Search,
   LogOut,
   Sparkles,
@@ -28,6 +29,13 @@ import { NotificationCenter } from '@/components/domain/notification-center'
 import { GlobalSearchDialog } from '@/components/domain/global-search-dialog'
 import { LogActivityModal } from '@/components/domain/log-activity-modal'
 import { CreateOrganisationModal } from '@/components/domain/create-organisation-modal'
+import { CreateContactModal } from '@/components/domain/create-contact-modal'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { Avatar } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
@@ -48,6 +56,8 @@ export function DashboardShell({
   const [searchOpen, setSearchOpen] = React.useState(false)
   const [logModalOpen, setLogModalOpen] = React.useState(false)
   const [createOrgOpen, setCreateOrgOpen] = React.useState(false)
+  const [createContactOpen, setCreateContactOpen] = React.useState(false)
+  const [preselectedOrg, setPreselectedOrg] = React.useState<{ id: string; name: string } | null>(null)
 
   const isOwnerOrTL = user.role === 'OWNER' || user.role === 'TL'
 
@@ -61,14 +71,14 @@ export function DashboardShell({
     { label: 'Calendar', href: '/calendar', icon: CalendarCheck },
     { label: 'Templates', href: '/templates', icon: FileText },
     { label: 'Analytics', href: '/analytics', icon: TrendingUp },
-    { label: 'AI & Funnel', href: '/analytics/advanced', icon: Sparkles },
-    { label: 'EOD Reports', href: '/eod', icon: FileSpreadsheet },
     ...(isOwnerOrTL
       ? [
           { label: 'Team', href: '/team', icon: BarChart3 },
-          { label: 'Import Excel', href: '/import', icon: Upload },
+          { label: 'AI & Funnel', href: '/analytics/advanced', icon: Sparkles },
+          { label: 'EOD Reports', href: '/eod', icon: FileSpreadsheet },
         ]
       : []),
+    { label: 'Profile', href: '/profile', icon: User },
     { label: 'Settings', href: '/settings', icon: Settings },
   ]
 
@@ -144,7 +154,11 @@ export function DashboardShell({
         {/* User Card & Logout Footer */}
         <div className="p-3 border-t border-border">
           <div className="flex items-center justify-between rounded-xl bg-surface-muted/60 p-2.5 border border-border/80">
-            <div className="flex items-center gap-2.5 min-w-0">
+            <Link
+              href="/profile"
+              className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-80 transition-opacity"
+              title="View my profile"
+            >
               <Avatar
                 name={user.name}
                 color={user.avatarColor}
@@ -154,13 +168,13 @@ export function DashboardShell({
                 <div className="text-xs font-semibold text-foreground truncate">{user.name}</div>
                 <div className="text-[10px] text-muted-foreground capitalize">{user.role.toLowerCase()}</div>
               </div>
-            </div>
+            </Link>
 
             <button
               type="button"
               onClick={handleLogout}
               title="Sign out"
-              className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-destructive transition-colors"
+              className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-destructive transition-colors shrink-0"
             >
               <LogOut className="size-3.5" />
             </button>
@@ -196,18 +210,61 @@ export function DashboardShell({
             </button>
           </div>
 
-          {/* Right Header Actions */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* Direct Create Organisation Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCreateOrgOpen(true)}
-              className="hidden sm:inline-flex"
-              icon={<Building2 className="size-3.5 text-primary" />}
-            >
-              + Org
-            </Button>
+          {/* Right Header Actions: Unified Global Quick Action & Notification Center */}
+          <div className="flex items-center gap-2.5">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="font-semibold shadow-xs flex items-center gap-1.5 px-3 py-1.5 h-8 text-xs cursor-pointer"
+                >
+                  <Plus className="size-3.5" />
+                  <span>New</span>
+                  <ChevronDown className="size-3 opacity-70 ml-0.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 p-1.5 space-y-0.5">
+                <DropdownMenuItem
+                  onClick={() => setLogModalOpen(true)}
+                  className="flex items-center gap-3 py-2 px-2.5 rounded-lg cursor-pointer hover:bg-muted/80 transition-colors"
+                >
+                  <div className="flex size-7 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
+                    <Activity className="size-3.5" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-xs text-foreground">Log Activity</div>
+                    <div className="text-[10.5px] text-muted-foreground">Calls, emails, meetings, notes</div>
+                  </div>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem
+                  onClick={() => setCreateOrgOpen(true)}
+                  className="flex items-center gap-3 py-2 px-2.5 rounded-lg cursor-pointer hover:bg-muted/80 transition-colors"
+                >
+                  <div className="flex size-7 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+                    <Building2 className="size-3.5" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-xs text-foreground">Add Organisation</div>
+                    <div className="text-[10.5px] text-muted-foreground">New partnership target</div>
+                  </div>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem
+                  onClick={() => setCreateContactOpen(true)}
+                  className="flex items-center gap-3 py-2 px-2.5 rounded-lg cursor-pointer hover:bg-muted/80 transition-colors"
+                >
+                  <div className="flex size-7 items-center justify-center rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
+                    <Users className="size-3.5" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-xs text-foreground">Add Contact / Lead</div>
+                    <div className="text-[10.5px] text-muted-foreground">Stakeholder or decision maker</div>
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* Notification Center */}
             <NotificationCenter />
@@ -280,7 +337,13 @@ export function DashboardShell({
             </nav>
 
             <div className="pt-3 border-t border-border flex items-center justify-between">
-              <div className="text-xs font-semibold">{user.name}</div>
+              <Link
+                href="/profile"
+                onClick={() => setMobileNavOpen(false)}
+                className="text-xs font-semibold text-foreground hover:underline"
+              >
+                {user.name}
+              </Link>
               <Button variant="ghost" size="xs" onClick={handleLogout}>
                 Logout
               </Button>
@@ -292,7 +355,24 @@ export function DashboardShell({
       {/* Global Dialog Modals */}
       <GlobalSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
       <LogActivityModal open={logModalOpen} onOpenChange={setLogModalOpen} />
-      <CreateOrganisationModal open={createOrgOpen} onOpenChange={setCreateOrgOpen} />
+      <CreateOrganisationModal
+        open={createOrgOpen}
+        onOpenChange={setCreateOrgOpen}
+        onOpenAddContact={(orgId, orgName) => {
+          setCreateOrgOpen(false)
+          setPreselectedOrg({ id: orgId, name: orgName })
+          setCreateContactOpen(true)
+        }}
+      />
+      <CreateContactModal
+        open={createContactOpen}
+        onOpenChange={(open) => {
+          setCreateContactOpen(open)
+          if (!open) setPreselectedOrg(null)
+        }}
+        organisationId={preselectedOrg?.id}
+        organisationName={preselectedOrg?.name}
+      />
     </div>
   )
 }

@@ -10,8 +10,10 @@ import {
 } from '@/lib/rbac'
 import {
   normalizeDomain,
+  normalizeEmail,
   normalizeLinkedInUrl,
   normalizeOrgName,
+  normalizePersonName,
   normalizePhone,
   normalizeWebsite,
 } from '@/lib/normalize'
@@ -22,7 +24,7 @@ import { NotFoundError } from '@/server/errors'
 import { writeAudit } from './audit'
 import { findOrganisationDuplicates, type OrganisationDuplicate } from './duplicates'
 import { recomputeOrganisationCaches } from './caches'
-import { createNotification } from './notifications'
+import { createNotification, notifyOwnersAndTLs } from './notifications'
 
 /**
  * Organisation service (spec §5, §8, §18, §19, §22).
@@ -307,32 +309,122 @@ export async function createOrganisation(
     if (duplicates.length > 0) return { status: 'DUPLICATE', duplicates }
   }
 
-  const assignedToId = can(user, 'org:assign') ? (input.assignedToId ?? null) : null
+  // Sticky lead assignment: whosoever gets/creates the lead handles it throughout.
+  // Owner and TL may assign to a specific team member; for Interns (or if left blank),
+  // it is automatically assigned to the creator so they own and handle it throughout.
+  const assignedToId = can(user, 'org:assign')
+    ? (input.assignedToId ?? user.id)
+    : user.id
   const website = normalizeWebsite(input.website)
 
-  // An organisation handed straight to someone starts at ASSIGNED, not NEW.
-  const status: OrgStatus = input.status ?? (assignedToId ? 'ASSIGNED' : 'NEW')
+  // Map initial status
+  let status: OrgStatus = 'NEW'
+  let nextAction: string | null = null
+  if (input.status === 'CONTACTED') {
+    status = 'CONTACTED'
+  } else if (input.status === 'FOLLOW_UP') {
+    status = 'CONTACTED'
+    nextAction = 'Follow-up scheduled'
+  } else if (input.status === 'MEETING') {
+    status = 'MEETING'
+  } else if (input.status === 'PARTNERSHIP') {
+    status = 'PARTNERSHIP'
+  } else if (input.status === 'REJECTED') {
+    status = 'REJECTED'
+  } else if (input.status === 'ASSIGNED') {
+    status = 'ASSIGNED'
+  } else if (input.status === 'NEW') {
+    status = assignedToId ? 'ASSIGNED' : 'NEW'
+  } else {
+    status = assignedToId ? 'ASSIGNED' : 'NEW'
+  }
+
+  const domain = input.domain?.trim() || (website ? normalizeDomain(website) : null)
+  const leadSource = input.leadSource?.trim() || null
+
+  const customFields: Record<string, unknown> = {}
+  if (input.organisationType) {
+    customFields.organisationType = input.organisationType
+  }
+  if (input.numberOfProfessionals !== undefined && input.numberOfProfessionals !== null) {
+    customFields.numberOfProfessionals = input.numberOfProfessionals
+  }
 
   const org = await prisma.$transaction(async (tx) => {
     const created = await tx.organisation.create({
       data: {
         name: input.name,
         nameNormalized: normalizeOrgName(input.name),
-        category: input.category ?? null,
+        category: input.category ?? input.domain ?? null,
         website,
-        domain: normalizeDomain(website),
+        domain,
+        leadSource,
         generalEmail: input.generalEmail ?? null,
         generalPhone: input.generalPhone ?? null,
         linkedinUrl: normalizeLinkedInUrl(input.linkedinUrl),
         location: input.location ?? null,
         priority: input.priority,
         status,
+        nextAction,
         notes: input.notes ?? null,
+        customFields: Object.keys(customFields).length > 0 ? (customFields as Prisma.InputJsonValue) : undefined,
         assignedToId,
         createdById: user.id,
       },
       select: { id: true, name: true, status: true, assignedToId: true },
     })
+
+    // Create primary contact if name is provided
+    if (input.primaryContact?.name?.trim()) {
+      const contactName = input.primaryContact.name.trim()
+      await tx.contact.create({
+        data: {
+          organisationId: created.id,
+          name: contactName,
+          nameNormalized: normalizePersonName(contactName),
+          designation: input.primaryContact.designation?.trim() || null,
+          email: input.primaryContact.email?.trim() || null,
+          emailNormalized: input.primaryContact.email ? normalizeEmail(input.primaryContact.email) : null,
+          phone: input.primaryContact.phone?.trim() || null,
+          phoneNormalized: input.primaryContact.phone ? normalizePhone(input.primaryContact.phone) : null,
+          linkedinUrl: normalizeLinkedInUrl(input.primaryContact.linkedinUrl),
+          isDecisionMaker: input.primaryContact.isDecisionMaker ?? false,
+          priority: input.primaryContact.priority ?? 'MEDIUM',
+          assignedToId,
+          createdById: user.id,
+        },
+      })
+    }
+
+    // Link or create tags if provided
+    if (input.tags && input.tags.length > 0) {
+      for (const rawTag of input.tags) {
+        const tagName = rawTag.trim()
+        if (!tagName) continue
+        const tag = await tx.tag.upsert({
+          where: { name: tagName },
+          update: { isArchived: false },
+          create: {
+            name: tagName,
+            color: 'violet',
+            createdById: user.id,
+          },
+        })
+        await tx.organisationTag.upsert({
+          where: {
+            organisationId_tagId: {
+              organisationId: created.id,
+              tagId: tag.id,
+            },
+          },
+          update: {},
+          create: {
+            organisationId: created.id,
+            tagId: tag.id,
+          },
+        })
+      }
+    }
 
     await writeAudit(
       {
@@ -403,10 +495,11 @@ export async function updateOrganisation(
         generalPhone: input.generalPhone ?? null,
         linkedinUrl: normalizeLinkedInUrl(input.linkedinUrl),
         location: input.location ?? null,
-        priority: input.priority,
         notes: input.notes ?? null,
         assignedToId,
-        ...(input.status && can(user, 'org:changeStatus') ? { status: input.status } : {}),
+        ...(input.status && input.status !== 'FOLLOW_UP' && can(user, 'org:changeStatus')
+          ? { status: input.status as OrgStatus }
+          : {}),
       },
       select: { id: true, name: true, status: true, priority: true, assignedToId: true },
     })
@@ -660,12 +753,18 @@ export async function changeOrganisationStatus(
     select: { id: true, name: true, status: true, assignedToId: true, createdById: true },
   })
   if (!org) throw new NotFoundError('Organisation')
-  if (!canWriteOrganisation(user, org)) throw new ForbiddenError()
+  if (!canWriteOrganisation(user, org) && org.assignedToId !== null) throw new ForbiddenError()
 
   if (org.status === input.status) return { from: org.status, to: input.status }
 
   await prisma.$transaction(async (tx) => {
-    await tx.organisation.update({ where: { id: org.id }, data: { status: input.status } })
+    await tx.organisation.update({
+      where: { id: org.id },
+      data: {
+        status: input.status,
+        ...(org.assignedToId === null ? { assignedToId: user.id } : {}),
+      },
+    })
 
     await writeAudit(
       {
@@ -683,6 +782,26 @@ export async function changeOrganisationStatus(
       tx,
     )
   })
+
+  // Drop notification to TL and OWNER when moved by an intern
+  if (user.role === 'INTERN') {
+    const fromLabel = ORG_STATUS_META[org.status]?.label ?? org.status
+    const toLabel = ORG_STATUS_META[input.status]?.label ?? input.status
+
+    await notifyOwnersAndTLs({
+      type: 'SYSTEM',
+      priority: input.status === 'PARTNERSHIP' ? 'URGENT' : input.status === 'REJECTED' ? 'WARNING' : 'INFO',
+      title: `Organisation Status Updated by ${user.name}`,
+      message: `${user.name} moved "${org.name}" from ${fromLabel} → ${toLabel}.${
+        input.reason ? ` Reason: ${input.reason}` : ''
+      }`,
+      linkUrl: `/organisations/${org.id}`,
+      entityType: 'organisation',
+      entityId: org.id,
+    }).catch((err) => {
+      console.error('Failed to notify owners/TLs on organisation status change:', err)
+    })
+  }
 
   return { from: org.status, to: input.status }
 }

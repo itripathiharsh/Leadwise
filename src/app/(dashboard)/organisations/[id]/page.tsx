@@ -17,6 +17,7 @@ import {
   Globe,
   MapPin,
   ShieldAlert,
+  AlertTriangle,
   ArrowLeft,
   CheckCircle2,
   ChevronRight,
@@ -93,7 +94,21 @@ export default function OrganisationDetailPage() {
     }
   }
 
+  const [currentUser, setCurrentUser] = React.useState<{ id: string; name: string } | null>(null)
+
+  React.useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.user) setCurrentUser(d.user)
+      })
+      .catch(() => {})
+  }, [])
+
   const openLog = (type: ActivityTypeTab, contactId?: string) => {
+    if (data?.organisation?.assignedTo && currentUser && data.organisation.assignedTo.id !== currentUser.id) {
+      toast.warning(`Note: ${data.organisation.name} is assigned to ${data.organisation.assignedTo.name}. Coordinate before outreach.`)
+    }
     setLogType(type)
     if (contactId) setSelectedContactId(contactId)
     setLogModalOpen(true)
@@ -146,6 +161,26 @@ export default function OrganisationDetailPage() {
           Refresh
         </Button>
       </div>
+
+      {/* Warning when viewing an organisation assigned to someone else */}
+      {currentUser && org.assignedTo && org.assignedTo.id !== currentUser.id && (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-xs text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs animate-in fade-in duration-200">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="size-5 text-amber-600 dark:text-amber-400 shrink-0" />
+            <div>
+              <span className="font-bold text-sm text-amber-800 dark:text-amber-300">
+                Assigned Account Warning:
+              </span>{' '}
+              <span className="text-muted-foreground">
+                This organisation is actively assigned to <strong className="text-foreground">{org.assignedTo.name}</strong>. Please coordinate with them before placing outreach calls or sending emails.
+              </span>
+            </div>
+          </div>
+          <Badge tone="amber" size="sm" className="shrink-0 font-semibold">
+            Managed by {org.assignedTo.name}
+          </Badge>
+        </div>
+      )}
 
       {/* Organisation Profile Header Card */}
       <div className="rounded-2xl border border-border bg-surface p-6 shadow-xs space-y-6">
@@ -610,6 +645,14 @@ export default function OrganisationDetailPage() {
               <div>
                 <span className="text-muted-foreground font-medium">Domain:</span>
                 <p className="font-semibold text-foreground mt-0.5">{org.domain || '—'}</p>
+              </div>
+              <div>
+                <span className="text-muted-foreground font-medium">Organization Type:</span>
+                <p className="font-semibold text-foreground mt-0.5">{org.customFields?.organisationType || '—'}</p>
+              </div>
+              <div>
+                <span className="text-muted-foreground font-medium">Number of Professionals:</span>
+                <p className="font-semibold text-foreground mt-0.5">{org.customFields?.numberOfProfessionals !== undefined && org.customFields?.numberOfProfessionals !== null ? org.customFields.numberOfProfessionals : '—'}</p>
               </div>
               <div>
                 <span className="text-muted-foreground font-medium">Total Activities Logged:</span>

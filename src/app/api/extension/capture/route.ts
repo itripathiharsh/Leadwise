@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import { NextResponse } from 'next/server'
 import { verifyApiKey } from '@/server/services/api-keys'
 import { getCurrentUser } from '@/lib/auth/current-user'
@@ -15,6 +16,16 @@ async function resolveUser(req: Request) {
   return getCurrentUser()
 }
 
+const extensionCaptureSchema = z.object({
+  organisationName: z.string().min(1, 'organisationName is required').max(200),
+  website: z.string().max(300).optional().nullable(),
+  contactName: z.string().min(1, 'contactName is required').max(200),
+  designation: z.string().max(200).optional().nullable(),
+  linkedinUrl: z.string().max(500).optional().nullable(),
+  email: z.string().max(200).optional().nullable(),
+  phone: z.string().max(50).optional().nullable(),
+})
+
 export async function POST(req: Request) {
   const user = await resolveUser(req)
   if (!user) {
@@ -22,12 +33,12 @@ export async function POST(req: Request) {
   }
 
   try {
-    const body = await req.json()
-    const { organisationName, website, contactName, designation, linkedinUrl, email, phone } = body
-
-    if (!organisationName || !contactName) {
-      return NextResponse.json({ error: 'organisationName and contactName are required' }, { status: 400 })
+    const rawBody = await req.json()
+    const parsed = extensionCaptureSchema.safeParse(rawBody)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid request', details: parsed.error.format() }, { status: 400 })
     }
+    const { organisationName, website, contactName, designation, linkedinUrl, email, phone } = parsed.data
 
     const orgNorm = normalizeOrgName(organisationName)
     const domainNorm = website ? normalizeDomain(website) : null

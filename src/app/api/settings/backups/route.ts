@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/current-user'
 import { assertCan } from '@/lib/rbac'
@@ -39,6 +40,15 @@ export async function GET() {
   })
 }
 
+const backupSettingsSchema = z.object({
+  scheduleDay: z.string().max(20).optional(),
+  scheduleTime: z.string().max(10).optional(),
+  retentionCount: z.coerce.number().int().min(1).max(52).optional(),
+  googleDriveFolderId: z.string().max(200).optional(),
+  googleDriveClientEmail: z.string().optional(),
+  googleDrivePrivateKey: z.string().optional(),
+})
+
 export async function PUT(req: Request) {
   const user = await getCurrentUser()
   if (!user) {
@@ -47,31 +57,42 @@ export async function PUT(req: Request) {
 
   assertCan(user, 'settings:manage')
 
-  const body = await req.json().catch(() => ({}))
+  try {
+    const rawBody = await req.json()
+    const parsed = backupSettingsSchema.safeParse(rawBody)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid backup settings', details: parsed.error.flatten() }, { status: 400 })
+    }
 
-  if (body.scheduleDay !== undefined) {
-    await setAppSetting('backup_schedule_day', String(body.scheduleDay))
-  }
-  if (body.scheduleTime !== undefined) {
-    await setAppSetting('backup_schedule_time', String(body.scheduleTime))
-  }
-  if (body.retentionCount !== undefined) {
-    await setAppSetting('backup_retention_count', String(body.retentionCount))
-  }
-  if (body.googleDriveFolderId !== undefined) {
-    await setAppSetting('google_drive_backup_folder_id', String(body.googleDriveFolderId).trim())
-  }
-  if (body.googleDriveClientEmail !== undefined) {
-    await setAppSetting('google_drive_client_email', String(body.googleDriveClientEmail).trim())
-  }
-  if (body.googleDrivePrivateKey !== undefined && String(body.googleDrivePrivateKey).trim().length > 0) {
-    await setAppSetting('google_drive_private_key', String(body.googleDrivePrivateKey).trim())
-  }
+    const body = parsed.data
 
-  const driveStatus = await testGoogleDriveConnection()
+    if (body.scheduleDay !== undefined) {
+      await setAppSetting('backup_schedule_day', String(body.scheduleDay))
+    }
+    if (body.scheduleTime !== undefined) {
+      await setAppSetting('backup_schedule_time', String(body.scheduleTime))
+    }
+    if (body.retentionCount !== undefined) {
+      await setAppSetting('backup_retention_count', String(body.retentionCount))
+    }
+    if (body.googleDriveFolderId !== undefined) {
+      await setAppSetting('google_drive_backup_folder_id', String(body.googleDriveFolderId).trim())
+    }
+    if (body.googleDriveClientEmail !== undefined) {
+      await setAppSetting('google_drive_client_email', String(body.googleDriveClientEmail).trim())
+    }
+    if (body.googleDrivePrivateKey !== undefined && String(body.googleDrivePrivateKey).trim().length > 0) {
+      await setAppSetting('google_drive_private_key', String(body.googleDrivePrivateKey).trim())
+    }
 
-  return NextResponse.json({
-    success: true,
-    driveStatus,
-  })
+    const driveStatus = await testGoogleDriveConnection()
+
+    return NextResponse.json({
+      success: true,
+      driveStatus,
+    })
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err)
+    return NextResponse.json({ error: msg }, { status: 400 })
+  }
 }

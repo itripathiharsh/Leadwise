@@ -10,12 +10,22 @@ import {
   ArrowRight,
   Sparkles,
   Layers,
+  User,
 } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
 export default function SettingsPage() {
   const sections = [
+    {
+      title: 'My Profile & Account',
+      description:
+        'View your personal outreach performance, assigned metrics, update display name, phone, avatar color theme, and change password.',
+      href: '/profile',
+      icon: User,
+      badge: 'Personal',
+      tone: 'violet' as const,
+    },
     {
       title: 'Automated Weekly Backups & Google Drive',
       description:
@@ -61,7 +71,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Settings Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {sections.map((sec) => {
           const Icon = sec.icon
           return (

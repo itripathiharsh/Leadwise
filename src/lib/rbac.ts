@@ -28,6 +28,8 @@ export const PERMISSIONS = [
   // Follow-ups
   'followup:create',
   'followup:manageAll',
+  // Templates
+  'template:manage',
   // Team & admin
   'team:view',
   'user:manage',
@@ -60,6 +62,7 @@ const TL_PERMISSIONS: Permission[] = [
   'activity:viewAll',
   'followup:create',
   'followup:manageAll',
+  'template:manage',
   'team:view',
   'audit:view',
   'eod:view',
@@ -74,11 +77,13 @@ const TL_PERMISSIONS: Permission[] = [
 const INTERN_PERMISSIONS: Permission[] = [
   // Interns see only what is assigned to them — enforced by scope helpers below,
   // not by the absence of a permission.
+  'org:create',
   'contact:create',
   'contact:edit',
   'activity:create',
   'org:changeStatus',
   'followup:create',
+  'template:manage',
   'reassign:request',
 ]
 

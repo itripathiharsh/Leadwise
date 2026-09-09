@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -129,16 +130,20 @@ export function MergeOrganisationDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="lg">
         <DialogHeader>
-          <div className="flex items-center gap-2">
-            <Building2 className="size-5 text-primary" />
-            <DialogTitle>Merge Duplicate Organisation</DialogTitle>
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Building2 className="size-5" />
+            </div>
+            <div>
+              <DialogTitle>Merge Duplicate Organisation</DialogTitle>
+              <DialogDescription>
+                Merge <strong>{sourceName}</strong> into another target record. All contacts, activities, and follow-ups will be preserved.
+              </DialogDescription>
+            </div>
           </div>
-          <DialogDescription>
-            Merge <strong>{sourceName}</strong> into another target record. All contacts, activities, and follow-ups will be preserved.
-          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
+        <DialogBody className="space-y-4">
           {/* Target Selector */}
           {!targetId ? (
             <div className="space-y-2">
@@ -212,23 +217,23 @@ export function MergeOrganisationDialog({
               </div>
             </div>
           )}
+        </DialogBody>
 
-          <DialogFooter>
-            <Button variant="ghost" type="button" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              type="button"
-              disabled={!targetId}
-              loading={merging}
-              onClick={handleExecuteMerge}
-              icon={<Check className="size-4" />}
-            >
-              Confirm Merge
-            </Button>
-          </DialogFooter>
-        </div>
+        <DialogFooter>
+          <Button variant="ghost" type="button" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            type="button"
+            disabled={!targetId}
+            loading={merging}
+            onClick={handleExecuteMerge}
+            icon={<Check className="size-4" />}
+          >
+            Confirm Merge
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

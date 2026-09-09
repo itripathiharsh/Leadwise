@@ -72,6 +72,8 @@ export const env = {
   },
 
   get seedPassword(): string {
-    return process.env.SEED_PASSWORD || 'Sentio@123'
+    const pass = process.env.SEED_PASSWORD
+    if (!pass || pass.trim() === '') throw new Error('Missing required environment variable SEED_PASSWORD. See .env.example.')
+    return pass
   },
 }

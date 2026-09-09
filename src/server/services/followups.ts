@@ -62,9 +62,12 @@ function assigneeClause(
   user: Pick<CurrentUser, 'id' | 'role'>,
   assignee: string | undefined,
 ): Prisma.FollowUpWhereInput {
+  if (!can(user, 'followup:manageAll')) {
+    return { assignedToId: user.id }
+  }
   if (assignee === 'ME') return { assignedToId: user.id }
   if (assignee && assignee !== 'ALL') return { assignedToId: assignee }
-  return followUpScope(user)
+  return {}
 }
 
 export async function getFollowUpBoard(

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/current-user'
 import { prisma } from '@/lib/db'
+import { pageSchema, pageSizeSchema } from '@/lib/validation'
 
 export async function GET(req: Request) {
   const user = await getCurrentUser()
@@ -9,8 +10,10 @@ export async function GET(req: Request) {
   }
 
   const { searchParams } = new URL(req.url)
-  const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1
-  const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 30
+  const pageParsed = pageSchema.safeParse(searchParams.get('page') ?? undefined)
+  const pageSizeParsed = pageSizeSchema.safeParse(searchParams.get('pageSize') ?? undefined)
+  const page = pageParsed.success ? pageParsed.data : 1
+  const pageSize = pageSizeParsed.success ? pageSizeParsed.data : 30
 
   const [items, total] = await Promise.all([
     prisma.auditLog.findMany({

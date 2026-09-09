@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -86,83 +87,87 @@ export function CallPrepDialog({
         </DialogHeader>
 
         {loading || !data ? (
-          <div className="p-12 text-center text-xs text-muted-foreground animate-pulse">
-            <Sparkles className="size-5 mx-auto mb-2 text-primary animate-spin" />
-            Generating personalized call brief...
-          </div>
+          <DialogBody>
+            <div className="p-12 text-center text-xs text-muted-foreground animate-pulse">
+              <Sparkles className="size-5 mx-auto mb-2 text-primary animate-spin" />
+              Generating personalized call brief...
+            </div>
+          </DialogBody>
         ) : (
-          <div className="space-y-4 py-2 max-h-[65vh] overflow-y-auto pr-1">
-            {/* Header summary & Objective */}
-            <div className="rounded-xl border border-primary/30 bg-primary-soft/20 p-3.5 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-foreground">
-                  {data.contactName} ({data.contactDesignation || 'Contact'})
-                </span>
-                <Badge tone="blue" size="sm">
-                  Stage: {data.currentStage}
-                </Badge>
+          <>
+            <DialogBody className="space-y-4">
+              {/* Header summary & Objective */}
+              <div className="rounded-xl border border-primary/30 bg-primary-soft/20 p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-bold text-foreground">
+                    {data.contactName} ({data.contactDesignation || 'Contact'})
+                  </span>
+                  <Badge tone="blue" size="sm">
+                    Stage: {data.currentStage}
+                  </Badge>
+                </div>
+
+                <div className="pt-1 text-xs">
+                  <span className="font-semibold text-primary">🎯 Primary Call Objective: </span>
+                  <span className="text-foreground">{data.recommendedObjective}</span>
+                </div>
               </div>
 
-              <div className="pt-1 text-xs">
-                <span className="font-semibold text-primary">🎯 Primary Call Objective: </span>
-                <span className="text-foreground">{data.recommendedObjective}</span>
+              {/* Suggested Opening */}
+              <div className="rounded-xl border border-border bg-surface p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    Suggested Opener
+                  </span>
+                  <Button variant="ghost" size="xs" onClick={copyOpener}>
+                    {copiedOpener ? <Check className="size-3 text-emerald-600" /> : <Copy className="size-3" />}
+                    {copiedOpener ? 'Copied' : 'Copy'}
+                  </Button>
+                </div>
+                <p className="text-xs font-mono text-foreground/90 bg-surface-muted/60 p-3 rounded-lg border border-border/50 leading-relaxed">
+                  &ldquo;{data.suggestedOpening}&rdquo;
+                </p>
               </div>
-            </div>
 
-            {/* Suggested Opening */}
-            <div className="rounded-xl border border-border bg-surface p-3.5 space-y-1.5">
-              <div className="flex items-center justify-between">
+              {/* Talking Points */}
+              <div className="space-y-2">
                 <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Suggested Opener
-                </span>
-                <Button variant="ghost" size="xs" onClick={copyOpener}>
-                  {copiedOpener ? <Check className="size-3 text-emerald-600" /> : <Copy className="size-3" />}
-                  {copiedOpener ? 'Copied' : 'Copy'}
-                </Button>
-              </div>
-              <p className="text-xs font-mono text-foreground/90 bg-surface-muted/60 p-2.5 rounded-lg border border-border/50 leading-relaxed">
-                &ldquo;{data.suggestedOpening}&rdquo;
-              </p>
-            </div>
-
-            {/* Talking Points */}
-            <div className="space-y-1.5">
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Key Value Points
-              </span>
-              <div className="space-y-1.5">
-                {data.talkingPoints.map((tp, i) => (
-                  <div
-                    key={i}
-                    className="flex items-start gap-2 text-xs p-2 rounded-lg bg-surface border border-border"
-                  >
-                    <CheckCircle2 className="size-3.5 text-primary shrink-0 mt-0.5" />
-                    <span className="text-foreground/90">{tp}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Objections */}
-            {data.objections?.length > 0 && (
-              <div className="space-y-1.5">
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Objection Handling
+                  Key Value Points
                 </span>
                 <div className="space-y-2">
-                  {data.objections.map((obj, i) => (
-                    <div key={i} className="rounded-lg bg-surface border border-border p-2.5 text-xs space-y-1">
-                      <div className="font-semibold text-rose-600 dark:text-rose-400">
-                        If they say: &ldquo;{obj.objection}&rdquo;
-                      </div>
-                      <div className="text-muted-foreground pl-2 border-l-2 border-primary/50">
-                        👉 Response: {obj.response}
-                      </div>
+                  {data.talkingPoints.map((tp, i) => (
+                    <div
+                      key={i}
+                      className="flex items-start gap-2.5 text-xs p-3 rounded-xl bg-surface border border-border"
+                    >
+                      <CheckCircle2 className="size-4 text-primary shrink-0 mt-0.5" />
+                      <span className="text-foreground/90 leading-relaxed">{tp}</span>
                     </div>
                   ))}
                 </div>
               </div>
-            )}
+
+              {/* Objections */}
+              {data.objections?.length > 0 && (
+                <div className="space-y-2">
+                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    Objection Handling
+                  </span>
+                  <div className="space-y-2">
+                    {data.objections.map((obj, i) => (
+                      <div key={i} className="rounded-xl bg-surface border border-border p-3 text-xs space-y-1.5">
+                        <div className="font-semibold text-rose-600 dark:text-rose-400">
+                          If they say: &ldquo;{obj.objection}&rdquo;
+                        </div>
+                        <div className="text-muted-foreground pl-2.5 border-l-2 border-primary/50 leading-relaxed">
+                          👉 Response: {obj.response}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </DialogBody>
 
             <DialogFooter>
               <Button variant="ghost" type="button" onClick={() => onOpenChange(false)}>
@@ -180,7 +185,7 @@ export function CallPrepDialog({
                 Log Call Now
               </Button>
             </DialogFooter>
-          </div>
+          </>
         )}
       </DialogContent>
     </Dialog>

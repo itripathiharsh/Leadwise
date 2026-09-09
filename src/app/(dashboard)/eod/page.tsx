@@ -31,6 +31,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog'
 import { buildWhatsAppLink, normalizeWhatsAppNumber, formatWhatsAppNumber } from '@/lib/whatsapp'
@@ -112,6 +113,12 @@ export default function EodReportsPage() {
         fetch(`/api/eod?history=true`),
       ])
 
+      if (reportRes.status === 403 || histRes.status === 403) {
+        toast.error('Access Denied: EOD reports are reserved for Owner and Team Lead.')
+        window.location.href = '/dashboard?denied=1'
+        return
+      }
+
       if (reportRes.ok) {
         const d = await reportRes.json()
         setReport(d.report)
@@ -129,6 +136,15 @@ export default function EodReportsPage() {
   }, [])
 
   React.useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.user && d.user.role !== 'OWNER' && d.user.role !== 'TL') {
+          toast.error('Access Denied: EOD reports are reserved for Owner and Team Lead.')
+          window.location.href = '/dashboard?denied=1'
+        }
+      })
+      .catch(() => {})
     loadReport(dateKey)
   }, [dateKey, loadReport])
 
@@ -599,38 +615,42 @@ export default function EodReportsPage() {
       <Dialog open={previewModalOpen} onOpenChange={setPreviewModalOpen}>
         <DialogContent size="lg">
           <DialogHeader>
-            <div className="flex items-center gap-2">
-              <Send className="size-5 text-emerald-600" />
-              <DialogTitle>Preview &amp; Send WhatsApp EOD</DialogTitle>
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600">
+                <Send className="size-5" />
+              </div>
+              <div>
+                <DialogTitle>Preview &amp; Send WhatsApp EOD</DialogTitle>
+                <DialogDescription>
+                  Review or edit the message text before opening WhatsApp Web to dispatch to the Owner.
+                </DialogDescription>
+              </div>
             </div>
-            <DialogDescription>
-              Review or edit the message text before opening WhatsApp Web to dispatch to the Owner.
-            </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 py-2">
+          <DialogBody className="space-y-4">
             <textarea
               rows={12}
               value={draftWhatsAppText}
               onChange={(e) => setDraftWhatsAppText(e.target.value)}
-              className="w-full rounded-xl border border-border bg-surface p-3.5 font-mono text-xs text-foreground shadow-xs focus:border-emerald-500 focus:outline-none leading-relaxed"
+              className="w-full rounded-xl border border-border bg-surface p-4 font-mono text-xs text-foreground shadow-xs focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 leading-relaxed resize-y"
             />
+          </DialogBody>
 
-            <DialogFooter>
-              <Button variant="ghost" type="button" onClick={() => setPreviewModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                type="button"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                onClick={handleWhatsAppSend}
-                icon={<Send className="size-4" />}
-              >
-                Send via WhatsApp Web
-              </Button>
-            </DialogFooter>
-          </div>
+          <DialogFooter>
+            <Button variant="ghost" type="button" onClick={() => setPreviewModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              type="button"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={handleWhatsAppSend}
+              icon={<Send className="size-4" />}
+            >
+              Send via WhatsApp Web
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -638,19 +658,23 @@ export default function EodReportsPage() {
       <Dialog open={autoSendModalOpen} onOpenChange={(open) => { if (!autoSending) setAutoSendModalOpen(open) }}>
         <DialogContent size="lg">
           <DialogHeader>
-            <div className="flex items-center gap-2">
-              <Zap className="size-5 text-violet-600" />
-              <DialogTitle>Auto Send EOD via WhatsApp</DialogTitle>
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-violet-500/10 text-violet-600">
+                <Zap className="size-5" />
+              </div>
+              <div>
+                <DialogTitle>Auto Send EOD via WhatsApp</DialogTitle>
+                <DialogDescription>
+                  The local automation agent will open WhatsApp Web, find the owner&apos;s chat, insert this EOD message, and send it automatically.
+                </DialogDescription>
+              </div>
             </div>
-            <DialogDescription>
-              The local automation agent will open WhatsApp Web, find the owner&apos;s chat, insert this EOD message, and send it automatically.
-            </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
+          <DialogBody className="space-y-4">
             {/* Target number */}
-            <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-muted/50 p-3">
-              <Phone className="size-4 text-muted-foreground" />
+            <div className="flex items-center gap-2.5 rounded-xl border border-border bg-surface-muted/50 p-3.5">
+              <Phone className="size-4 text-muted-foreground shrink-0" />
               <span className="text-xs font-semibold text-foreground">Send this EOD to:</span>
               <span className="text-sm font-bold text-emerald-600">
                 {formatWhatsAppNumber(report?.whatsappNumber)}
@@ -658,7 +682,7 @@ export default function EodReportsPage() {
             </div>
 
             {/* Message preview */}
-            <pre className="font-mono text-[10px] text-foreground/80 bg-surface-muted/60 p-3 rounded-xl border border-border/80 whitespace-pre-wrap leading-relaxed max-h-[200px] overflow-y-auto">
+            <pre className="font-mono text-[10px] text-foreground/80 bg-surface-muted/60 p-3.5 rounded-xl border border-border/80 whitespace-pre-wrap leading-relaxed max-h-[200px] overflow-y-auto">
               {draftWhatsAppText}
             </pre>
 
@@ -669,7 +693,7 @@ export default function EodReportsPage() {
                 <input
                   type="text"
                   placeholder="swa_..."
-                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs font-mono focus:border-violet-500 focus:outline-none"
+                  className="h-10 w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs font-mono focus:border-violet-500 focus:outline-none"
                   onChange={(e) => {
                     if (e.target.value.startsWith('swa_')) {
                       localStorage.setItem('whatsapp_agent_token', e.target.value.trim())
@@ -684,7 +708,7 @@ export default function EodReportsPage() {
             {/* Result feedback */}
             {autoSendResult && (
               <div className={cn(
-                'rounded-lg border p-3 text-xs',
+                'rounded-xl border p-3.5 text-xs',
                 autoSendResult.success
                   ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300'
                   : 'border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300'
@@ -725,23 +749,23 @@ export default function EodReportsPage() {
                 <span className="text-xs font-semibold text-muted-foreground">Sending via WhatsApp Web automation...</span>
               </div>
             )}
+          </DialogBody>
 
-            <DialogFooter>
-              <Button variant="ghost" type="button" onClick={() => setAutoSendModalOpen(false)} disabled={autoSending}>
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                type="button"
-                className="bg-violet-600 hover:bg-violet-700 text-white"
-                onClick={handleAutoSend}
-                disabled={autoSending || autoSendResult?.success}
-                icon={autoSending ? <Loader2 className="size-4 animate-spin" /> : <Zap className="size-4" />}
-              >
-                {autoSending ? 'Sending...' : autoSendResult?.success ? 'Sent ✓' : 'Send'}
-              </Button>
-            </DialogFooter>
-          </div>
+          <DialogFooter>
+            <Button variant="ghost" type="button" onClick={() => setAutoSendModalOpen(false)} disabled={autoSending}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              type="button"
+              className="bg-violet-600 hover:bg-violet-700 text-white"
+              onClick={handleAutoSend}
+              disabled={autoSending || autoSendResult?.success}
+              icon={autoSending ? <Loader2 className="size-4 animate-spin" /> : <Zap className="size-4" />}
+            >
+              {autoSending ? 'Sending...' : autoSendResult?.success ? 'Sent ✓' : 'Send'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

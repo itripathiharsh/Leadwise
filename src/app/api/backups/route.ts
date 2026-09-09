@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/current-user'
 import { assertCan } from '@/lib/rbac'
@@ -19,6 +20,10 @@ export async function GET() {
   return NextResponse.json({ history, health })
 }
 
+const backupTriggerSchema = z.object({
+  trigger: z.enum(['MANUAL', 'SCHEDULED']).optional().default('MANUAL'),
+})
+
 export async function POST(req: Request) {
   const user = await getCurrentUser()
   if (!user) {
@@ -28,8 +33,12 @@ export async function POST(req: Request) {
   assertCan(user, 'backup:manage')
 
   try {
-    const body = await req.json().catch(() => ({}))
-    const trigger = body.trigger === 'SCHEDULED' ? 'SCHEDULED' : 'MANUAL'
+    const rawBody = await req.json().catch(() => ({}))
+    const parsed = backupTriggerSchema.safeParse(rawBody)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid request', details: parsed.error.format() }, { status: 400 })
+    }
+    const trigger = parsed.data.trigger
 
     const result = await executeFullBackup(trigger, user.id)
 

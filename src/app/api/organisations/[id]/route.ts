@@ -8,6 +8,12 @@ import {
 } from '@/server/services/organisations'
 import { listActivitiesForOrganisation } from '@/server/services/activities'
 import { listFollowUpsForOrganisation } from '@/server/services/followups'
+import {
+  organisationCreateSchema,
+  organisationUpdateSchema,
+  organisationStatusSchema,
+  organisationAssignSchema,
+} from '@/lib/validation'
 
 export async function GET(
   _req: Request,
@@ -48,8 +54,12 @@ export async function PUT(
 
   const { id } = await params
   try {
-    const body = await req.json()
-    const result = await updateOrganisation(user, { ...body, id })
+    const rawBody = await req.json()
+    const parsed = organisationUpdateSchema.safeParse({ ...rawBody, id })
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid organisation update input', details: parsed.error.flatten() }, { status: 400 })
+    }
+    const result = await updateOrganisation(user, parsed.data)
     return NextResponse.json(result)
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
@@ -68,18 +78,23 @@ export async function PATCH(
 
   const { id } = await params
   try {
-    const body = await req.json()
+    const rawBody = await req.json()
 
-    if (body.status) {
-      const result = await changeOrganisationStatus(user, { id, status: body.status })
+    if (rawBody?.status) {
+      const parsed = organisationStatusSchema.safeParse({ ...rawBody, id })
+      if (!parsed.success) {
+        return NextResponse.json({ error: 'Invalid status update', details: parsed.error.flatten() }, { status: 400 })
+      }
+      const result = await changeOrganisationStatus(user, parsed.data)
       return NextResponse.json({ success: true, ...result })
     }
 
-    if (body.assignedToId !== undefined) {
-      const result = await assignOrganisation(user, {
-        id,
-        assignedToId: body.assignedToId,
-      })
+    if (rawBody?.assignedToId !== undefined) {
+      const parsed = organisationAssignSchema.safeParse({ ...rawBody, id })
+      if (!parsed.success) {
+        return NextResponse.json({ error: 'Invalid assignment', details: parsed.error.flatten() }, { status: 400 })
+      }
+      const result = await assignOrganisation(user, parsed.data)
       return NextResponse.json({ success: true, ...result })
     }
 

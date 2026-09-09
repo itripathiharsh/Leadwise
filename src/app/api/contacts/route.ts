@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/current-user'
 import { createContact, listContacts } from '@/server/services/contacts'
+import { contactCreateSchema, pageSchema, pageSizeSchema } from '@/lib/validation'
 
 export async function GET(req: Request) {
   const user = await getCurrentUser()
@@ -10,10 +11,12 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url)
   const q = searchParams.get('q') || ''
-  const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1
-  const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 25
+  const organisationId = searchParams.get('organisationId') || undefined
+  const sort = (searchParams.get('sort') as any) || undefined
+  const page = pageSchema.parse(searchParams.get('page') || undefined)
+  const pageSize = pageSizeSchema.parse(searchParams.get('pageSize') || undefined)
 
-  const result = await listContacts(user, { q, page, pageSize })
+  const result = await listContacts(user, { q, organisationId, sort, page, pageSize })
   return NextResponse.json(result)
 }
 
@@ -24,8 +27,12 @@ export async function POST(req: Request) {
   }
 
   try {
-    const body = await req.json()
-    const result = await createContact(user, body)
+    const rawBody = await req.json()
+    const parsed = contactCreateSchema.safeParse(rawBody)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid contact input', details: parsed.error.flatten() }, { status: 400 })
+    }
+    const result = await createContact(user, parsed.data)
     return NextResponse.json(result)
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)

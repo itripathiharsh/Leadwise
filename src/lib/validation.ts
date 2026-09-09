@@ -181,27 +181,64 @@ export const userUpdateSchema = z.object({
 })
 export type UserUpdateInput = z.infer<typeof userUpdateSchema>
 
+export const profileUpdateSchema = z.object({
+  name: trimmed.pipe(z.string().min(2, 'Name must be at least 2 characters').max(120)),
+  phone: optionalPhone,
+  avatarColor: z.enum(['indigo', 'violet', 'cyan', 'emerald', 'amber', 'rose', 'sky', 'teal']).optional(),
+  currentPassword: z.string().optional(),
+  newPassword: z
+    .string()
+    .max(100)
+    .transform((v) => v.trim())
+    .refine((v) => v === '' || v.length >= 8, 'Password must be at least 8 characters')
+    .transform((v) => (v === '' ? undefined : v))
+    .optional(),
+})
+export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>
+
 // ── Organisations ────────────────────────────────────────────────────────────
 
 export const organisationCreateSchema = z.object({
   name: trimmed.pipe(z.string().min(2, 'Organisation name is required').max(200)),
   category: optionalText(120),
+  domain: trimmed.pipe(z.string().min(1, 'Domain is required').max(120)),
+  leadSource: trimmed.pipe(z.string().min(1, 'Lead source is required').max(120)),
   website: optionalUrl,
+  organisationType: optionalText(120),
+  numberOfProfessionals: z
+    .preprocess(
+      (val) => (val === '' || val === null || val === undefined ? undefined : Number(val)),
+      z.number().int('Must be a whole number').min(0, 'Cannot be negative').max(1000000).optional(),
+    )
+    .optional(),
   generalEmail: optionalEmail,
   generalPhone: optionalPhone,
   linkedinUrl: optionalUrl,
   location: optionalText(160),
   priority: z.nativeEnum(Priority).default('MEDIUM'),
-  status: z.nativeEnum(OrgStatus).optional(),
+  status: z.string().optional().default('NEW'),
   assignedToId: optionalCuid,
   notes: optionalLongText(),
+  primaryContact: z
+    .object({
+      name: optionalText(120),
+      designation: optionalText(120),
+      email: optionalEmail,
+      phone: optionalPhone,
+      linkedinUrl: optionalUrl,
+      isDecisionMaker: z.boolean().optional().default(false),
+      priority: z.nativeEnum(Priority).optional().default('MEDIUM'),
+    })
+    .optional(),
+  tags: z.array(z.string().min(1).max(60)).optional().default([]),
   /** Set true to create despite a duplicate warning the user has reviewed. */
   confirmDuplicate: z.boolean().optional().default(false),
 })
 export type OrganisationCreateInput = z.infer<typeof organisationCreateSchema>
 
-export const organisationUpdateSchema = organisationCreateSchema.extend({
+export const organisationUpdateSchema = organisationCreateSchema.partial().extend({
   id: cuid,
+  name: trimmed.pipe(z.string().min(2, 'Organisation name is required').max(200)),
 })
 export type OrganisationUpdateInput = z.infer<typeof organisationUpdateSchema>
 
@@ -424,3 +461,17 @@ export function fieldErrorsFrom(error: z.ZodError): Record<string, string> {
   }
   return result
 }
+
+// Bulk operations
+export const bulkSchema = z.object({
+  action: z.enum(['STATUS', 'ASSIGN']),
+  orgIds: z.array(z.string().min(1)).min(1).max(50),
+  status: z.nativeEnum(OrgStatus).optional(),
+  rejectionReason: z.string().max(500).optional(),
+  assignedToId: z.string().min(1).max(64).optional(),
+})
+
+// Numeric / pagination
+export const positiveIntSchema = z.coerce.number().int().positive().min(1).max(1000)
+export const pageSchema = z.coerce.number().int().min(1).max(10000).optional().default(1)
+export const pageSizeSchema = z.coerce.number().int().min(1).max(100).optional().default(25)

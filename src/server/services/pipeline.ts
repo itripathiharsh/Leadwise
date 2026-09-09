@@ -4,6 +4,8 @@ import type { CurrentUser } from '@/lib/auth/current-user'
 import { assertCan, can, canWriteOrganisation, ForbiddenError, organisationScope } from '@/lib/rbac'
 import { writeAudit } from './audit'
 import { recomputeOrganisationCaches } from './caches'
+import { notifyOwnersAndTLs } from './notifications'
+import { ORG_STATUS_META } from '@/lib/constants'
 import { NotFoundError } from '@/server/errors'
 
 export type LeadHealth = 'ACTIVE' | 'ATTENTION' | 'GOING_COLD'
@@ -244,7 +246,7 @@ export async function moveOrganisationStage(
     rejectionNote?: string
   },
 ) {
-  assertCan(user, 'org:edit')
+  assertCan(user, 'org:changeStatus')
 
   const existing = await prisma.organisation.findFirst({
     where: { id: input.id, deletedAt: null },
@@ -252,7 +254,7 @@ export async function moveOrganisationStage(
   })
 
   if (!existing) throw new NotFoundError('Organisation')
-  if (!canWriteOrganisation(user, existing)) {
+  if (!canWriteOrganisation(user, existing) && existing.assignedToId !== null) {
     throw new ForbiddenError('You can only move organisations assigned to you.')
   }
 
@@ -261,6 +263,7 @@ export async function moveOrganisationStage(
       where: { id: existing.id },
       data: {
         status: input.status,
+        ...(existing.assignedToId === null ? { assignedToId: user.id } : {}),
         ...(input.nextAction !== undefined ? { nextAction: input.nextAction } : {}),
         ...(input.rejectionReason !== undefined ? { rejectionReason: input.rejectionReason } : {}),
         ...(input.rejectionNote !== undefined ? { rejectionNote: input.rejectionNote } : {}),
@@ -287,6 +290,26 @@ export async function moveOrganisationStage(
 
     return org
   })
+
+  // Drop notification to TL and OWNER when moved by an intern
+  if (user.role === 'INTERN' && existing.status !== input.status) {
+    const fromLabel = ORG_STATUS_META[existing.status]?.label ?? existing.status
+    const toLabel = ORG_STATUS_META[input.status]?.label ?? input.status
+
+    await notifyOwnersAndTLs({
+      type: 'SYSTEM',
+      priority: input.status === 'PARTNERSHIP' ? 'URGENT' : input.status === 'REJECTED' ? 'WARNING' : 'INFO',
+      title: `Pipeline Stage Updated by ${user.name}`,
+      message: `${user.name} moved "${existing.name}" from ${fromLabel} → ${toLabel}.${
+        input.rejectionReason ? ` Reason: ${input.rejectionReason}` : ''
+      }`,
+      linkUrl: `/organisations/${existing.id}`,
+      entityType: 'organisation',
+      entityId: existing.id,
+    }).catch((err) => {
+      console.error('Failed to notify owners/TLs on pipeline stage move:', err)
+    })
+  }
 
   return updated
 }

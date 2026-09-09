@@ -1,6 +1,8 @@
+import { z } from 'zod'
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/current-user'
 import { stageImport, commitImport, listImportBatches } from '@/server/services/import'
+import { importCommitSchema } from '@/lib/validation'
 
 export async function GET() {
   const user = await getCurrentUser()
@@ -36,7 +38,10 @@ export async function POST(req: Request) {
     }
 
     // JSON commit
-    const body = await req.json()
+    const rawBody = await req.json()
+    const parsed = importCommitSchema.safeParse(rawBody)
+    if (!parsed.success) return NextResponse.json({ error: 'Invalid request', details: parsed.error.format() }, { status: 400 })
+    const body = parsed.data
     const result = await commitImport(user, body)
     return NextResponse.json(result)
   } catch (err: unknown) {

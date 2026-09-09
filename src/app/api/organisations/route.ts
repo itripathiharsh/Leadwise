@@ -5,6 +5,12 @@ import {
   listOrganisations,
   bulkAssignOrganisations,
 } from '@/server/services/organisations'
+import {
+  organisationCreateSchema,
+  organisationBulkAssignSchema,
+  pageSchema,
+  pageSizeSchema,
+} from '@/lib/validation'
 import type { OrgStatus, Priority } from '@prisma/client'
 
 export async function GET(req: Request) {
@@ -24,8 +30,9 @@ export async function GET(req: Request) {
   const assignee = searchParams.get('assignee') || undefined
   const category = searchParams.get('category') || undefined
   const followUp = searchParams.get('followUp') as any || undefined
-  const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1
-  const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 25
+  const sort = (searchParams.get('sort') as any) || undefined
+  const page = pageSchema.parse(searchParams.get('page') || undefined)
+  const pageSize = pageSizeSchema.parse(searchParams.get('pageSize') || undefined)
 
   const result = await listOrganisations(user, {
     q,
@@ -34,6 +41,7 @@ export async function GET(req: Request) {
     assignee,
     category,
     followUp,
+    sort,
     page,
     pageSize,
   })
@@ -48,8 +56,12 @@ export async function POST(req: Request) {
   }
 
   try {
-    const body = await req.json()
-    const result = await createOrganisation(user, body)
+    const rawBody = await req.json()
+    const parsed = organisationCreateSchema.safeParse(rawBody)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid organisation input', details: parsed.error.flatten() }, { status: 400 })
+    }
+    const result = await createOrganisation(user, parsed.data)
     return NextResponse.json(result)
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
@@ -64,12 +76,13 @@ export async function PATCH(req: Request) {
   }
 
   try {
-    const body = await req.json()
-    if (body.bulkAssign) {
-      const result = await bulkAssignOrganisations(user, {
-        ids: body.ids,
-        assignedToId: body.assignedToId,
-      })
+    const rawBody = await req.json()
+    if (rawBody?.bulkAssign) {
+      const parsed = organisationBulkAssignSchema.safeParse(rawBody)
+      if (!parsed.success) {
+        return NextResponse.json({ error: 'Invalid bulk assign input', details: parsed.error.flatten() }, { status: 400 })
+      }
+      const result = await bulkAssignOrganisations(user, parsed.data)
       return NextResponse.json({ success: true, ...result })
     }
 

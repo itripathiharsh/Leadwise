@@ -59,19 +59,19 @@ export async function createTemplate(
   input: {
     title: string
     category: string
-    subcategory?: string
-    subject?: string
+    subcategory?: string | null
+    subject?: string | null
     body: string
   },
 ) {
-  assertCan(user, 'org:edit')
+  assertCan(user, 'template:manage')
 
   return prisma.template.create({
     data: {
       title: input.title.trim(),
       category: input.category,
-      subcategory: input.subcategory?.trim() || undefined,
-      subject: input.subject?.trim() || undefined,
+      subcategory: input.subcategory?.trim() || null,
+      subject: input.subject?.trim() || null,
       body: input.body.trim(),
       createdById: user.id,
     },
@@ -84,13 +84,13 @@ export async function updateTemplate(
   input: {
     title?: string
     category?: string
-    subcategory?: string
-    subject?: string
+    subcategory?: string | null
+    subject?: string | null
     body?: string
     isArchived?: boolean
   },
 ) {
-  assertCan(user, 'org:edit')
+  assertCan(user, 'template:manage')
 
   const existing = await prisma.template.findUnique({ where: { id } })
   if (!existing) throw new NotFoundError('Template')
@@ -109,7 +109,7 @@ export async function updateTemplate(
 }
 
 export async function deleteTemplate(user: CurrentUser, id: string) {
-  assertCan(user, 'org:edit')
+  assertCan(user, 'template:manage')
 
   const existing = await prisma.template.findUnique({ where: { id } })
   if (!existing) throw new NotFoundError('Template')

@@ -1,6 +1,19 @@
+import { z } from 'zod'
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/current-user'
 import { generateCallPrep, summarizeCallNotes } from '@/server/services/ai/assistant'
+
+const aiAssistantSchema = z.discriminatedUnion('action', [
+  z.object({
+    action: z.literal('CALL_PREP'),
+    orgId: z.string().min(1, 'orgId is required'),
+    contactId: z.string().optional(),
+  }),
+  z.object({
+    action: z.literal('SUMMARIZE_NOTES'),
+    rawNotes: z.string().min(1, 'rawNotes is required'),
+  }),
+])
 
 export async function POST(req: Request) {
   const user = await getCurrentUser()
@@ -9,22 +22,22 @@ export async function POST(req: Request) {
   }
 
   try {
-    const body = await req.json()
-    const { action, orgId, contactId, rawNotes } = body
+    const rawBody = await req.json()
+    const parsed = aiAssistantSchema.safeParse(rawBody)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid request', details: parsed.error.format() }, { status: 400 })
+    }
+    const body = parsed.data
 
-    if (action === 'CALL_PREP') {
-      if (!orgId) return NextResponse.json({ error: 'orgId is required' }, { status: 400 })
-      const prep = await generateCallPrep(orgId, contactId)
+    if (body.action === 'CALL_PREP') {
+      const prep = await generateCallPrep(body.orgId, body.contactId)
       return NextResponse.json({ callPrep: prep })
     }
 
-    if (action === 'SUMMARIZE_NOTES') {
-      if (!rawNotes) return NextResponse.json({ error: 'rawNotes is required' }, { status: 400 })
-      const summary = await summarizeCallNotes(rawNotes)
+    if (body.action === 'SUMMARIZE_NOTES') {
+      const summary = await summarizeCallNotes(body.rawNotes)
       return NextResponse.json(summary)
     }
-
-    return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
     return NextResponse.json({ error: msg }, { status: 400 })

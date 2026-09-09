@@ -50,6 +50,9 @@ export interface TodayPriorityItem {
   primaryContactName: string | null
   recommendedAction: string
   reason: string
+  assignedToId?: string | null
+  assignedToName?: string | null
+  isAssignedToCurrentUser?: boolean
 }
 
 /**
@@ -206,15 +209,15 @@ export async function scoreOrganisation(orgId: string): Promise<OrganisationInte
 export async function recommendTodayPriorities(
   user: Pick<CurrentUser, 'id' | 'role'>,
 ): Promise<TodayPriorityItem[]> {
-  const orgs = await prisma.organisation.findMany({
+  // Strictly prioritize organisations assigned to the current user or created by the current user
+  let orgs = await prisma.organisation.findMany({
     where: {
       deletedAt: null,
-      AND: [
-        organisationScope(user),
-        { status: { notIn: ['REJECTED', 'PARTNERSHIP'] } },
-      ],
+      status: { notIn: ['REJECTED', 'PARTNERSHIP'] },
+      OR: [{ assignedToId: user.id }, { createdById: user.id }],
     },
     include: {
+      assignedTo: { select: { id: true, name: true, avatarColor: true } },
       contacts: { where: { deletedAt: null }, take: 1, orderBy: [{ isDecisionMaker: 'desc' }] },
       followUps: { where: { deletedAt: null, status: 'PENDING' }, take: 1 },
     },
@@ -225,6 +228,51 @@ export async function recommendTodayPriorities(
     take: 10,
   })
 
+  // Fallback 1: If current user has no assigned/created active organisations,
+  // suggest available unassigned organisations
+  if (orgs.length === 0) {
+    orgs = await prisma.organisation.findMany({
+      where: {
+        deletedAt: null,
+        status: { notIn: ['REJECTED', 'PARTNERSHIP'] },
+        assignedToId: null,
+      },
+      include: {
+        assignedTo: { select: { id: true, name: true, avatarColor: true } },
+        contacts: { where: { deletedAt: null }, take: 1, orderBy: [{ isDecisionMaker: 'desc' }] },
+        followUps: { where: { deletedAt: null, status: 'PENDING' }, take: 1 },
+      },
+      orderBy: [
+        { priority: 'asc' },
+        { lastContactedAt: { sort: 'desc', nulls: 'last' } },
+      ],
+      take: 5,
+    })
+  }
+
+  // Fallback 2: Team-scoped fallback for leaders
+  if (orgs.length === 0) {
+    orgs = await prisma.organisation.findMany({
+      where: {
+        deletedAt: null,
+        AND: [
+          organisationScope(user),
+          { status: { notIn: ['REJECTED', 'PARTNERSHIP'] } },
+        ],
+      },
+      include: {
+        assignedTo: { select: { id: true, name: true, avatarColor: true } },
+        contacts: { where: { deletedAt: null }, take: 1, orderBy: [{ isDecisionMaker: 'desc' }] },
+        followUps: { where: { deletedAt: null, status: 'PENDING' }, take: 1 },
+      },
+      orderBy: [
+        { priority: 'asc' },
+        { lastContactedAt: { sort: 'desc', nulls: 'last' } },
+      ],
+      take: 5,
+    })
+  }
+
   const items: TodayPriorityItem[] = []
 
   let rank = 1
@@ -232,6 +280,7 @@ export async function recommendTodayPriorities(
     const isOverdue = org.followUps.some((f) => f.dueDate.getTime() <= Date.now())
     const score = org.aiScore ?? (org.priority === 'HIGH' ? 85 : org.priority === 'MEDIUM' ? 65 : 40)
     const primaryContact = org.contacts[0]?.name || null
+    const isAssignedToCurrentUser = !org.assignedTo?.id || org.assignedTo.id === user.id
 
     let reason = 'High priority target with active partnership potential'
     if (isOverdue) {
@@ -252,6 +301,9 @@ export async function recommendTodayPriorities(
       primaryContactName: primaryContact,
       recommendedAction: org.nextAction || 'Place outreach check-in call',
       reason,
+      assignedToId: org.assignedTo?.id ?? null,
+      assignedToName: org.assignedTo?.name ?? null,
+      isAssignedToCurrentUser,
     })
 
     if (items.length >= 5) break

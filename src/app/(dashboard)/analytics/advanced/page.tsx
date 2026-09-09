@@ -40,6 +40,12 @@ export default function AdvancedAnalyticsPage() {
         fetch('/api/ai/reports?mode=insights'),
       ])
 
+      if (res1.status === 403 || res2.status === 403) {
+        toast.error('Access Denied: AI Funnel intelligence is reserved for Owner and Team Lead.')
+        window.location.href = '/dashboard?denied=1'
+        return
+      }
+
       if (res1.ok) {
         const d1 = await res1.json()
         setData(d1)
@@ -56,6 +62,15 @@ export default function AdvancedAnalyticsPage() {
   }, [])
 
   React.useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.user && d.user.role !== 'OWNER' && d.user.role !== 'TL') {
+          toast.error('Access Denied: AI Funnel intelligence is reserved for Owner and Team Lead.')
+          window.location.href = '/dashboard?denied=1'
+        }
+      })
+      .catch(() => {})
     fetchData()
   }, [fetchData])
 

@@ -26,6 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Field } from '@/components/ui/field'
@@ -368,30 +369,32 @@ export function PipelineKanban({
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleConfirmRejection} className="space-y-4 py-2">
-            <Field label="Primary Rejection Reason" required>
-              <select
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-xs focus:border-primary focus:outline-none"
-              >
-                {REJECTION_REASONS.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-              </select>
-            </Field>
+          <form onSubmit={handleConfirmRejection} className="flex flex-col flex-1 overflow-hidden">
+            <DialogBody className="space-y-4">
+              <Field label="Primary Rejection Reason" required>
+                <select
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  className="h-10 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-xs transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  {REJECTION_REASONS.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+              </Field>
 
-            <Field label="Additional Context / Notes">
-              <textarea
-                rows={3}
-                placeholder="Details of the conversation, objections, or when to revisit..."
-                value={rejectionNote}
-                onChange={(e) => setRejectionNote(e.target.value)}
-                className="w-full rounded-md border border-border bg-surface p-3 text-sm text-foreground shadow-xs focus:border-primary focus:outline-none"
-              />
-            </Field>
+              <Field label="Additional Context / Notes">
+                <textarea
+                  rows={3}
+                  placeholder="Details of the conversation, objections, or when to revisit..."
+                  value={rejectionNote}
+                  onChange={(e) => setRejectionNote(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-surface p-3 text-sm text-foreground shadow-xs transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-y min-h-[72px]"
+                />
+              </Field>
+            </DialogBody>
 
             <DialogFooter>
               <Button

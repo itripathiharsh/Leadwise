@@ -21,8 +21,10 @@ export async function GET(req: Request) {
   }
 
   const { searchParams } = new URL(req.url)
-  const take = Math.min(100, parseInt(searchParams.get('limit') || '50', 10))
-  const skip = parseInt(searchParams.get('offset') || '0', 10)
+  const rawLimit = Number(searchParams.get('limit'))
+  const rawOffset = Number(searchParams.get('offset'))
+  const take = Number.isInteger(rawLimit) && rawLimit > 0 ? Math.min(100, rawLimit) : 50
+  const skip = Number.isInteger(rawOffset) && rawOffset >= 0 ? rawOffset : 0
 
   const [activities, total] = await Promise.all([
     prisma.activity.findMany({

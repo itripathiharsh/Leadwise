@@ -24,6 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Field, Input } from '@/components/ui/field'
@@ -125,13 +126,14 @@ export default function TemplatesPage() {
           body: body.trim(),
         }),
       })
+      const data = await res.json().catch(() => null)
 
       if (res.ok) {
         toast.success(editingId ? 'Template updated!' : 'Template created!')
         setModalOpen(false)
         fetchTemplates()
       } else {
-        toast.error('Failed to save template.')
+        toast.error(data?.error || 'Failed to save template.')
       }
     } catch {
       toast.error('Network error saving template.')
@@ -144,12 +146,15 @@ export default function TemplatesPage() {
     if (!confirm('Are you sure you want to delete this template?')) return
     try {
       const res = await fetch(`/api/templates/${id}`, { method: 'DELETE' })
+      const data = await res.json().catch(() => null)
       if (res.ok) {
         toast.success('Template removed.')
         fetchTemplates()
+      } else {
+        toast.error(data?.error || 'Failed to delete template.')
       }
     } catch {
-      toast.error('Failed to delete template.')
+      toast.error('Network error deleting template.')
     }
   }
 
@@ -318,70 +323,74 @@ export default function TemplatesPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSave} className="space-y-4 py-2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Template Title" required>
-                <Input
-                  placeholder="e.g. Initial Clinical Partnership Intro"
-                  required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-              </Field>
+          <form onSubmit={handleSave} className="flex flex-col flex-1 overflow-hidden">
+            <DialogBody className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Template Title" required>
+                  <Input
+                    placeholder="e.g. Initial Clinical Partnership Intro"
+                    required
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="h-10"
+                  />
+                </Field>
 
-              <Field label="Category" required>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-xs focus:border-primary focus:outline-none"
-                >
-                  <option value="EMAIL">Email</option>
-                  <option value="LINKEDIN">LinkedIn (InMail / Message)</option>
-                  <option value="CALL_SCRIPT">Call Script</option>
-                  <option value="WHATSAPP">WhatsApp</option>
-                </select>
-              </Field>
-            </div>
-
-            {category === 'EMAIL' && (
-              <Field label="Email Subject Line">
-                <Input
-                  placeholder="e.g. Partnership exploration: Leadwise & {{organisation_name}}"
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                />
-              </Field>
-            )}
-
-            {/* Placeholders Toolbar */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Click to Insert Variable Placeholders:
-              </label>
-              <div className="flex flex-wrap gap-1.5">
-                {PLACEHOLDERS.map((ph) => (
-                  <button
-                    key={ph}
-                    type="button"
-                    onClick={() => insertPlaceholder(ph)}
-                    className="rounded bg-surface-muted px-2 py-0.5 text-[11px] font-mono text-primary hover:bg-primary/10 border border-border transition-colors"
+                <Field label="Category" required>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="h-10 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-xs transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                   >
-                    + {ph}
-                  </button>
-                ))}
+                    <option value="EMAIL">Email</option>
+                    <option value="LINKEDIN">LinkedIn (InMail / Message)</option>
+                    <option value="CALL_SCRIPT">Call Script</option>
+                    <option value="WHATSAPP">WhatsApp</option>
+                  </select>
+                </Field>
               </div>
-            </div>
 
-            <Field label="Template Content / Body" required>
-              <textarea
-                rows={6}
-                required
-                placeholder="Hi {{contact_name}}, I'm reaching out from Leadwise regarding..."
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                className="w-full rounded-md border border-border bg-surface p-3 text-xs font-mono text-foreground shadow-xs focus:border-primary focus:outline-none leading-relaxed"
-              />
-            </Field>
+              {category === 'EMAIL' && (
+                <Field label="Email Subject Line">
+                  <Input
+                    placeholder="e.g. Partnership exploration: Leadwise & {{organisation_name}}"
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                    className="h-10"
+                  />
+                </Field>
+              )}
+
+              {/* Placeholders Toolbar */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Click to Insert Variable Placeholders:
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {PLACEHOLDERS.map((ph) => (
+                    <button
+                      key={ph}
+                      type="button"
+                      onClick={() => insertPlaceholder(ph)}
+                      className="rounded-md bg-surface-muted px-2.5 py-1 text-[11px] font-mono text-primary hover:bg-primary/10 border border-border transition-colors"
+                    >
+                      + {ph}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <Field label="Template Content / Body" required>
+                <textarea
+                  rows={6}
+                  required
+                  placeholder="Hi {{contact_name}}, I'm reaching out from Leadwise regarding..."
+                  value={body}
+                  onChange={(e) => setBody(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-surface p-3.5 text-xs font-mono text-foreground shadow-xs transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 leading-relaxed resize-y min-h-[100px]"
+                />
+              </Field>
+            </DialogBody>
 
             <DialogFooter>
               <Button variant="ghost" type="button" onClick={() => setModalOpen(false)}>

@@ -1,10 +1,16 @@
+import { z } from 'zod'
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/current-user'
 import {
   listFollowUps,
   completeFollowUp,
-  createFollowUp,
 } from '@/server/services/followups'
+import { pageSchema, pageSizeSchema } from '@/lib/validation'
+
+const followUpActionSchema = z.object({
+  id: z.string().min(1, 'Follow-up ID is required').max(64),
+  action: z.literal('COMPLETE'),
+})
 
 export async function GET(req: Request) {
   const user = await getCurrentUser()
@@ -14,8 +20,8 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url)
   const bucket = (searchParams.get('bucket') as any) || undefined
-  const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1
-  const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 25
+  const page = pageSchema.parse(searchParams.get('page') || undefined)
+  const pageSize = pageSizeSchema.parse(searchParams.get('pageSize') || undefined)
 
   const result = await listFollowUps(user, { bucket, page, pageSize })
   return NextResponse.json(result)
@@ -28,13 +34,13 @@ export async function PATCH(req: Request) {
   }
 
   try {
-    const body = await req.json()
-    if (body.id && body.action === 'COMPLETE') {
-      const result = await completeFollowUp(user, body.id)
-      return NextResponse.json({ success: true, ...result })
+    const rawBody = await req.json()
+    const parsed = followUpActionSchema.safeParse(rawBody)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid follow-up action', details: parsed.error.flatten() }, { status: 400 })
     }
-
-    return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
+    const result = await completeFollowUp(user, parsed.data.id)
+    return NextResponse.json({ success: true, ...result })
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
     return NextResponse.json({ error: msg }, { status: 400 })

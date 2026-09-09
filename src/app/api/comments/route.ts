@@ -1,6 +1,12 @@
+import { z } from 'zod'
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/current-user'
 import { listComments, addComment } from '@/server/services/comments'
+
+const commentCreateSchema = z.object({
+  organisationId: z.string().min(1, 'organisationId is required').max(64),
+  comment: z.string().min(1, 'comment is required').max(5000),
+})
 
 export async function GET(req: Request) {
   const user = await getCurrentUser()
@@ -25,13 +31,13 @@ export async function POST(req: Request) {
   }
 
   try {
-    const body = await req.json()
-    const { organisationId, comment } = body
-
-    if (!organisationId || !comment) {
-      return NextResponse.json({ error: 'organisationId and comment are required' }, { status: 400 })
+    const rawBody = await req.json()
+    const parsed = commentCreateSchema.safeParse(rawBody)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid comment input', details: parsed.error.flatten() }, { status: 400 })
     }
 
+    const { organisationId, comment } = parsed.data
     const created = await addComment(user, organisationId, comment)
     return NextResponse.json({ success: true, comment: created })
   } catch (err: unknown) {

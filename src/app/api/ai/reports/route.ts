@@ -11,6 +11,10 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  if (user.role !== 'OWNER' && user.role !== 'TL') {
+    return NextResponse.json({ error: 'Forbidden: Only Owner and Team Lead have access to executive AI reports and analytics.' }, { status: 403 })
+  }
+
   const { searchParams } = new URL(req.url)
   const mode = searchParams.get('mode')
 
