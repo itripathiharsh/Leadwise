@@ -143,27 +143,35 @@ export async function executeSafeRestore(
 
       if (!id || !email) continue
 
-      await prisma.user.upsert({
-        where: { id },
-        create: {
-          id,
-          name: name || 'Restored User',
-          email,
-          role: ['OWNER', 'TL', 'INTERN'].includes(role) ? role : 'INTERN',
-          phone,
-          avatarColor,
-          isActive,
-          passwordHash: defaultPasswordHash,
-        },
-        update: {
-          name: name || undefined,
-          email,
-          role: ['OWNER', 'TL', 'INTERN'].includes(role) ? role : undefined,
-          phone,
-          avatarColor,
-          isActive,
-        },
+      const existingUser = await prisma.user.findFirst({
+        where: { OR: [{ id }, { email }] },
       })
+
+      if (existingUser) {
+        await prisma.user.update({
+          where: { id: existingUser.id },
+          data: {
+            name: name || undefined,
+            role: ['OWNER', 'TL', 'INTERN'].includes(role) ? role : undefined,
+            phone: phone || undefined,
+            avatarColor,
+            isActive,
+          },
+        })
+      } else {
+        await prisma.user.create({
+          data: {
+            id,
+            name: name || 'Restored User',
+            email,
+            role: ['OWNER', 'TL', 'INTERN'].includes(role) ? role : 'INTERN',
+            phone: phone || undefined,
+            avatarColor,
+            isActive,
+            passwordHash: defaultPasswordHash,
+          },
+        })
+      }
       restored.users++
     }
   }
@@ -181,11 +189,20 @@ export async function executeSafeRestore(
 
       if (!id || !name) continue
 
-      await prisma.tag.upsert({
-        where: { id },
-        create: { id, name, color, isArchived, createdById },
-        update: { name, color, isArchived },
+      const existingTag = await prisma.tag.findFirst({
+        where: { OR: [{ id }, { name }] },
       })
+
+      if (existingTag) {
+        await prisma.tag.update({
+          where: { id: existingTag.id },
+          data: { color, isArchived },
+        })
+      } else {
+        await prisma.tag.create({
+          data: { id, name, color, isArchived, createdById: createdById || undefined },
+        })
+      }
       restored.tags++
     }
   }
