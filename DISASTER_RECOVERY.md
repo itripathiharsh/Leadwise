@@ -109,19 +109,28 @@ If a bad code deployment reaches production:
 3. Click **Instant Rollback** or promote that deployment.
 4. Production traffic immediately shifts with 0 downtime.
 
-### Scenario D: Google Service Account Setup for Automated Backups
-To connect Google Drive for automated headless backups:
-1. Go to [Google Cloud Console](https://console.cloud.google.com).
-2. Create a project or select an existing project.
-3. Enable the **Google Drive API**.
-4. Navigate to **IAM & Admin → Service Accounts** → Create Service Account.
-5. Generate a new JSON key file (contains `client_email` and `private_key`).
-6. Go to Google Drive, open folder `1Rg8Gr68cwglbsq_HYZphghMADlafrGCg`, and click **Share**.
-7. Share the folder with the `client_email` with **Editor** permissions.
-8. In Leadwise, log in as OWNER, navigate to **Settings → Backups** (`/settings/backups`), and paste:
-   - Service Account Email
-   - RSA Private Key
-9. Click **Test Connection** to confirm connectivity.
+### Scenario D: Google OAuth 2.0 Setup for 5 TB My Drive Backups
+To connect your personal Google account with 5 TB storage quota:
+1. Go to [Google Cloud Console Credentials](https://console.cloud.google.com/apis/credentials).
+2. Select or create project `leadwise-backup`.
+3. Configure the **OAuth Consent Screen**:
+   - User type: **External**.
+   - Scopes: Add `https://www.googleapis.com/auth/drive.file`, `https://www.googleapis.com/auth/drive.metadata.readonly`, `https://www.googleapis.com/auth/userinfo.email`.
+   - Add your Google account email under **Test users**.
+4. Go to **Credentials → Create Credentials → OAuth Client ID**:
+   - Application Type: **Web application**.
+   - **Authorized redirect URIs**:
+     - `https://leadwise-red.vercel.app/api/auth/google/callback`
+     - `https://leadwise-beyond-binary2.vercel.app/api/auth/google/callback`
+     - `http://localhost:3000/api/auth/google/callback`
+5. In Leadwise ([https://leadwise-red.vercel.app/settings/backups](https://leadwise-red.vercel.app/settings/backups)), expand **Google Cloud OAuth 2.0 Credentials** and enter:
+   - **OAuth Client ID**
+   - **OAuth Client Secret**
+6. Click **Save Settings**, then click **Connect with Google**.
+7. Grant permissions to Leadwise. The system will securely obtain a persistent `refresh_token`, save it to the database, and display:
+   - Status: `Connected`
+   - Account: `Your Google Email`
+   - Storage: Direct upload to `1Rg8Gr68cwglbsq_HYZphghMADlafrGCg` consuming your 5 TB My Drive quota.
 
 ---
 
