@@ -40,6 +40,7 @@ const userSelect = {
   name: true,
   email: true,
   role: true,
+  status: true,
   phone: true,
   avatarColor: true,
   isActive: true,
@@ -64,7 +65,9 @@ export async function listUsers(
   return prisma.user.findMany({
     where: {
       deletedAt: null,
-      ...(options.includeInactive ? {} : { isActive: true }),
+      ...(options.includeInactive
+        ? { status: { in: ['APPROVED', 'DISCONTINUED'] } }
+        : { status: 'APPROVED', isActive: true }),
     },
     select: userSelect,
     orderBy: [{ role: 'asc' }, { name: 'asc' }],
@@ -76,7 +79,7 @@ export async function listAssignableUsers(): Promise<
   Array<{ id: string; name: string; role: Role; avatarColor: string }>
 > {
   return prisma.user.findMany({
-    where: { deletedAt: null, isActive: true },
+    where: { deletedAt: null, isActive: true, status: 'APPROVED' },
     select: { id: true, name: true, role: true, avatarColor: true },
     orderBy: [{ role: 'asc' }, { name: 'asc' }],
   })
@@ -312,6 +315,169 @@ export async function deactivateUser(user: CurrentUser, id: string): Promise<voi
   })
 }
 
+/**
+ * Discontinue an intern's tenure or account.
+ * Available to both OWNER and TL.
+ * Revokes active status, sets status to DISCONTINUED, releases pending followups,
+ * and unassigns active organisations so they return to the available pool.
+ */
+export async function discontinueUser(
+  user: CurrentUser,
+  id: string,
+  options: { unassignOrganisations?: boolean } = { unassignOrganisations: true },
+): Promise<{ success: boolean; unassignedCount: number }> {
+  assertCan(user, 'user:manage')
+  if (id === user.id) throw new ForbiddenError('You cannot discontinue your own account.')
+
+  const target = await prisma.user.findFirst({
+    where: { id, deletedAt: null },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      _count: { select: { organisationsAssigned: { where: { deletedAt: null } } } },
+    },
+  })
+  if (!target) throw new NotFoundError('User')
+
+  if (target.role === 'OWNER') {
+    throw new ValidationError('Owner accounts cannot be discontinued. Promote another owner first if changing ownership.')
+  }
+
+  let unassignedCount = 0
+
+  await prisma.$transaction(async (tx) => {
+    if (options.unassignOrganisations && target._count.organisationsAssigned > 0) {
+      const res = await tx.organisation.updateMany({
+        where: { assignedToId: id, deletedAt: null },
+        data: { assignedToId: null, status: 'NEW' },
+      })
+      unassignedCount = res.count
+    }
+
+    // Cancel pending followups assigned to this user
+    await tx.followUp.updateMany({
+      where: { assignedToId: id, status: 'PENDING', deletedAt: null },
+      data: { status: 'CANCELLED' },
+    })
+
+    await tx.user.update({
+      where: { id },
+      data: { isActive: false, status: 'DISCONTINUED' },
+    })
+
+    await writeAudit(
+      {
+        userId: user.id,
+        action: 'user.discontinued',
+        entityType: 'user',
+        entityId: id,
+        entityLabel: target.name,
+        summary: `${user.name} (${user.role}) discontinued ${target.role} ${target.name} (${target.email})${
+          unassignedCount > 0 ? ` — released ${unassignedCount} assigned organisations to unassigned pool` : ''
+        }`,
+      },
+      tx,
+    )
+  })
+
+  return { success: true, unassignedCount }
+}
+
+/**
+ * Reactivate a discontinued or inactive user.
+ */
+export async function reactivateUser(user: CurrentUser, id: string): Promise<{ success: boolean }> {
+  assertCan(user, 'user:manage')
+
+  const target = await prisma.user.findFirst({
+    where: { id, deletedAt: null },
+    select: { id: true, name: true, email: true, role: true },
+  })
+  if (!target) throw new NotFoundError('User')
+
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id },
+      data: { isActive: true, status: 'APPROVED' },
+    })
+
+    await writeAudit(
+      {
+        userId: user.id,
+        action: 'user.reactivated',
+        entityType: 'user',
+        entityId: id,
+        entityLabel: target.name,
+        summary: `${user.name} (${user.role}) reactivated ${target.role} ${target.name} (${target.email})`,
+      },
+      tx,
+    )
+  })
+
+  return { success: true }
+}
+
+/**
+ * Soft delete an intern account completely.
+ */
+export async function deleteUser(user: CurrentUser, id: string): Promise<{ success: boolean }> {
+  assertCan(user, 'user:manage')
+  if (id === user.id) throw new ForbiddenError('You cannot delete your own account.')
+
+  const target = await prisma.user.findFirst({
+    where: { id, deletedAt: null },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      _count: { select: { organisationsAssigned: { where: { deletedAt: null } } } },
+    },
+  })
+  if (!target) throw new NotFoundError('User')
+
+  if (target.role === 'OWNER') {
+    throw new ValidationError('Owner accounts cannot be deleted.')
+  }
+
+  await prisma.$transaction(async (tx) => {
+    // Release any assigned organisations
+    if (target._count.organisationsAssigned > 0) {
+      await tx.organisation.updateMany({
+        where: { assignedToId: id, deletedAt: null },
+        data: { assignedToId: null, status: 'NEW' },
+      })
+    }
+
+    // Cancel pending followups
+    await tx.followUp.updateMany({
+      where: { assignedToId: id, status: 'PENDING', deletedAt: null },
+      data: { status: 'CANCELLED' },
+    })
+
+    await tx.user.update({
+      where: { id },
+      data: { isActive: false, status: 'DISCONTINUED', deletedAt: new Date() },
+    })
+
+    await writeAudit(
+      {
+        userId: user.id,
+        action: 'user.deleted',
+        entityType: 'user',
+        entityId: id,
+        entityLabel: target.name,
+        summary: `${user.name} (${user.role}) deleted ${target.role} ${target.name} (${target.email})`,
+      },
+      tx,
+    )
+  })
+
+  return { success: true }
+}
+
 // ── Team performance (spec §17) ──────────────────────────────────────────────
 
 export interface TeamPerformanceRow {
@@ -389,4 +555,107 @@ export async function getTeamPerformance(user: CurrentUser): Promise<TeamPerform
       }
     }),
   )
+}
+
+/** List new signups in PENDING status awaiting TL/Owner review. */
+export async function listPendingUsers(user: CurrentUser) {
+  assertCan(user, 'team:view')
+  return prisma.user.findMany({
+    where: {
+      deletedAt: null,
+      status: 'PENDING',
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      role: true,
+      status: true,
+      createdAt: true,
+      avatarColor: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  })
+}
+
+/** TL/Owner review action: APPROVE or REJECT user registration. */
+export async function reviewUserRegistration(
+  user: CurrentUser,
+  input: { userId: string; action: 'APPROVE' | 'REJECT'; role?: Role },
+) {
+  assertCan(user, 'team:view')
+  const target = await prisma.user.findFirst({
+    where: { id: input.userId, deletedAt: null },
+  })
+  if (!target) throw new NotFoundError('User')
+
+  if (input.action === 'APPROVE') {
+    const assignedRole = input.role || target.role || 'INTERN'
+    const updated = await prisma.user.update({
+      where: { id: target.id },
+      data: {
+        status: 'APPROVED',
+        isActive: true,
+        role: assignedRole,
+      },
+      select: userSelect,
+    })
+
+    await prisma.notificationPreference.upsert({
+      where: { userId: target.id },
+      create: {
+        userId: target.id,
+        followUpReminders: true,
+        meetingReminders: true,
+        assignmentNotifications: true,
+        backupAlerts: assignedRole === 'OWNER' || assignedRole === 'TL',
+      },
+      update: {},
+    })
+
+    await prisma.userTarget.upsert({
+      where: { userId: target.id },
+      create: {
+        userId: target.id,
+        dailyOrganisations: 20,
+        dailyCalls: 15,
+        dailyEmails: 20,
+        dailyLinkedin: 10,
+        dailyMeetings: 2,
+      },
+      update: {},
+    })
+
+    await writeAudit({
+      userId: user.id,
+      action: 'user.approved',
+      entityType: 'user',
+      entityId: target.id,
+      entityLabel: target.name,
+      summary: `${user.name} approved access for ${target.name} (${target.email}) with role ${assignedRole}`,
+    })
+
+    return { success: true, user: updated, status: 'APPROVED' }
+  } else {
+    const updated = await prisma.user.update({
+      where: { id: target.id },
+      data: {
+        status: 'REJECTED',
+        isActive: false,
+      },
+      select: userSelect,
+    })
+
+    await writeAudit({
+      userId: user.id,
+      action: 'user.rejected',
+      entityType: 'user',
+      entityId: target.id,
+      entityLabel: target.name,
+      summary: `${user.name} rejected access request for ${target.name} (${target.email})`,
+    })
+
+    return { success: true, user: updated, status: 'REJECTED' }
+  }
 }

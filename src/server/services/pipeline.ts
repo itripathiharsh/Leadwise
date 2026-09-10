@@ -51,13 +51,12 @@ export interface PipelineBoard {
   total: number
 }
 
-const STAGES: OrgStatus[] = [
-  'NEW',
+export const PIPELINE_STAGES: OrgStatus[] = [
   'ASSIGNED',
   'CONTACTED',
   'RESPONDED',
-  'INTERESTED',
   'MEETING',
+  'INTERESTED',
   'PARTNERSHIP',
   'REJECTED',
 ]
@@ -103,10 +102,7 @@ export function getRecommendedNextAction(
   hasFollowUp: boolean,
   daysSinceContact: number | null,
 ): string {
-  if (status === 'NEW') {
-    return hasContacts ? 'Assign outreach rep & initiate intro call' : 'Identify decision-maker & add contact'
-  }
-  if (status === 'ASSIGNED') {
+  if (status === 'NEW' || status === 'ASSIGNED') {
     return 'Make initial outreach call / send LinkedIn intro'
   }
   if (status === 'CONTACTED') {
@@ -117,11 +113,11 @@ export function getRecommendedNextAction(
   if (status === 'RESPONDED') {
     return 'Schedule partnership discovery meeting'
   }
-  if (status === 'INTERESTED') {
-    return hasFollowUp ? 'Conduct scheduled follow-up discussion' : 'Schedule proposal review & next steps'
-  }
   if (status === 'MEETING') {
-    return 'Send formal partnership agreement / proposal'
+    return hasFollowUp ? 'Conduct scheduled meeting & assess fit' : 'Schedule clinical pitch / demo session'
+  }
+  if (status === 'INTERESTED') {
+    return 'Prepare & send formal partnership agreement / proposal'
   }
   if (status === 'PARTNERSHIP') {
     return 'Coordinate onboarding & live partnership launch'

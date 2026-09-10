@@ -113,6 +113,9 @@ async function runQaAudit() {
       'Users',
       'Assignments',
       'EOD Reports',
+      'Tags',
+      'Templates',
+      'Audit Logs',
       'Backup Metadata',
     ]
 
@@ -131,12 +134,15 @@ async function runQaAudit() {
       users: 1,
       reassignments: 1,
       eodReports: 1,
+      tags: 1,
+      templates: 1,
+      auditLogs: 1,
     })
 
-    if (validation.valid && validation.totalSheets === 8) {
+    if (validation.valid && validation.totalSheets === 11) {
       results.push({
         suite: 'Automated Backups (P0)',
-        name: 'Multi-Sheet Excel (.xlsx) Backup Generator (8 Relational Sheets)',
+        name: 'Multi-Sheet Excel (.xlsx) Backup Generator (11 Relational Sheets)',
         status: 'PASS',
       })
       results.push({

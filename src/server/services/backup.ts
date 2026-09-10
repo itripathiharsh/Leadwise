@@ -57,10 +57,13 @@ export async function buildFullBackupWorkbook(): Promise<{
     users: number
     reassignments: number
     eodReports: number
+    tags: number
+    templates: number
+    auditLogs: number
   }
 }> {
   const workbook = new ExcelJS.Workbook()
-  workbook.creator = 'Leadwise Partnership CRM'
+  workbook.creator = 'Leadwise'
   workbook.created = new Date()
   workbook.properties.date1904 = false
 
@@ -310,7 +313,88 @@ export async function buildFullBackupWorkbook(): Promise<{
     })
   }
 
-  // 8. Settings & Metadata Sheet
+  // 8. Tags
+  const tagSheet = workbook.addWorksheet('Tags')
+  tagSheet.columns = [
+    { header: 'id', key: 'id', width: 28 },
+    { header: 'name', key: 'name', width: 24 },
+    { header: 'color', key: 'color', width: 16 },
+    { header: 'isArchived', key: 'isArchived', width: 14 },
+    { header: 'createdById', key: 'createdById', width: 28 },
+    { header: 'createdAt', key: 'createdAt', width: 22 },
+    { header: 'updatedAt', key: 'updatedAt', width: 22 },
+  ]
+  formatWorksheetHeader(tagSheet)
+
+  const tags = await prisma.tag.findMany({ orderBy: { createdAt: 'asc' } })
+  for (const t of tags) {
+    tagSheet.addRow({
+      ...t,
+      isArchived: t.isArchived ? 'true' : 'false',
+      createdAt: t.createdAt.toISOString(),
+      updatedAt: t.updatedAt.toISOString(),
+    })
+  }
+
+  // 9. Outreach Templates
+  const tplSheet = workbook.addWorksheet('Templates')
+  tplSheet.columns = [
+    { header: 'id', key: 'id', width: 28 },
+    { header: 'title', key: 'title', width: 32 },
+    { header: 'category', key: 'category', width: 18 },
+    { header: 'subcategory', key: 'subcategory', width: 22 },
+    { header: 'subject', key: 'subject', width: 36 },
+    { header: 'body', key: 'body', width: 60 },
+    { header: 'isArchived', key: 'isArchived', width: 14 },
+    { header: 'createdById', key: 'createdById', width: 28 },
+    { header: 'createdAt', key: 'createdAt', width: 22 },
+    { header: 'updatedAt', key: 'updatedAt', width: 22 },
+  ]
+  formatWorksheetHeader(tplSheet)
+
+  const templates = await prisma.template.findMany({ orderBy: { createdAt: 'asc' } })
+  for (const t of templates) {
+    tplSheet.addRow({
+      ...t,
+      isArchived: t.isArchived ? 'true' : 'false',
+      createdAt: t.createdAt.toISOString(),
+      updatedAt: t.updatedAt.toISOString(),
+    })
+  }
+
+  // 10. Audit Logs
+  const auditSheet = workbook.addWorksheet('Audit Logs')
+  auditSheet.columns = [
+    { header: 'id', key: 'id', width: 28 },
+    { header: 'userId', key: 'userId', width: 28 },
+    { header: 'action', key: 'action', width: 28 },
+    { header: 'entityType', key: 'entityType', width: 20 },
+    { header: 'entityId', key: 'entityId', width: 28 },
+    { header: 'entityLabel', key: 'entityLabel', width: 28 },
+    { header: 'summary', key: 'summary', width: 44 },
+    { header: 'before', key: 'before', width: 36 },
+    { header: 'after', key: 'after', width: 36 },
+    { header: 'createdAt', key: 'createdAt', width: 22 },
+  ]
+  formatWorksheetHeader(auditSheet)
+
+  const auditLogs = await prisma.auditLog.findMany({ orderBy: { createdAt: 'desc' }, take: 10000 })
+  for (const a of auditLogs) {
+    auditSheet.addRow({
+      id: a.id,
+      userId: a.userId ?? '',
+      action: a.action,
+      entityType: a.entityType,
+      entityId: a.entityId,
+      entityLabel: a.entityLabel ?? '',
+      summary: a.summary,
+      before: a.before ? JSON.stringify(a.before) : '',
+      after: a.after ? JSON.stringify(a.after) : '',
+      createdAt: a.createdAt.toISOString(),
+    })
+  }
+
+  // 11. Settings & Metadata Sheet
   const metaSheet = workbook.addWorksheet('Backup Metadata')
   metaSheet.columns = [
     { header: 'Parameter', key: 'key', width: 26 },
@@ -318,7 +402,7 @@ export async function buildFullBackupWorkbook(): Promise<{
   ]
   formatWorksheetHeader(metaSheet)
 
-  metaSheet.addRow({ key: 'Application', val: 'Leadwise Partnership Outreach CRM' })
+  metaSheet.addRow({ key: 'Application', val: 'Leadwise' })
   metaSheet.addRow({ key: 'Backup Version', val: '1.0.0' })
   metaSheet.addRow({ key: 'Generated At', val: formatDateTime(new Date()) })
   metaSheet.addRow({ key: 'Total Organisations', val: orgs.length })
@@ -327,6 +411,9 @@ export async function buildFullBackupWorkbook(): Promise<{
   metaSheet.addRow({ key: 'Total Follow-ups', val: followups.length })
   metaSheet.addRow({ key: 'Total Users', val: users.length })
   metaSheet.addRow({ key: 'Total EOD Reports', val: eodReports.length })
+  metaSheet.addRow({ key: 'Total Tags', val: tags.length })
+  metaSheet.addRow({ key: 'Total Templates', val: templates.length })
+  metaSheet.addRow({ key: 'Total Audit Logs', val: auditLogs.length })
 
   return {
     workbook,
@@ -338,6 +425,9 @@ export async function buildFullBackupWorkbook(): Promise<{
       users: users.length,
       reassignments: reassignments.length,
       eodReports: eodReports.length,
+      tags: tags.length,
+      templates: templates.length,
+      auditLogs: auditLogs.length,
     },
   }
 }
@@ -355,6 +445,9 @@ export async function validateBackup(
     users: number
     reassignments: number
     eodReports: number
+    tags: number
+    templates: number
+    auditLogs: number
   },
 ): Promise<BackupValidationResult> {
   const errors: string[] = []
@@ -366,6 +459,9 @@ export async function validateBackup(
     { name: 'Users', expectedCount: counts.users },
     { name: 'Assignments', expectedCount: counts.reassignments },
     { name: 'EOD Reports', expectedCount: counts.eodReports },
+    { name: 'Tags', expectedCount: counts.tags },
+    { name: 'Templates', expectedCount: counts.templates },
+    { name: 'Audit Logs', expectedCount: counts.auditLogs },
     { name: 'Backup Metadata', expectedCount: -1 },
   ]
 
@@ -448,7 +544,7 @@ export async function executeFullBackup(
   const timeStr = `${String(timestamp.getHours()).padStart(2, '0')}${String(
     timestamp.getMinutes(),
   ).padStart(2, '0')}`
-  const fileName = `Leadwise_CRM_Backup_${dateStr}_${timeStr}.xlsx`
+  const fileName = `leadwise_backup_${dateStr}_${timeStr}.xlsx`
 
   // 1. Initialize BackupRecord in DB
   const record = await prisma.backupRecord.create({
@@ -544,7 +640,7 @@ export async function executeFullBackup(
       await notifyOwnersAndTLs({
         type: 'BACKUP_COMPLETED',
         priority: 'INFO',
-        title: '✓ Weekly CRM Backup Completed',
+        title: '✓ Leadwise Backup Completed',
         message: `${counts.organisations} Organisations, ${counts.contacts} Contacts, ${counts.activities} Activities securely backed up to Google Drive.`,
         linkUrl: '/settings/backups',
       })
@@ -552,7 +648,7 @@ export async function executeFullBackup(
       await notifyOwnersAndTLs({
         type: 'BACKUP_FAILED',
         priority: 'URGENT',
-        title: '⚠️ Leadwise CRM Backup Drive Warning',
+        title: '⚠️ Leadwise Backup Drive Warning',
         message: `Backup generated but Google Drive upload failed: ${driveErrorMsg}. Please check backup settings.`,
         linkUrl: '/settings/backups',
       })
@@ -586,8 +682,8 @@ export async function executeFullBackup(
     await notifyOwnersAndTLs({
       type: 'BACKUP_FAILED',
       priority: 'URGENT',
-      title: '⚠️ CRM Backup Execution Error',
-      message: `Weekly backup could not be completed: ${errorMsg}`,
+      title: '⚠️ Leadwise Backup Execution Error',
+      message: `Automatic backup could not be completed: ${errorMsg}`,
       linkUrl: '/settings/backups',
     })
 
@@ -596,11 +692,11 @@ export async function executeFullBackup(
 }
 
 /**
- * Keeps only the configured number of historical backups (e.g. 8).
+ * Keeps only the configured number of historical backups (e.g. 12 months minimum).
  */
 export async function enforceBackupRetention() {
   const retentionSetting = await getAppSetting('backup_retention_count')
-  const maxRetain = retentionSetting ? parseInt(retentionSetting, 10) : 8
+  const maxRetain = retentionSetting ? parseInt(retentionSetting, 10) : 12
 
   if (isNaN(maxRetain) || maxRetain <= 0) return
 

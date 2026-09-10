@@ -17,6 +17,19 @@ import {
 import { Badge } from '@/components/ui/badge'
 
 export default function SettingsPage() {
+  const [role, setRole] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.user?.role) setRole(d.user.role)
+      })
+      .catch(() => {})
+  }, [])
+
+  const isLeader = role === 'OWNER' || role === 'TL'
+
   const sections = [
     {
       title: 'Personal Profile & Credentials',
@@ -27,16 +40,7 @@ export default function SettingsPage() {
       badge: 'Personal',
       tone: 'violet' as const,
       accent: 'text-violet-400 bg-violet-500/10 border-violet-500/20',
-    },
-    {
-      title: 'Automated Backups & Cloud Sync',
-      description:
-        'Multi-sheet Excel (.xlsx) CRM export archives, scheduled weekly backups, retention policies, and Google Drive Service integration.',
-      href: '/settings/backups',
-      icon: Database,
-      badge: 'Automated',
-      tone: 'emerald' as const,
-      accent: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+      show: true,
     },
     {
       title: 'Notification Center & Cadence Reminders',
@@ -47,6 +51,18 @@ export default function SettingsPage() {
       badge: 'Alerts',
       tone: 'blue' as const,
       accent: 'text-sky-400 bg-sky-500/10 border-sky-500/20',
+      show: true,
+    },
+    {
+      title: 'Automated Backups & Cloud Sync',
+      description:
+        'Multi-sheet Excel (.xlsx) CRM export archives, scheduled weekly backups, retention policies, and Google Drive Service integration.',
+      href: '/settings/backups',
+      icon: Database,
+      badge: 'Governance',
+      tone: 'emerald' as const,
+      accent: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+      show: isLeader,
     },
     {
       title: 'Security State & Audit Trail',
@@ -57,8 +73,9 @@ export default function SettingsPage() {
       badge: 'Compliance',
       tone: 'slate' as const,
       accent: 'text-slate-400 bg-slate-500/10 border-slate-500/20',
+      show: isLeader,
     },
-  ]
+  ].filter((s) => s.show)
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 p-4 sm:p-6 lg:p-8">

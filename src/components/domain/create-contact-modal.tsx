@@ -41,11 +41,33 @@ export function CreateContactModal({
   const [isDecisionMaker, setIsDecisionMaker] = React.useState(false)
   const [priority, setPriority] = React.useState('MEDIUM')
   const [notes, setNotes] = React.useState('')
+  const [assignedToId, setAssignedToId] = React.useState('')
 
+  const [currentUser, setCurrentUser] = React.useState<{ id: string; name: string; role?: string } | null>(null)
+  const [usersList, setUsersList] = React.useState<Array<{ id: string; name: string; role?: string }>>([])
   const [loading, setLoading] = React.useState(false)
+
+  const isLeader = currentUser?.role === 'OWNER' || currentUser?.role === 'TL'
 
   React.useEffect(() => {
     if (open) {
+      fetch('/api/auth/me')
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.user) {
+            setCurrentUser(data.user)
+            if (data.user.role === 'OWNER' || data.user.role === 'TL') {
+              fetch('/api/users')
+                .then((res) => res.json())
+                .then((uData) => {
+                  if (uData.users) setUsersList(uData.users)
+                })
+                .catch(() => {})
+            }
+          }
+        })
+        .catch(() => {})
+
       if (initialOrgId) {
         setOrganisationId(initialOrgId)
       } else {
@@ -70,6 +92,7 @@ export function CreateContactModal({
       setLinkedinUrl('')
       setIsDecisionMaker(false)
       setNotes('')
+      setAssignedToId('')
     }
   }, [open, initialOrgId])
 
@@ -98,6 +121,7 @@ export function CreateContactModal({
           isDecisionMaker,
           priority,
           notes: notes.trim() || undefined,
+          assignedToId: assignedToId || undefined,
         }),
       })
 
@@ -233,6 +257,32 @@ export function CreateContactModal({
                 className="size-4 rounded border-border text-primary focus:ring-primary"
               />
             </div>
+
+            {isLeader && (
+              <Field label="Assign Contact / Lead Handler">
+                <select
+                  value={assignedToId}
+                  onChange={(e) => setAssignedToId(e.target.value)}
+                  className="h-10 w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold text-foreground shadow-xs transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                >
+                  <option value="">Default to Organisation Handler</option>
+                  {currentUser && (
+                    <option value={currentUser.id}>
+                      Assign to Me ({currentUser.name})
+                    </option>
+                  )}
+                  <optgroup label="Team Members">
+                    {usersList
+                      .filter((u) => u.id !== currentUser?.id)
+                      .map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.name} {u.role ? `(${u.role})` : ''}
+                        </option>
+                      ))}
+                  </optgroup>
+                </select>
+              </Field>
+            )}
 
             <Field label="Contact Notes">
               <textarea

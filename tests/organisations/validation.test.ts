@@ -27,7 +27,7 @@ describe('Add Organisation Form Validation Schema', () => {
 
   it('accepts valid payload without category (only domain and organisationType)', () => {
     const result = organisationCreateSchema.safeParse({
-      name: 'Atlas Care Clinic',
+      name: 'Leadwise Care Clinic',
       domain: 'Mental Health',
       leadSource: 'LinkedIn',
       organisationType: 'Private Organization',
@@ -35,7 +35,7 @@ describe('Add Organisation Form Validation Schema', () => {
     })
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.data.name).toBe('Atlas Care Clinic')
+      expect(result.data.name).toBe('Leadwise Care Clinic')
       expect(result.data.domain).toBe('Mental Health')
       expect(result.data.organisationType).toBe('Private Organization')
       expect(result.data.numberOfProfessionals).toBe(42)

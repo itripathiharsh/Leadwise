@@ -43,30 +43,29 @@ interface OrgStatusMeta {
 }
 
 export const ORG_STATUS_META: Record<OrgStatus, OrgStatusMeta> = {
-  NEW: { label: 'New', tone: 'slate', rank: 0, description: 'Added but not yet assigned to anyone.' },
-  ASSIGNED: { label: 'Assigned', tone: 'blue', rank: 1, description: 'Owned by a team member, outreach not started.' },
-  CONTACTED: { label: 'Contacted', tone: 'indigo', rank: 2, description: 'We have reached out at least once.' },
-  RESPONDED: { label: 'Responded', tone: 'cyan', rank: 3, description: 'They replied to our outreach.' },
-  INTERESTED: { label: 'Interested', tone: 'amber', rank: 4, description: 'They expressed interest in partnering.' },
-  MEETING: { label: 'Meeting', tone: 'violet', rank: 5, description: 'A meeting is scheduled or has happened.' },
-  PARTNERSHIP: { label: 'Partnership', tone: 'emerald', rank: 6, description: 'Converted into an active partnership.' },
-  REJECTED: { label: 'Rejected', tone: 'rose', rank: -1, description: 'Not interested or not a fit.' },
+  NEW: { label: 'Assigned', tone: 'blue', rank: 1, description: 'Allocated to rep, outreach pending.' },
+  ASSIGNED: { label: 'Assigned', tone: 'blue', rank: 1, description: 'Allocated to rep, outreach pending.' },
+  CONTACTED: { label: 'Contacted', tone: 'indigo', rank: 2, description: 'Initial outreach call, email, or message initiated.' },
+  RESPONDED: { label: 'Responded', tone: 'cyan', rank: 3, description: 'Target responded or engaged with outreach.' },
+  MEETING: { label: 'Meeting Scheduled', tone: 'violet', rank: 4, description: 'Discovery call or clinical demo scheduled.' },
+  INTERESTED: { label: 'Warm / Interested', tone: 'amber', rank: 5, description: 'Qualified interest expressed in partnership.' },
+  PARTNERSHIP: { label: 'Partnership Signed', tone: 'emerald', rank: 6, description: 'Formal partnership agreement executed and active.' },
+  REJECTED: { label: 'Disqualified / Cold', tone: 'rose', rank: -1, description: 'Disqualified, unresponsive, or gone cold.' },
 }
 
 /** Display order for filters and funnel charts. */
 export const ORG_STATUS_ORDER: OrgStatus[] = [
-  'NEW',
   'ASSIGNED',
   'CONTACTED',
   'RESPONDED',
-  'INTERESTED',
   'MEETING',
+  'INTERESTED',
   'PARTNERSHIP',
   'REJECTED',
 ]
 
 /** Statuses that count as a "hot" lead on dashboards. */
-export const HOT_STATUSES: OrgStatus[] = ['INTERESTED', 'MEETING', 'PARTNERSHIP']
+export const HOT_STATUSES: OrgStatus[] = ['MEETING', 'INTERESTED', 'PARTNERSHIP']
 
 // ── Priority ────────────────────────────────────────────────────────────────
 
@@ -282,7 +281,7 @@ export function resolveOrgStatus(
 
   // Re-engagement: a genuine positive signal pulls an org out of REJECTED.
   if (current === 'REJECTED') {
-    return ORG_STATUS_META[suggested].rank >= ORG_STATUS_META.INTERESTED.rank ? suggested : null
+    return ORG_STATUS_META[suggested].rank >= ORG_STATUS_META.MEETING.rank ? suggested : null
   }
 
   // Never move backwards (a routine follow-up call must not undo "Interested").

@@ -954,7 +954,7 @@ export default function ProfilePage() {
               </CardTitle>
             </div>
             <CardDescription className="text-xs">
-              Overview of permissions and access configured for your user role in Leadwise CRM.
+              Overview of permissions and access configured for your user role in Leadwise.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 text-xs">
@@ -1006,11 +1006,11 @@ export default function ProfilePage() {
                   </div>
                   <div className="flex items-start gap-2 text-muted-foreground">
                     <CheckCircle2 className="size-4 text-blue-500 shrink-0 mt-0.5" />
-                    <span>Assign organisations and reallocate workloads across interns.</span>
+                    <span>Assign organisations, review signups, approve and discontinue interns.</span>
                   </div>
                   <div className="flex items-start gap-2 text-muted-foreground">
                     <CheckCircle2 className="size-4 text-blue-500 shrink-0 mt-0.5" />
-                    <span>Access AI & funnel analytics across the entire CRM.</span>
+                    <span>Full executive CRM access matching Owner administrative privileges.</span>
                   </div>
                 </div>
               </div>
@@ -1021,7 +1021,7 @@ export default function ProfilePage() {
                 <div className="p-3 rounded-xl bg-violet-500/5 border border-violet-500/20 text-foreground space-y-1">
                   <div className="font-semibold text-violet-600 dark:text-violet-400">Full Workspace Ownership</div>
                   <p className="text-muted-foreground text-[11px] leading-relaxed">
-                    You hold full administrative control over the Leadwise CRM organization and workspace settings.
+                    You hold full administrative control over the Leadwise organization and workspace settings.
                   </p>
                 </div>
                 <div className="space-y-2 pt-2">

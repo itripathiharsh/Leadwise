@@ -57,3 +57,9 @@ prisma/*.db-journal
 whatsapp-agent/node_modules/
 whatsapp-agent/.env
 whatsapp-agent/dist/
+
+# Scratch & design prototypes
+NEW FE/
+stitch_work.md
+scripts/download_*.js
+/logo.png

@@ -49,30 +49,7 @@ export type Permission = (typeof PERMISSIONS)[number]
 
 const OWNER_PERMISSIONS: Permission[] = [...PERMISSIONS]
 
-const TL_PERMISSIONS: Permission[] = [
-  'org:viewAll',
-  'org:create',
-  'org:edit',
-  'org:assign',
-  'org:changeStatus',
-  'contact:create',
-  'contact:edit',
-  'contact:delete',
-  'activity:create',
-  'activity:viewAll',
-  'followup:create',
-  'followup:manageAll',
-  'template:manage',
-  'team:view',
-  'audit:view',
-  'eod:view',
-  'eod:generate',
-  'data:export',
-  'data:import',
-  'backup:manage',
-  'reassign:approve',
-  'reassign:request',
-]
+const TL_PERMISSIONS: Permission[] = [...PERMISSIONS]
 
 const INTERN_PERMISSIONS: Permission[] = [
   // Interns see only what is assigned to them — enforced by scope helpers below,
@@ -174,11 +151,11 @@ export function canWriteOrganisation(
 export const ROLE_LABELS: Record<Role, string> = {
   OWNER: 'Owner',
   TL: 'Team Lead',
-  INTERN: 'Intern',
+  INTERN: 'Employee',
 }
 
 export const ROLE_DESCRIPTIONS: Record<Role, string> = {
-  OWNER: 'Full access to every organisation, report and setting.',
-  TL: 'Assigns work, manages follow-ups and generates EOD reports.',
-  INTERN: 'Works assigned organisations and logs outreach activity.',
+  OWNER: 'Full access to every organisation, team member, report and setting.',
+  TL: 'Full executive access to manage team, user approvals, assign work, reports and settings.',
+  INTERN: 'Normal employee access: works assigned organisations and logs outreach activity.',
 }

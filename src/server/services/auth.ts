@@ -13,7 +13,7 @@ import { writeAuditSafe } from './audit'
 
 export type LoginOutcome =
   | { ok: true; session: SessionPayload }
-  | { ok: false; reason: 'INVALID' | 'INACTIVE' }
+  | { ok: false; reason: 'INVALID' | 'INACTIVE' | 'PENDING' | 'REJECTED' | 'DISCONTINUED' }
 
 export async function authenticate(email: string, password: string): Promise<LoginOutcome> {
   const normalized = normalizeEmail(email)
@@ -21,7 +21,7 @@ export async function authenticate(email: string, password: string): Promise<Log
 
   const user = await prisma.user.findFirst({
     where: { email: normalized, deletedAt: null },
-    select: { id: true, name: true, email: true, role: true, passwordHash: true, isActive: true },
+    select: { id: true, name: true, email: true, role: true, passwordHash: true, isActive: true, status: true },
   })
 
   // Compare against a dummy hash when the account is missing so that a wrong
@@ -30,6 +30,9 @@ export async function authenticate(email: string, password: string): Promise<Log
   const valid = await verifyPassword(password, hash)
 
   if (!user || !valid) return { ok: false, reason: 'INVALID' }
+  if (user.status === 'PENDING') return { ok: false, reason: 'PENDING' }
+  if (user.status === 'REJECTED') return { ok: false, reason: 'REJECTED' }
+  if (user.status === 'DISCONTINUED') return { ok: false, reason: 'DISCONTINUED' }
   if (!user.isActive) return { ok: false, reason: 'INACTIVE' }
 
   await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } })

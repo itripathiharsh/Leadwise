@@ -66,25 +66,24 @@ export function AiLeadIntelligenceCard({
   if (!data) return null
 
   return (
-    <Card className="border-primary/30 bg-primary-soft/15 shadow-xs overflow-hidden">
-      <CardHeader className="pb-3 border-b border-primary/20 bg-surface/50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
-              <Sparkles className="size-4" />
-            </div>
-            <div>
-              <CardTitle className="text-sm font-bold flex items-center gap-2">
-                AI Partnership Intelligence
-                <Badge tone="violet" size="sm">
-                  {data.score}/100 Score
-                </Badge>
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Explainable qualification score &amp; recommended next steps.
-              </CardDescription>
-            </div>
+    <div className="ai-intel-glow rounded-2xl border border-cyan-500/40 bg-gradient-to-br from-cyan-950/25 via-surface/90 to-surface/95 backdrop-blur-xl p-5 shadow-2xl space-y-4 rim-highlight">
+      <div className="flex items-center justify-between pb-3 border-b border-cyan-500/20">
+        <div className="flex items-center gap-2.5">
+          <div className="flex size-8 items-center justify-center rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-[0_0_12px_rgba(34,211,238,0.3)]">
+            <Sparkles className="size-4.5" />
           </div>
+          <div>
+            <div className="text-sm font-bold text-foreground flex items-center gap-2">
+              <span>AI Partnership Intelligence</span>
+              <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                {data.score}/100 Score
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Explainable qualification score &amp; recommended next steps.
+            </p>
+          </div>
+        </div>
 
           <div className="flex items-center gap-2">
             <Badge
@@ -110,9 +109,8 @@ export function AiLeadIntelligenceCard({
             </Button>
           </div>
         </div>
-      </CardHeader>
 
-      <CardContent className="space-y-4 pt-4">
+      <div className="space-y-4 pt-1">
         {/* Top Summary & Likelihood */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="md:col-span-2 rounded-xl bg-surface p-3.5 border border-border space-y-1">
@@ -194,7 +192,7 @@ export function AiLeadIntelligenceCard({
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

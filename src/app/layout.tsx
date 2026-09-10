@@ -10,8 +10,11 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'Leadwise — Partnership Outreach CRM',
-  description: 'Internal Partnership Outreach & Activity CRM for Leadwise',
+  title: {
+    default: 'Leadwise',
+    template: '%s | Leadwise',
+  },
+  description: 'Leadwise Partnership Outreach Command Center',
 }
 
 export default function RootLayout({

@@ -22,6 +22,12 @@ export default function AuditLogPage() {
     setLoading(true)
     try {
       const res = await fetch(`/api/audit?page=${page}`)
+      if (res.status === 403) {
+        toast.error('Access Denied: Audit log is reserved for leadership.')
+        window.location.href = '/settings'
+        return
+      }
+
       if (res.ok) {
         const d = await res.json()
         setLogs(d.items ?? [])
@@ -36,6 +42,15 @@ export default function AuditLogPage() {
   }, [page])
 
   React.useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.user && d.user.role !== 'OWNER' && d.user.role !== 'TL') {
+          toast.error('Access Denied: Audit log is reserved for leadership.')
+          window.location.href = '/settings'
+        }
+      })
+      .catch(() => {})
     fetchLogs()
   }, [fetchLogs])
 

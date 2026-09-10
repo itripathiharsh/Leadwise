@@ -42,14 +42,17 @@ import { CallPrepDialog } from '@/components/domain/call-prep-dialog'
 import { CommentsFeed } from '@/components/domain/comments-feed'
 import { formatDateTime, formatDate } from '@/lib/dates'
 import { toast } from 'sonner'
+import { OrgStatusBadge } from '@/components/domain/badges'
+import type { OrgStatus } from '@prisma/client'
 import { cn } from '@/lib/utils'
 
 const STAGES = [
-  { key: 'NEW', label: 'Target' },
+  { key: 'ASSIGNED', label: 'Assigned' },
   { key: 'CONTACTED', label: 'Contacted' },
+  { key: 'RESPONDED', label: 'Responded' },
+  { key: 'MEETING', label: 'Meeting Scheduled' },
   { key: 'INTERESTED', label: 'Warm / Interested' },
-  { key: 'MEETING', label: 'Meeting' },
-  { key: 'PARTNERSHIP', label: 'Partnered' },
+  { key: 'PARTNERSHIP', label: 'Partnership Signed' },
 ]
 
 export default function OrganisationDetailPage() {
@@ -108,16 +111,59 @@ export default function OrganisationDetailPage() {
     }
   }
 
-  const [currentUser, setCurrentUser] = React.useState<{ id: string; name: string } | null>(null)
+  const [currentUser, setCurrentUser] = React.useState<{ id: string; name: string; role?: string } | null>(null)
+  const [usersList, setUsersList] = React.useState<Array<{ id: string; name: string; role?: string; avatarColor?: string }>>([])
+  const [reassigning, setReassigning] = React.useState(false)
+
+  const isLeader = currentUser?.role === 'OWNER' || currentUser?.role === 'TL'
 
   React.useEffect(() => {
     fetch('/api/auth/me')
       .then((r) => r.json())
       .then((d) => {
-        if (d.user) setCurrentUser(d.user)
+        if (d.user) {
+          setCurrentUser(d.user)
+          if (d.user.role === 'OWNER' || d.user.role === 'TL') {
+            fetch('/api/users')
+              .then((res) => res.json())
+              .then((uData) => {
+                if (uData.users) setUsersList(uData.users)
+              })
+              .catch(() => {})
+          }
+        }
       })
       .catch(() => {})
   }, [])
+
+  const handleReassign = async (newAssigneeId: string) => {
+    setReassigning(true)
+    try {
+      const res = await fetch(`/api/organisations/${orgId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assignedToId: newAssigneeId === 'UNASSIGNED' ? null : newAssigneeId,
+          confirmReassign: true,
+        }),
+      })
+      const result = await res.json()
+      if (res.ok) {
+        toast.success(
+          newAssigneeId === 'UNASSIGNED'
+            ? 'Entity unassigned and returned to open pool.'
+            : `Entity assigned to ${result.assigneeName || 'team member'}.`,
+        )
+        fetchDetails()
+      } else {
+        toast.error(result.error || 'Failed to reassign entity.')
+      }
+    } catch {
+      toast.error('Network error during reassignment.')
+    } finally {
+      setReassigning(false)
+    }
+  }
 
   const openLog = (type: ActivityTypeTab, contactId?: string) => {
     if (data?.organisation?.assignedTo && currentUser && data.organisation.assignedTo.id !== currentUser.id) {
@@ -230,20 +276,7 @@ export default function OrganisationDetailPage() {
                 >
                   {org.priority} Priority
                 </Badge>
-                <Badge
-                  tone={
-                    org.status === 'PARTNERSHIP'
-                      ? 'emerald'
-                      : org.status === 'MEETING'
-                        ? 'violet'
-                        : org.status === 'INTERESTED'
-                          ? 'amber'
-                          : 'indigo'
-                  }
-                  size="sm"
-                >
-                  {org.status}
-                </Badge>
+                <OrgStatusBadge status={org.status as OrgStatus} size="sm" />
               </div>
 
               <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
@@ -284,11 +317,43 @@ export default function OrganisationDetailPage() {
 
           {/* Account Owner & Stage Controls */}
           <div className="flex flex-wrap items-center gap-3 lg:self-start">
-            <div className="rounded-xl border border-border/80 bg-surface-elevated/70 p-2 px-3 text-right">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground block">
-                Assigned Lead
-              </span>
-              {org.assignedTo ? (
+            <div className="rounded-xl border border-border/80 bg-surface-elevated/70 p-2 px-3">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground block">
+                  Assigned Lead
+                </span>
+                {isLeader && (
+                  <span className="text-[9px] font-mono text-primary font-bold uppercase bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20">
+                    Leader Control
+                  </span>
+                )}
+              </div>
+              {isLeader ? (
+                <div className="flex items-center gap-2">
+                  <select
+                    value={org.assignedTo?.id || 'UNASSIGNED'}
+                    onChange={(e) => handleReassign(e.target.value)}
+                    disabled={reassigning}
+                    className="rounded-lg border border-border bg-surface px-2.5 py-1 text-xs font-bold text-foreground shadow-xs focus:border-primary focus:outline-none cursor-pointer"
+                  >
+                    {currentUser && (
+                      <option value={currentUser.id}>
+                        Assign to Me ({currentUser.name})
+                      </option>
+                    )}
+                    <option value="UNASSIGNED">Unassigned (Open Pool)</option>
+                    <optgroup label="Assign to Team Member">
+                      {usersList
+                        .filter((u) => u.id !== currentUser?.id)
+                        .map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.name} {u.role ? `(${u.role})` : ''}
+                          </option>
+                        ))}
+                    </optgroup>
+                  </select>
+                </div>
+              ) : org.assignedTo ? (
                 <div className="flex items-center gap-2 mt-0.5">
                   <Avatar name={org.assignedTo.name} color={org.assignedTo.avatarColor} size="xs" />
                   <span className="text-xs font-bold text-foreground">{org.assignedTo.name}</span>
@@ -307,14 +372,13 @@ export default function OrganisationDetailPage() {
                 onChange={(e) => handleStatusChange(e.target.value)}
                 className="rounded-lg border border-border bg-surface px-2.5 py-1 text-xs font-bold text-foreground shadow-xs focus:border-primary focus:outline-none"
               >
-                <option value="NEW">New Target</option>
                 <option value="ASSIGNED">Assigned</option>
                 <option value="CONTACTED">Contacted</option>
                 <option value="RESPONDED">Responded</option>
-                <option value="INTERESTED">Interested</option>
-                <option value="MEETING">Meeting</option>
-                <option value="PARTNERSHIP">Partnership</option>
-                <option value="REJECTED">Disqualified</option>
+                <option value="MEETING">Meeting Scheduled</option>
+                <option value="INTERESTED">Warm / Interested</option>
+                <option value="PARTNERSHIP">Partnership Signed</option>
+                <option value="REJECTED">Disqualified / Cold</option>
               </select>
             </div>
           </div>
@@ -331,7 +395,7 @@ export default function OrganisationDetailPage() {
             </span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
             {STAGES.map((s, idx) => {
               const isPassed =
                 STAGES.findIndex((x) => x.key === org.status) >= idx

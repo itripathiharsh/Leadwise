@@ -138,21 +138,29 @@ enum NotificationType {
   SYSTEM
 }
 
+enum UserStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  DISCONTINUED
+}
+
 // ── Users & team ─────────────────────────────────────────────────────────────
 
 model User {
-  id           String    @id @default(cuid())
+  id           String      @id @default(cuid())
   name         String
-  email        String    @unique
+  email        String      @unique
   passwordHash String
-  role         Role      @default(INTERN)
+  role         Role        @default(INTERN)
+  status       UserStatus  @default(APPROVED)
   phone        String?
   /// Tailwind-safe accent key for the avatar chip (violet, teal, amber, ...)
-  avatarColor  String    @default("violet")
-  isActive     Boolean   @default(true)
+  avatarColor  String      @default("violet")
+  isActive     Boolean     @default(true)
   lastLoginAt  DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
   deletedAt    DateTime?
 
   organisationsAssigned Organisation[] @relation("OrganisationAssignee")
@@ -183,6 +191,7 @@ model User {
   attachments            Attachment[]
 
   @@index([role])
+  @@index([status])
   @@index([isActive])
   @@index([deletedAt])
 }

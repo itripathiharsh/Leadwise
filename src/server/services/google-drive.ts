@@ -79,6 +79,101 @@ async function getServiceAccountAccessToken(
   return data.access_token
 }
 
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+]
+
+/**
+ * Finds an existing folder by name and parentId, or creates a new one.
+ */
+async function findOrCreateFolder(
+  accessToken: string,
+  folderName: string,
+  parentId?: string,
+): Promise<string | undefined> {
+  try {
+    let q = `mimeType = 'application/vnd.google-apps.folder' and name = '${folderName}' and trashed = false`
+    if (parentId) {
+      q += ` and '${parentId}' in parents`
+    }
+    const searchRes = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)&spaces=drive`,
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+    )
+    if (searchRes.ok) {
+      const searchData = (await searchRes.json()) as { files?: { id: string; name: string }[] }
+      if (searchData.files && searchData.files.length > 0) {
+        return searchData.files[0].id
+      }
+    }
+
+    // Create if not found
+    const createBody: { name: string; mimeType: string; parents?: string[] } = {
+      name: folderName,
+      mimeType: 'application/vnd.google-apps.folder',
+    }
+    if (parentId) createBody.parents = [parentId]
+
+    const createRes = await fetch('https://www.googleapis.com/drive/v3/files?fields=id', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(createBody),
+    })
+    if (createRes.ok) {
+      const created = (await createRes.json()) as { id: string }
+      return created.id
+    }
+  } catch {
+    // If folder creation fails, fallback gracefully to parentId
+  }
+  return parentId
+}
+
+/**
+ * Resolves or creates the hierarchical disaster recovery folder:
+ * Leadwise Backups/ -> YYYY/ -> MonthName/
+ */
+async function resolveBackupDestinationFolder(
+  accessToken: string,
+  rootOverride?: string,
+): Promise<string | undefined> {
+  try {
+    const now = new Date()
+    const yearStr = String(now.getFullYear())
+    const monthStr = MONTH_NAMES[now.getMonth()]
+
+    // 1. Root folder ("Leadwise Backups" or rootOverride)
+    let baseFolderId = rootOverride
+    if (!baseFolderId) {
+      baseFolderId = await findOrCreateFolder(accessToken, 'Leadwise Backups')
+    }
+
+    // 2. Year folder (e.g. "2026")
+    const yearFolderId = await findOrCreateFolder(accessToken, yearStr, baseFolderId)
+
+    // 3. Month folder (e.g. "September")
+    const monthFolderId = await findOrCreateFolder(accessToken, monthStr, yearFolderId)
+
+    return monthFolderId || yearFolderId || baseFolderId
+  } catch {
+    return rootOverride
+  }
+}
+
 /**
  * Uploads an Excel backup buffer to Google Drive.
  * If credentials are not configured or upload fails, returns structured failure without throwing.
@@ -102,6 +197,9 @@ export async function uploadBackupToGoogleDrive(
 
     const accessToken = await getServiceAccountAccessToken(config.clientEmail, config.privateKey)
 
+    // Resolve hierarchical disaster recovery structure: Leadwise Backups/ -> YYYY/ -> MonthName/
+    const destinationFolderId = await resolveBackupDestinationFolder(accessToken, folderId)
+
     // Build multipart body for Drive v3 upload
     const boundary = `-------314159265358979323846`
     const delimiter = `\r\n--${boundary}\r\n`
@@ -112,8 +210,8 @@ export async function uploadBackupToGoogleDrive(
       mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     }
 
-    if (folderId && folderId.trim().length > 0) {
-      metadata.parents = [folderId.trim()]
+    if (destinationFolderId && destinationFolderId.trim().length > 0) {
+      metadata.parents = [destinationFolderId.trim()]
     }
 
     const metadataHeader =

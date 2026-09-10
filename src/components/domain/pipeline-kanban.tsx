@@ -38,17 +38,27 @@ import { cn } from '@/lib/utils'
 import type { PipelineBoard, PipelineCardItem } from '@/server/services/pipeline'
 import type { OrgStatus } from '@prisma/client'
 
+export const PIPELINE_STAGES: OrgStatus[] = [
+  'ASSIGNED',
+  'CONTACTED',
+  'RESPONDED',
+  'MEETING',
+  'INTERESTED',
+  'PARTNERSHIP',
+  'REJECTED',
+]
+
 const STAGE_CONFIG: Record<
   OrgStatus,
-  { label: string; tone: 'slate' | 'blue' | 'indigo' | 'teal' | 'amber' | 'violet' | 'emerald' | 'rose'; barColor: string; description: string }
+  { label: string; tone: 'slate' | 'blue' | 'indigo' | 'cyan' | 'teal' | 'amber' | 'violet' | 'emerald' | 'rose'; barColor: string; description: string }
 > = {
-  NEW: { label: 'New Targets', tone: 'slate', barColor: 'bg-sky-500', description: 'Fresh targets to qualify' },
+  NEW: { label: 'Assigned', tone: 'blue', barColor: 'bg-blue-500', description: 'Allocated to rep' },
   ASSIGNED: { label: 'Assigned', tone: 'blue', barColor: 'bg-blue-500', description: 'Allocated to rep' },
   CONTACTED: { label: 'Contacted', tone: 'indigo', barColor: 'bg-indigo-500', description: 'Outreach initiated' },
-  RESPONDED: { label: 'Responded', tone: 'teal', barColor: 'bg-teal-500', description: 'Contact replied / engaged' },
-  INTERESTED: { label: 'Warm / Interested', tone: 'amber', barColor: 'bg-amber-500', description: 'Keen on partnership' },
+  RESPONDED: { label: 'Responded', tone: 'cyan', barColor: 'bg-cyan-500', description: 'Contact replied / engaged' },
   MEETING: { label: 'Meeting Scheduled', tone: 'violet', barColor: 'bg-violet-500', description: 'Call / Demo scheduled' },
-  PARTNERSHIP: { label: 'Partnership Signed', tone: 'emerald', barColor: 'bg-emerald-500', description: 'Active partnership agreed' },
+  INTERESTED: { label: 'Warm / Interested', tone: 'amber', barColor: 'bg-amber-500', description: 'Keen on partnership' },
+  PARTNERSHIP: { label: 'Partnership Signed', tone: 'emerald', barColor: 'bg-emerald-500', description: 'Active partnership signed' },
   REJECTED: { label: 'Disqualified / Cold', tone: 'rose', barColor: 'bg-rose-500', description: 'Declined or unresponsive' },
 }
 
@@ -178,7 +188,7 @@ export function PipelineKanban({
     setRejectionNote('')
   }
 
-  const stages = Object.keys(STAGE_CONFIG) as OrgStatus[]
+  const stages = PIPELINE_STAGES
 
   return (
     <div className="space-y-4">
@@ -186,8 +196,12 @@ export function PipelineKanban({
       <div className="flex gap-4 overflow-x-auto pb-6 pt-1 snap-x min-h-[78vh]">
         {stages.map((stage) => {
           const config = STAGE_CONFIG[stage]
-          const items = board.columns[stage] || []
-          const count = board.counts[stage] || 0
+          const items = stage === 'ASSIGNED'
+            ? [...(board.columns['ASSIGNED'] || []), ...(board.columns['NEW'] || [])]
+            : (board.columns[stage] || [])
+          const count = stage === 'ASSIGNED'
+            ? (board.counts['ASSIGNED'] || 0) + (board.counts['NEW'] || 0)
+            : (board.counts[stage] || 0)
 
           return (
             <div

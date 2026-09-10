@@ -73,6 +73,12 @@ export default function BackupsSettingsPage() {
         fetch('/api/settings/backups'),
       ])
 
+      if (backupsRes.status === 403 || settingsRes.status === 403) {
+        toast.error('Access Denied: Backup management is reserved for leadership.')
+        window.location.href = '/settings'
+        return
+      }
+
       if (backupsRes.ok) {
         const bData = await backupsRes.json()
         setHistory(bData.history ?? [])
@@ -96,6 +102,15 @@ export default function BackupsSettingsPage() {
   }, [])
 
   React.useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.user && d.user.role !== 'OWNER' && d.user.role !== 'TL') {
+          toast.error('Access Denied: Backup management is reserved for leadership.')
+          window.location.href = '/settings'
+        }
+      })
+      .catch(() => {})
     loadData()
   }, [loadData])
 

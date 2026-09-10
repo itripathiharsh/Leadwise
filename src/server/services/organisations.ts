@@ -310,33 +310,35 @@ export async function createOrganisation(
   }
 
   // Sticky lead assignment: whosoever gets/creates the lead handles it throughout.
-  // Owner and TL may assign to a specific team member; for Interns (or if left blank),
-  // it is automatically assigned to the creator so they own and handle it throughout.
+  // Owner and TL may assign to themselves, others, or leave unassigned (null).
+  // Interns are always assigned to themselves.
   const assignedToId = can(user, 'org:assign')
-    ? (input.assignedToId ?? user.id)
+    ? (input.assignedToId !== undefined ? input.assignedToId : user.id)
     : user.id
   const website = normalizeWebsite(input.website)
 
   // Map initial status
-  let status: OrgStatus = 'NEW'
+  let status: OrgStatus = 'ASSIGNED'
   let nextAction: string | null = null
   if (input.status === 'CONTACTED') {
     status = 'CONTACTED'
   } else if (input.status === 'FOLLOW_UP') {
     status = 'CONTACTED'
     nextAction = 'Follow-up scheduled'
+  } else if (input.status === 'RESPONDED') {
+    status = 'RESPONDED'
   } else if (input.status === 'MEETING') {
     status = 'MEETING'
+  } else if (input.status === 'INTERESTED') {
+    status = 'INTERESTED'
   } else if (input.status === 'PARTNERSHIP') {
     status = 'PARTNERSHIP'
   } else if (input.status === 'REJECTED') {
     status = 'REJECTED'
   } else if (input.status === 'ASSIGNED') {
     status = 'ASSIGNED'
-  } else if (input.status === 'NEW') {
-    status = assignedToId ? 'ASSIGNED' : 'NEW'
   } else {
-    status = assignedToId ? 'ASSIGNED' : 'NEW'
+    status = 'ASSIGNED'
   }
 
   const domain = input.domain?.trim() || (website ? normalizeDomain(website) : null)

@@ -11,6 +11,10 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  if (user.role === 'INTERN') {
+    return NextResponse.json({ error: 'Forbidden: Backup settings restricted to leaders' }, { status: 403 })
+  }
+
   assertCan(user, 'settings:manage')
 
   const [

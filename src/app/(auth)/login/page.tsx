@@ -35,10 +35,12 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = React.useState(true)
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [errorStatus, setErrorStatus] = React.useState<string | null>(null)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    setErrorStatus(null)
     setLoading(true)
 
     try {
@@ -52,6 +54,7 @@ export default function LoginPage() {
 
       if (!res.ok || data.error) {
         setError(data.error || 'Sign in failed. Please verify your email and password.')
+        if (data.status) setErrorStatus(data.status)
         setLoading(false)
         return
       }
@@ -129,12 +132,12 @@ export default function LoginPage() {
               <img
                 src="/logo-white-text.png"
                 alt="Leadwise"
-                className="h-12 xl:h-14 w-auto object-contain drop-shadow-[0_0_25px_rgba(99,102,241,0.35)] hidden dark:block"
+                className="h-12 xl:h-14 w-auto object-contain drop-shadow-[0_0_25px_rgba(99,102,241,0.4)] hidden dark:block"
               />
               <img
-                src="/logo.png"
+                src="/logo-dark-text.png"
                 alt="Leadwise"
-                className="h-12 xl:h-14 w-auto object-contain drop-shadow-[0_0_15px_rgba(0,0,0,0.1)] block dark:hidden"
+                className="h-12 xl:h-14 w-auto object-contain block dark:hidden"
               />
             </div>
             <div className="h-8 w-px bg-border/60" />
@@ -269,12 +272,12 @@ export default function LoginPage() {
             <img
               src="/logo-white-text.png"
               alt="Leadwise"
-              className="h-14 w-auto object-contain drop-shadow-[0_0_25px_rgba(99,102,241,0.35)] mb-1 hidden dark:block"
+              className="h-14 w-auto object-contain drop-shadow-[0_0_25px_rgba(99,102,241,0.4)] mb-1 hidden dark:block"
             />
             <img
-              src="/logo.png"
+              src="/logo-dark-text.png"
               alt="Leadwise"
-              className="h-14 w-auto object-contain drop-shadow-[0_0_15px_rgba(0,0,0,0.1)] mb-1 block dark:hidden"
+              className="h-14 w-auto object-contain mb-1 block dark:hidden"
             />
             <p className="text-xs text-muted-foreground max-w-xs font-medium">
               Partnership Intelligence Command Center
@@ -282,19 +285,19 @@ export default function LoginPage() {
           </div>
 
           {/* Form Container */}
-          <div className="glass-card rounded-2xl border border-border/90 bg-surface/85 backdrop-blur-2xl p-7 sm:p-9 shadow-2xl space-y-6 rim-highlight">
+          <div className="bento-box rounded-2xl border border-border/90 bg-surface/85 backdrop-blur-2xl p-7 sm:p-9 shadow-2xl space-y-6 rim-highlight">
             <div className="space-y-4">
               <div className="flex items-center justify-between pb-1 border-b border-border/50">
                 <div>
                   <img
                     src="/logo-white-text.png"
                     alt="Leadwise"
-                    className="h-9 sm:h-10 w-auto object-contain drop-shadow-[0_0_15px_rgba(99,102,241,0.25)] hidden dark:block"
+                    className="h-9 sm:h-10 w-auto object-contain drop-shadow-[0_0_18px_rgba(99,102,241,0.35)] hidden dark:block"
                   />
                   <img
-                    src="/logo.png"
+                    src="/logo-dark-text.png"
                     alt="Leadwise"
-                    className="h-9 sm:h-10 w-auto object-contain drop-shadow-[0_0_10px_rgba(0,0,0,0.1)] block dark:hidden"
+                    className="h-9 sm:h-10 w-auto object-contain block dark:hidden"
                   />
                 </div>
                 <span className="text-[10px] font-mono uppercase px-2.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 font-semibold">
@@ -313,9 +316,32 @@ export default function LoginPage() {
 
             <form onSubmit={handleLogin} className="space-y-4">
               {error && (
-                <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-3.5 text-xs text-destructive font-medium animate-in-fast flex items-start gap-2.5">
-                  <div className="size-2 rounded-full bg-destructive mt-1 shrink-0 animate-ping" />
-                  <span className="leading-tight">{error}</span>
+                <div
+                  className={cn(
+                    'rounded-xl border p-3.5 text-xs font-medium animate-in-fast flex items-start gap-2.5',
+                    errorStatus === 'PENDING'
+                      ? 'border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-300'
+                      : 'border-destructive/40 bg-destructive/10 text-destructive',
+                  )}
+                >
+                  {errorStatus === 'PENDING' ? (
+                    <div className="size-2 rounded-full bg-amber-500 mt-1 shrink-0 animate-pulse" />
+                  ) : (
+                    <div className="size-2 rounded-full bg-destructive mt-1 shrink-0 animate-ping" />
+                  )}
+                  <div className="flex-1">
+                    <span className="leading-tight">{error}</span>
+                    {errorStatus === 'PENDING' && (
+                      <div className="mt-2 pt-2 border-t border-amber-500/20">
+                        <Link
+                          href="/awaiting-approval"
+                          className="inline-flex items-center gap-1 font-bold text-amber-700 dark:text-amber-300 hover:underline"
+                        >
+                          View Awaiting Approval Status →
+                        </Link>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -326,7 +352,7 @@ export default function LoginPage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="harsh@sentiomind.com"
+                  placeholder="admin@sentio.in"
                   autoComplete="email"
                   required
                   value={email}
@@ -398,6 +424,18 @@ export default function LoginPage() {
               >
                 Launch Command Center
               </Button>
+
+              <div className="text-center pt-2">
+                <p className="text-xs text-muted-foreground">
+                  Don&apos;t have an account yet?{' '}
+                  <Link
+                    href="/signup"
+                    className="font-bold text-primary hover:underline transition-colors"
+                  >
+                    Request access / Sign up
+                  </Link>
+                </p>
+              </div>
             </form>
           </div>
 

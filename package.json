@@ -1,8 +1,8 @@
 {
-  "name": "leadwise-crm",
+  "name": "leadwise",
   "version": "1.0.0",
   "private": true,
-  "description": "Leadwise Partnership Outreach CRM",
+  "description": "Leadwise",
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",

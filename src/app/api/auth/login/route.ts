@@ -26,9 +26,36 @@ export async function POST(req: Request) {
     const outcome = await authenticate(email, password)
 
     if (!outcome.ok) {
+      if (outcome.reason === 'PENDING') {
+        return NextResponse.json(
+          {
+            error: 'Your account registration is pending review by Team Leadership. Access will be granted once approved.',
+            status: 'PENDING',
+          },
+          { status: 403 },
+        )
+      }
+      if (outcome.reason === 'REJECTED') {
+        return NextResponse.json(
+          {
+            error: 'Your account registration was not approved. Please contact Team Leadership.',
+            status: 'REJECTED',
+          },
+          { status: 403 },
+        )
+      }
+      if (outcome.reason === 'DISCONTINUED') {
+        return NextResponse.json(
+          {
+            error: 'This account has been discontinued. Please contact your Team Lead or Owner for assistance.',
+            status: 'DISCONTINUED',
+          },
+          { status: 403 },
+        )
+      }
       if (outcome.reason === 'INACTIVE') {
         return NextResponse.json(
-          { error: 'This account has been deactivated. Please contact the Owner.' },
+          { error: 'This account has been deactivated. Please contact Team Leadership.' },
           { status: 403 },
         )
       }

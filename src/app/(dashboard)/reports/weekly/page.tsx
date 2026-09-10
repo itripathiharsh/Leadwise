@@ -27,6 +27,12 @@ export default function WeeklyReportPage() {
     setLoading(true)
     try {
       const res = await fetch('/api/ai/reports')
+      if (res.status === 403) {
+        toast.error('Access Denied: Reports are reserved for leadership.')
+        window.location.href = '/dashboard?denied=1'
+        return
+      }
+
       if (res.ok) {
         const json = await res.json()
         setData(json)
@@ -39,6 +45,15 @@ export default function WeeklyReportPage() {
   }, [])
 
   React.useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.user && d.user.role !== 'OWNER' && d.user.role !== 'TL') {
+          toast.error('Access Denied: Reports are reserved for leadership.')
+          window.location.href = '/dashboard?denied=1'
+        }
+      })
+      .catch(() => {})
     fetchReport()
   }, [fetchReport])
 

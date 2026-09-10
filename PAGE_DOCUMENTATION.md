@@ -1,8 +1,8 @@
-# Atlas CRM (Leadwise) - Complete Page Documentation
+# Leadwise - Complete Page Documentation
 
 ## Project Overview
 
-**Atlas CRM** (branded as **Leadwise**) is a Next.js App Router Partnership Outreach & Activity CRM.
+**Leadwise** is a Next.js App Router Partnership Outreach Command Center.
 
 **Tech Stack:**
 - Next.js (App Router)

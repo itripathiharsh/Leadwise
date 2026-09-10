@@ -369,7 +369,7 @@ export function CreateOrganisationModal({
   const [orgPriority, setOrgPriority] = React.useState<'HIGH' | 'MEDIUM' | 'LOW'>('MEDIUM')
   const [contactPriority, setContactPriority] = React.useState<'HIGH' | 'MEDIUM' | 'LOW'>('MEDIUM')
   const [decisionMaker, setDecisionMaker] = React.useState<'YES' | 'NO' | 'UNKNOWN'>('UNKNOWN')
-  const [initialStatus, setInitialStatus] = React.useState('NEW')
+  const [initialStatus, setInitialStatus] = React.useState('ASSIGNED')
   const [assignedToId, setAssignedToId] = React.useState('')
 
   // ── Section 4: Additional ──
@@ -419,16 +419,32 @@ export function CreateOrganisationModal({
     return () => clearTimeout(timer)
   }, [name, website, open, confirmDuplicate])
 
+  const [availableUsers, setAvailableUsers] = React.useState<Array<{ id: string; name: string; role?: string; avatarColor?: string }>>(usersList)
+
   React.useEffect(() => {
     if (open) {
       fetch('/api/auth/me')
         .then((r) => r.json())
         .then((data) => {
-          if (data.user) setCurrentUser(data.user)
+          if (data.user) {
+            setCurrentUser(data.user)
+            setAssignedToId((prev) => prev || data.user.id)
+          }
         })
         .catch(() => {})
+
+      if (usersList.length > 0) {
+        setAvailableUsers(usersList)
+      } else {
+        fetch('/api/users')
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.users) setAvailableUsers(data.users)
+          })
+          .catch(() => {})
+      }
     }
-  }, [open])
+  }, [open, usersList])
 
   React.useEffect(() => {
     if (!open) {
@@ -600,6 +616,15 @@ export function CreateOrganisationModal({
           ? parseInt(numberOfProfessionals.trim(), 10)
           : undefined
 
+      let finalAssignedToId: string | undefined | null = undefined
+      if (assignedToId === 'UNASSIGNED') {
+        finalAssignedToId = null
+      } else if (assignedToId) {
+        finalAssignedToId = assignedToId
+      } else if (currentUser) {
+        finalAssignedToId = currentUser.id
+      }
+
       const payload: Record<string, any> = {
         name: name.trim(),
         category: finalCategory || undefined,
@@ -610,7 +635,7 @@ export function CreateOrganisationModal({
         organisationType: finalOrgType,
         priority: orgPriority,
         status: initialStatus,
-        assignedToId: assignedToId || undefined,
+        assignedToId: finalAssignedToId,
         notes: notes.trim() || undefined,
         confirmDuplicate,
         tags: tags.length > 0 ? tags : undefined,
@@ -694,7 +719,7 @@ export function CreateOrganisationModal({
                       Organisation Already Exists
                     </div>
                     <p className="text-xs leading-relaxed text-muted-foreground mt-0.5">
-                      We found an existing organisation matching this name in Leadwise CRM. You can add a new contact to the existing organisation instead of creating a duplicate:
+                      We found an existing organisation matching this name in Leadwise. You can add a new contact to the existing organisation instead of creating a duplicate:
                     </p>
                   </div>
                 </div>
@@ -1177,9 +1202,14 @@ export function CreateOrganisationModal({
 
                 {/* Lead Handler / Assigned To */}
                 <div>
-                  <label className="block text-xs font-semibold text-foreground mb-1.5">
-                    Lead Handler
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-foreground">
+                      Assign Entity / Lead To
+                    </label>
+                    <span className="text-[10px] text-muted-foreground font-mono">
+                      {currentUser?.role === 'INTERN' ? 'Auto-assigned' : 'Self or Others'}
+                    </span>
+                  </div>
                   {currentUser?.role === 'INTERN' ? (
                     <div className="flex h-10 items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-700 dark:text-emerald-300">
                       <Check className="size-4 shrink-0" />
@@ -1189,16 +1219,30 @@ export function CreateOrganisationModal({
                     <select
                       value={assignedToId}
                       onChange={(e) => setAssignedToId(e.target.value)}
-                      className="h-10 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-xs transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                      className="h-10 w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold text-foreground shadow-xs transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                     >
-                      <option value="">Default to Creator / Self</option>
-                      {usersList.map((u) => (
-                        <option key={u.id} value={u.id}>
-                          {u.name}
+                      {currentUser && (
+                        <option value={currentUser.id}>
+                          Assign to Me ({currentUser.name} — {currentUser.role})
                         </option>
-                      ))}
+                      )}
+                      <option value="UNASSIGNED">Unassigned (Leave in Open Pool)</option>
+                      <optgroup label="All Team Members">
+                        {availableUsers
+                          .filter((u) => u.id !== currentUser?.id)
+                          .map((u) => (
+                            <option key={u.id} value={u.id}>
+                              {u.name} {u.role ? `(${u.role})` : ''}
+                            </option>
+                          ))}
+                      </optgroup>
                     </select>
                   )}
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {currentUser?.role === 'INTERN'
+                      ? 'Interns automatically own and work the leads they create.'
+                      : 'As Team Lead or Owner, you can assign to yourself, delegate to any intern, or keep unassigned.'}
+                  </p>
                 </div>
               </div>
 
@@ -1273,12 +1317,13 @@ export function CreateOrganisationModal({
                     onChange={(e) => setInitialStatus(e.target.value)}
                     className="h-10 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-xs transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                   >
-                    <option value="NEW">New</option>
+                    <option value="ASSIGNED">Assigned</option>
                     <option value="CONTACTED">Contacted</option>
-                    <option value="FOLLOW_UP">Follow-up</option>
-                    <option value="MEETING">Meeting</option>
-                    <option value="PARTNERSHIP">Partnership</option>
-                    <option value="REJECTED">Rejected</option>
+                    <option value="RESPONDED">Responded</option>
+                    <option value="MEETING">Meeting Scheduled</option>
+                    <option value="INTERESTED">Warm / Interested</option>
+                    <option value="PARTNERSHIP">Partnership Signed</option>
+                    <option value="REJECTED">Disqualified / Cold</option>
                   </select>
                 </div>
               </div>

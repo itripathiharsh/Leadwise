@@ -97,15 +97,33 @@ export default function OrganisationsPage() {
     fetchOrganisations()
   }, [fetchOrganisations])
 
-  // Fetch users for assignment filter
+  const [currentUser, setCurrentUser] = React.useState<any>(null)
+  const [currentUserRole, setCurrentUserRole] = React.useState<string | null>(null)
+  const isLeader = currentUserRole === 'OWNER' || currentUserRole === 'TL'
+
+  // Fetch current user
   React.useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.user) {
+          setCurrentUser(d.user)
+          setCurrentUserRole(d.user.role)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  // Fetch users for assignment filter (only for leaders)
+  React.useEffect(() => {
+    if (!isLeader) return
     fetch('/api/users')
       .then((r) => r.json())
       .then((d) => {
         if (d?.users) setUsersList(d.users)
       })
       .catch(() => {})
-  }, [])
+  }, [isLeader])
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -147,6 +165,32 @@ export default function OrganisationsPage() {
       toast.error('Network error during assignment.')
     } finally {
       setBulkAssigning(false)
+    }
+  }
+
+  const handleQuickReassign = async (orgId: string, assignedToId: string) => {
+    try {
+      const res = await fetch(`/api/organisations/${orgId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assignedToId: assignedToId === 'UNASSIGNED' ? null : assignedToId,
+          confirmReassign: true,
+        }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success(
+          assignedToId === 'UNASSIGNED'
+            ? 'Organisation unassigned.'
+            : `Assigned to ${data.assigneeName || 'team member'}.`,
+        )
+        fetchOrganisations()
+      } else {
+        toast.error(data.error || 'Failed to reassign.')
+      }
+    } catch {
+      toast.error('Network error reassigning.')
     }
   }
 
@@ -226,14 +270,13 @@ export default function OrganisationsPage() {
               className="rounded-xl border border-border bg-surface-elevated/70 px-3 py-2 text-xs text-foreground font-medium shadow-xs focus:border-primary focus:outline-none transition-all"
             >
               <option value="">All Partnership Stages</option>
-              <option value="NEW">New Target</option>
               <option value="ASSIGNED">Assigned</option>
               <option value="CONTACTED">Contacted</option>
               <option value="RESPONDED">Responded</option>
-              <option value="INTERESTED">Interested / Warm</option>
               <option value="MEETING">Meeting Scheduled</option>
+              <option value="INTERESTED">Warm / Interested</option>
               <option value="PARTNERSHIP">Partnership Signed</option>
-              <option value="REJECTED">Disqualified</option>
+              <option value="REJECTED">Disqualified / Cold</option>
             </select>
           </div>
 
@@ -254,26 +297,28 @@ export default function OrganisationsPage() {
             </select>
           </div>
 
-          {/* Owner Filter */}
-          <div className="flex items-center gap-1.5">
-            <select
-              value={assigneeFilter}
-              onChange={(e) => {
-                setAssigneeFilter(e.target.value)
-                setPage(1)
-              }}
-              className="rounded-xl border border-border bg-surface-elevated/70 px-3 py-2 text-xs text-foreground font-medium shadow-xs focus:border-primary focus:outline-none transition-all"
-            >
-              <option value="">All Owners</option>
-              {usersList.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Owner Filter (Leaders Only) */}
+          {isLeader && (
+            <div className="flex items-center gap-1.5">
+              <select
+                value={assigneeFilter}
+                onChange={(e) => {
+                  setAssigneeFilter(e.target.value)
+                  setPage(1)
+                }}
+                className="rounded-xl border border-border bg-surface-elevated/70 px-3 py-2 text-xs text-foreground font-medium shadow-xs focus:border-primary focus:outline-none transition-all"
+              >
+                <option value="">All Owners</option>
+                {usersList.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
-          {(search || statusFilter || priorityFilter || assigneeFilter) && (
+          {(search || statusFilter || priorityFilter || (isLeader && assigneeFilter)) && (
             <Button
               variant="ghost"
               size="xs"
@@ -292,8 +337,8 @@ export default function OrganisationsPage() {
         </div>
       </div>
 
-      {/* High Density Bulk Selection Floating Bar */}
-      {selectedIds.length > 0 && (
+      {/* High Density Bulk Selection Floating Bar (Leaders Only) */}
+      {isLeader && selectedIds.length > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/40 bg-primary/10 backdrop-blur-xl p-3 shadow-lg animate-in fade-in slide-in-from-top-1">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-white bg-primary px-2.5 py-0.5 rounded-full shadow-xs">
@@ -366,16 +411,18 @@ export default function OrganisationsPage() {
             <table className="w-full text-left text-sm border-collapse">
               <thead>
                 <tr className="border-b border-border/80 text-[11px] font-mono uppercase tracking-wider text-muted-foreground bg-surface-elevated/40">
-                  <th className="py-3.5 px-4 w-10">
-                    <input
-                      type="checkbox"
-                      checked={
-                        selectedIds.length > 0 && selectedIds.length === organisations.length
-                      }
-                      onChange={(e) => handleSelectAll(e.target.checked)}
-                      className="size-3.5 rounded border-border text-primary bg-surface"
-                    />
-                  </th>
+                  {isLeader && (
+                    <th className="py-3.5 px-4 w-10">
+                      <input
+                        type="checkbox"
+                        checked={
+                          selectedIds.length > 0 && selectedIds.length === organisations.length
+                        }
+                        onChange={(e) => handleSelectAll(e.target.checked)}
+                        className="size-3.5 rounded border-border text-primary bg-surface"
+                      />
+                    </th>
+                  )}
                   <th className="py-3.5 px-4">Organization & Contacts</th>
                   <th className="py-3.5 px-4">Domain & Category</th>
                   <th className="py-3.5 px-4">Stage</th>
@@ -397,14 +444,16 @@ export default function OrganisationsPage() {
                         isSelected && 'bg-primary/5',
                       )}
                     >
-                      <td className="py-3.5 px-4">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => handleToggleSelect(org.id)}
-                          className="size-3.5 rounded border-border text-primary bg-surface"
-                        />
-                      </td>
+                      {isLeader && (
+                        <td className="py-3.5 px-4">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleToggleSelect(org.id)}
+                            className="size-3.5 rounded border-border text-primary bg-surface"
+                          />
+                        </td>
+                      )}
 
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
@@ -480,7 +529,39 @@ export default function OrganisationsPage() {
                       </td>
 
                       <td className="py-3.5 px-4">
-                        {org.assignedTo ? (
+                        {isLeader ? (
+                          <div className="flex items-center gap-1.5">
+                            {org.assignedTo && (
+                              <Avatar
+                                name={org.assignedTo.name}
+                                color={org.assignedTo.avatarColor}
+                                size="xs"
+                              />
+                            )}
+                            <select
+                              value={org.assignedTo?.id || 'UNASSIGNED'}
+                              onChange={(e) => handleQuickReassign(org.id, e.target.value)}
+                              className="rounded-lg border border-border/80 bg-surface px-2 py-1 text-[11px] font-semibold text-foreground focus:border-primary focus:outline-none cursor-pointer max-w-[135px] truncate"
+                              title="Reassign to self, unassigned, or others (Leader Control)"
+                            >
+                              {currentUser && (
+                                <option value={currentUser.id}>
+                                  Me ({currentUser.name})
+                                </option>
+                              )}
+                              <option value="UNASSIGNED">Unassigned</option>
+                              <optgroup label="Team Members">
+                                {usersList
+                                  .filter((u) => u.id !== currentUser?.id)
+                                  .map((u) => (
+                                    <option key={u.id} value={u.id}>
+                                      {u.name}
+                                    </option>
+                                  ))}
+                              </optgroup>
+                            </select>
+                          </div>
+                        ) : org.assignedTo ? (
                           <div className="flex items-center gap-2">
                             <Avatar
                               name={org.assignedTo.name}

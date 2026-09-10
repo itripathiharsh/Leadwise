@@ -10,6 +10,10 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  if (user.role === 'INTERN') {
+    return NextResponse.json({ error: 'Forbidden: Backups restricted to leaders' }, { status: 403 })
+  }
+
   assertCan(user, 'backup:manage')
 
   const [history, health] = await Promise.all([

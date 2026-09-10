@@ -35,7 +35,7 @@ interface Column {
 
 function createWorkbook(): ExcelJS.Workbook {
   const workbook = new ExcelJS.Workbook()
-  workbook.creator = 'Leadwise CRM'
+  workbook.creator = 'Leadwise'
   workbook.created = new Date()
   return workbook
 }

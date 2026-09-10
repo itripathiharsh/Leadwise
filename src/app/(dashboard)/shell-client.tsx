@@ -117,18 +117,20 @@ export function DashboardShell({
         ...(isOwnerOrTL ? [{ label: 'Team', href: '/team', icon: BarChart3 }] : []),
       ],
     },
-    {
-      title: 'Insights',
-      items: [
-        { label: 'Analytics', href: '/analytics', icon: TrendingUp },
-        ...(isOwnerOrTL
-          ? [
+    ...(isOwnerOrTL
+      ? [
+          {
+            title: 'Insights',
+            items: [
+              { label: 'Analytics', href: '/analytics', icon: TrendingUp },
               { label: 'AI & Funnel', href: '/analytics/advanced', icon: Sparkles },
               { label: 'EOD Reports', href: '/eod', icon: FileSpreadsheet },
-            ]
-          : []),
-      ],
-    },
+              { label: 'Weekly Report', href: '/reports/weekly', icon: BarChart3 },
+              { label: 'Monthly Report', href: '/reports/monthly', icon: CalendarCheck },
+            ],
+          },
+        ]
+      : []),
     {
       title: 'System',
       items: [
@@ -158,16 +160,13 @@ export function DashboardShell({
             <img
               src="/logo-white-text.png"
               alt="Leadwise"
-              className="h-8 w-auto object-contain drop-shadow-[0_0_12px_rgba(99,102,241,0.25)] group-hover:scale-105 transition-transform duration-200 hidden dark:block"
+              className="h-9 w-auto max-w-[160px] object-contain drop-shadow-[0_0_15px_rgba(99,102,241,0.35)] group-hover:scale-105 transition-transform duration-200 hidden dark:block"
             />
             <img
-              src="/logo.png"
+              src="/logo-dark-text.png"
               alt="Leadwise"
-              className="h-8 w-auto object-contain group-hover:scale-105 transition-transform duration-200 block dark:hidden"
+              className="h-9 w-auto max-w-[160px] object-contain group-hover:scale-105 transition-transform duration-200 block dark:hidden"
             />
-            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-primary/15 text-primary border border-primary/25">
-              CRM
-            </span>
           </Link>
         </div>
 
@@ -276,11 +275,17 @@ export function DashboardShell({
               className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-border-strong hover:bg-muted shadow-xs w-48 sm:w-72"
             >
               <Search className="size-3.5" />
-              <span className="truncate">Search CRM...</span>
+              <span className="truncate">Search Leadwise...</span>
               <kbd className="ml-auto rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground border border-border">
                 ⌘K
               </kbd>
             </button>
+
+            {/* Nocturne Telemetry Badge */}
+            <div className="hidden xl:flex items-center gap-2 px-3 py-1 rounded-full border border-border/80 bg-surface-muted/60 backdrop-blur-md text-[11px] font-mono text-muted-foreground">
+              <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>LEADWISE SYNC ACTIVE</span>
+            </div>
           </div>
 
           {/* Right Header Actions: Unified Global Quick Action & Notification Center */}
@@ -415,10 +420,16 @@ export function DashboardShell({
           <div className="relative flex w-64 flex-col bg-surface border-r border-border shadow-xl p-4 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-border">
               <div className="flex items-center gap-2">
-                <div className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <Sparkles className="size-4" />
-                </div>
-                <span className="font-bold text-sm">Leadwise CRM</span>
+                <img
+                  src="/logo-white-text.png"
+                  alt="Leadwise"
+                  className="h-7 w-auto max-w-[130px] object-contain drop-shadow-[0_0_12px_rgba(99,102,241,0.3)] hidden dark:block"
+                />
+                <img
+                  src="/logo-dark-text.png"
+                  alt="Leadwise"
+                  className="h-7 w-auto max-w-[130px] object-contain block dark:hidden"
+                />
               </div>
               <button
                 type="button"

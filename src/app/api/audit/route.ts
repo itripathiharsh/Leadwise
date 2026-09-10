@@ -9,6 +9,10 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  if (user.role === 'INTERN') {
+    return NextResponse.json({ error: 'Forbidden: Access restricted to leaders' }, { status: 403 })
+  }
+
   const { searchParams } = new URL(req.url)
   const pageParsed = pageSchema.safeParse(searchParams.get('page') ?? undefined)
   const pageSizeParsed = pageSizeSchema.safeParse(searchParams.get('pageSize') ?? undefined)
