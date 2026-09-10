@@ -1,0 +1,37 @@
+{
+  "project": "Leadwise",
+  "version": "1.0.0",
+  "deployedAt": "2026-09-10T18:51:10Z",
+  "environment": "production",
+  "git": {
+    "repository": "https://github.com/itripathiharsh/Leadwise",
+    "branch": "main",
+    "commit": "fb3ccef53425bba6195dae00de987e95829b9d87"
+  },
+  "hosting": {
+    "provider": "Vercel",
+    "team": "Beyond Binary (team_2aQBwwmDSkpZPNKvtMffUHdi)",
+    "projectId": "prj_GyyLEcP7moGCzZgB2oElri0xqrFW",
+    "deploymentId": "dpl_5ULFQ1WyWfmcAUXTweKnoSTcCKtY",
+    "urls": [
+      "https://leadwise-red.vercel.app",
+      "https://leadwise-beyond-binary2.vercel.app"
+    ]
+  },
+  "database": {
+    "provider": "Supabase PostgreSQL",
+    "ref": "opiipezwttttnallhegz",
+    "region": "ap-south-1",
+    "version": "17.6",
+    "tablesCount": 24,
+    "initialAdmin": "admin@sentio.in"
+  },
+  "backup": {
+    "destination": "Google Drive",
+    "folderId": "1Rg8Gr68cwglbsq_HYZphghMADlafrGCg",
+    "schedules": [
+      "Monthly: 0 0 1 * *",
+      "Weekly: 0 19 * * 6"
+    ]
+  }
+}
