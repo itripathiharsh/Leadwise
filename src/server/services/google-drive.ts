@@ -1,5 +1,4 @@
-import { importPKCS8, SignJWT } from 'jose'
-import { getAppSetting } from './settings'
+import { getAppSetting, setAppSetting } from './settings'
 
 export interface GoogleDriveUploadResult {
   success: boolean
@@ -9,73 +8,77 @@ export interface GoogleDriveUploadResult {
   error?: string
 }
 
-export interface GoogleDriveConfig {
-  clientEmail?: string
-  privateKey?: string
-  folderId?: string
+export interface GoogleDriveOAuthConfig {
+  clientId: string
+  clientSecret: string
+  refreshToken?: string
+  userEmail?: string
+  folderId: string
 }
 
 /**
- * Retrieves the Google Drive configuration from Environment or AppSettings.
+ * Retrieves the Google Drive OAuth configuration from Environment or AppSettings.
+ * Never logs or returns secrets to client-facing callers.
  */
-export async function getGoogleDriveConfig(): Promise<GoogleDriveConfig> {
-  const clientEmail =
-    process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL ||
-    (await getAppSetting('google_drive_client_email')) ||
+export async function getGoogleDriveConfig(): Promise<GoogleDriveOAuthConfig> {
+  const clientId =
+    process.env.GOOGLE_OAUTH_CLIENT_ID ||
+    (await getAppSetting('google_drive_oauth_client_id')) ||
     ''
 
-  const rawKey =
-    process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY ||
-    (await getAppSetting('google_drive_private_key')) ||
+  const clientSecret =
+    process.env.GOOGLE_OAUTH_CLIENT_SECRET ||
+    (await getAppSetting('google_drive_oauth_client_secret')) ||
     ''
 
-  // Handle formatted or escaped newlines in PEM
-  const privateKey = rawKey.replace(/\\n/g, '\n')
+  const refreshToken =
+    process.env.GOOGLE_OAUTH_REFRESH_TOKEN ||
+    (await getAppSetting('google_drive_oauth_refresh_token')) ||
+    ''
+
+  const userEmail =
+    (await getAppSetting('google_drive_oauth_user_email')) ||
+    ''
 
   const folderId =
     process.env.GOOGLE_DRIVE_BACKUP_FOLDER_ID ||
     (await getAppSetting('google_drive_backup_folder_id')) ||
-    ''
+    '1Rg8Gr68cwglbsq_HYZphghMADlafrGCg'
 
-  return { clientEmail, privateKey, folderId }
+  return { clientId, clientSecret, refreshToken, userEmail, folderId }
 }
 
 /**
- * Generate a Google OAuth 2.0 access token using Service Account RS256 JWT
+ * Exchanges a long-lived OAuth 2.0 refresh token for an ephemeral (1-hr) access token.
+ * Strictly avoids logging or leaking any credentials on error.
  */
-async function getServiceAccountAccessToken(
-  clientEmail: string,
-  privateKeyPem: string,
+async function getOAuth2AccessToken(
+  clientId: string,
+  clientSecret: string,
+  refreshToken: string,
 ): Promise<string> {
-  const privateKey = await importPKCS8(privateKeyPem, 'RS256')
-
-  const now = Math.floor(Date.now() / 1000)
-  const jwt = await new SignJWT({
-    scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive',
-  })
-    .setProtectedHeader({ alg: 'RS256', typ: 'JWT' })
-    .setIssuer(clientEmail)
-    .setSubject(clientEmail)
-    .setAudience('https://oauth2.googleapis.com/token')
-    .setIssuedAt(now)
-    .setExpirationTime(now + 3600)
-    .sign(privateKey)
-
   const response = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-      assertion: jwt,
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: 'refresh_token',
     }),
   })
 
   if (!response.ok) {
-    const errorText = await response.text()
-    throw new Error(`Google Auth Token request failed (${response.status}): ${errorText}`)
+    throw new Error(
+      `Google OAuth token refresh failed with status ${response.status}. Re-authentication in Settings > Backups may be required.`,
+    )
   }
 
-  const data = (await response.json()) as { access_token: string }
+  const data = (await response.json()) as { access_token?: string }
+  if (!data.access_token) {
+    throw new Error('Google OAuth token refresh returned empty access token.')
+  }
+
   return data.access_token
 }
 
@@ -175,8 +178,8 @@ async function resolveBackupDestinationFolder(
 }
 
 /**
- * Uploads an Excel backup buffer to Google Drive.
- * If credentials are not configured or upload fails, returns structured failure without throwing.
+ * Uploads an Excel backup buffer to Google Drive using the authenticated user's OAuth credentials.
+ * The uploaded file is owned by the user's Google account and consumes their 5 TB storage quota.
  */
 export async function uploadBackupToGoogleDrive(
   buffer: Buffer,
@@ -187,17 +190,29 @@ export async function uploadBackupToGoogleDrive(
     const config = await getGoogleDriveConfig()
     const folderId = folderIdOverride || config.folderId
 
-    if (!config.clientEmail || !config.privateKey) {
+    if (!config.clientId || !config.clientSecret) {
       return {
         success: false,
         error:
-          'Google Drive credentials not configured. Please set GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY in Settings or .env.',
+          'Google OAuth credentials not configured. Please set Client ID and Client Secret in Settings > Backups.',
       }
     }
 
-    const accessToken = await getServiceAccountAccessToken(config.clientEmail, config.privateKey)
+    if (!config.refreshToken) {
+      return {
+        success: false,
+        error:
+          'Google Account not connected. Please click "Connect with Google" in Settings > Backups to authorize uploads to your My Drive.',
+      }
+    }
 
-    // Resolve hierarchical disaster recovery structure: Leadwise Backups/ -> YYYY/ -> MonthName/
+    const accessToken = await getOAuth2AccessToken(
+      config.clientId,
+      config.clientSecret,
+      config.refreshToken,
+    )
+
+    // Resolve hierarchical disaster recovery structure inside target folder
     const destinationFolderId = await resolveBackupDestinationFolder(accessToken, folderId)
 
     // Build multipart body for Drive v3 upload
@@ -274,23 +289,35 @@ export async function uploadBackupToGoogleDrive(
 }
 
 /**
- * Validates Google Drive connection and permissions.
+ * Validates Google Drive connection and permissions via OAuth 2.0.
  */
 export async function testGoogleDriveConnection(): Promise<{
   connected: boolean
   message: string
   folderName?: string
+  userEmail?: string
 }> {
   try {
     const config = await getGoogleDriveConfig()
-    if (!config.clientEmail || !config.privateKey) {
+    if (!config.clientId || !config.clientSecret) {
       return {
         connected: false,
-        message: 'Google Service Account credentials missing in environment and settings.',
+        message: 'Google OAuth Client ID & Secret missing. Configure them in Settings or environment variables.',
       }
     }
 
-    const accessToken = await getServiceAccountAccessToken(config.clientEmail, config.privateKey)
+    if (!config.refreshToken) {
+      return {
+        connected: false,
+        message: 'Google Account not connected. Click "Connect with Google" to authorize backups.',
+      }
+    }
+
+    const accessToken = await getOAuth2AccessToken(
+      config.clientId,
+      config.clientSecret,
+      config.refreshToken,
+    )
 
     if (config.folderId) {
       const folderRes = await fetch(
@@ -304,20 +331,23 @@ export async function testGoogleDriveConnection(): Promise<{
       if (!folderRes.ok) {
         return {
           connected: false,
-          message: `Authenticated with Google, but target folder "${config.folderId}" was not accessible (${folderRes.status}). Ensure the folder is shared with ${config.clientEmail}.`,
+          userEmail: config.userEmail,
+          message: `Authenticated with Google as ${config.userEmail || 'user'}, but folder "${config.folderId}" was not found (${folderRes.status}). Verify folder ID.`,
         }
       }
       const folderData = (await folderRes.json()) as { name: string }
       return {
         connected: true,
-        message: `Successfully connected to Google Drive. Target folder: ${folderData.name}`,
+        userEmail: config.userEmail,
         folderName: folderData.name,
+        message: `Connected to Google Drive as ${config.userEmail || 'user'}. Target folder: "${folderData.name}".`,
       }
     }
 
     return {
       connected: true,
-      message: `Successfully authenticated with Google Drive as ${config.clientEmail}. (Root drive will be used)`,
+      userEmail: config.userEmail,
+      message: `Connected to Google Drive as ${config.userEmail || 'user'}. (Root folder will be used)`,
     }
   } catch (err: unknown) {
     return {
@@ -325,4 +355,100 @@ export async function testGoogleDriveConnection(): Promise<{
       message: err instanceof Error ? err.message : String(err),
     }
   }
+}
+
+/**
+ * Generates the Google OAuth 2.0 authorization URL.
+ */
+export function generateGoogleOAuthUrl(
+  redirectUri: string,
+  state: string,
+  clientId: string,
+): string {
+  const params = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    response_type: 'code',
+    scope:
+      'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/userinfo.email',
+    access_type: 'offline',
+    prompt: 'consent',
+    state,
+  })
+  return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
+}
+
+/**
+ * Exchanges the one-time authorization code for permanent refresh and access tokens.
+ */
+export async function exchangeOAuthCodeForTokens(
+  code: string,
+  redirectUri: string,
+  clientId: string,
+  clientSecret: string,
+): Promise<{ refreshToken: string; accessToken: string; email?: string }> {
+  const response = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      code,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+      grant_type: 'authorization_code',
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error(
+      `Google OAuth code exchange failed (${response.status}). Verify that redirect URI matches your Google Cloud Console configuration.`,
+    )
+  }
+
+  const data = (await response.json()) as { refresh_token?: string; access_token: string }
+  if (!data.access_token) {
+    throw new Error('Google OAuth exchange returned no access token.')
+  }
+
+  // Retrieve authenticated user's email
+  let email: string | undefined
+  try {
+    const userinfoRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: `Bearer ${data.access_token}` },
+    })
+    if (userinfoRes.ok) {
+      const udata = (await userinfoRes.json()) as { email?: string }
+      email = udata.email
+    }
+  } catch {
+    // Non-fatal
+  }
+
+  return {
+    refreshToken: data.refresh_token || '',
+    accessToken: data.access_token,
+    email,
+  }
+}
+
+/**
+ * Revokes and deletes stored Google OAuth tokens.
+ */
+export async function disconnectGoogleDrive(): Promise<void> {
+  const config = await getGoogleDriveConfig()
+  if (config.refreshToken) {
+    try {
+      await fetch(
+        `https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(config.refreshToken)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        },
+      )
+    } catch {
+      // Non-fatal
+    }
+  }
+  await setAppSetting('google_drive_oauth_refresh_token', '')
+  await setAppSetting('google_drive_oauth_user_email', '')
 }

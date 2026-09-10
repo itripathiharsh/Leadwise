@@ -8,11 +8,14 @@ import {
   FolderSync,
   CheckCircle2,
   AlertTriangle,
-  Clock,
   HardDrive,
   RefreshCw,
   Save,
   ShieldCheck,
+  Link2,
+  Unlink,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -49,7 +52,10 @@ export default function BackupsSettingsPage() {
   const [loading, setLoading] = React.useState(true)
   const [saving, setSaving] = React.useState(false)
   const [testingDrive, setTestingDrive] = React.useState(false)
+  const [connectingDrive, setConnectingDrive] = React.useState(false)
+  const [disconnectingDrive, setDisconnectingDrive] = React.useState(false)
   const [modalOpen, setModalOpen] = React.useState(false)
+  const [showAdvancedCredentials, setShowAdvancedCredentials] = React.useState(false)
 
   const [history, setHistory] = React.useState<BackupHistoryRecord[]>([])
   const [health, setHealth] = React.useState<BackupHealth | null>(null)
@@ -58,12 +64,18 @@ export default function BackupsSettingsPage() {
   const [scheduleDay, setScheduleDay] = React.useState('Saturday')
   const [scheduleTime, setScheduleTime] = React.useState('19:00')
   const [retentionCount, setRetentionCount] = React.useState('8')
-  const [driveFolderId, setDriveFolderId] = React.useState('')
-  const [driveClientEmail, setDriveClientEmail] = React.useState('')
-  const [drivePrivateKey, setDrivePrivateKey] = React.useState('')
-  const [driveStatus, setDriveStatus] = React.useState<{ connected: boolean; message: string } | null>(
-    null,
-  )
+  const [driveFolderId, setDriveFolderId] = React.useState('1Rg8Gr68cwglbsq_HYZphghMADlafrGCg')
+  const [oauthClientId, setOauthClientId] = React.useState('')
+  const [oauthClientSecret, setOauthClientSecret] = React.useState('')
+  const [oauthHasSecret, setOauthHasSecret] = React.useState(false)
+  const [oauthConnected, setOauthConnected] = React.useState(false)
+  const [oauthUserEmail, setOauthUserEmail] = React.useState('')
+  const [driveStatus, setDriveStatus] = React.useState<{
+    connected: boolean
+    message: string
+    folderName?: string
+    userEmail?: string
+  } | null>(null)
 
   const loadData = React.useCallback(async () => {
     setLoading(true)
@@ -90,11 +102,14 @@ export default function BackupsSettingsPage() {
         setScheduleDay(sData.scheduleDay ?? 'Saturday')
         setScheduleTime(sData.scheduleTime ?? '19:00')
         setRetentionCount(String(sData.retentionCount ?? 8))
-        setDriveFolderId(sData.googleDriveFolderId ?? '')
-        setDriveClientEmail(sData.googleDriveClientEmail ?? '')
+        setDriveFolderId(sData.googleDriveFolderId ?? '1Rg8Gr68cwglbsq_HYZphghMADlafrGCg')
+        setOauthClientId(sData.googleDriveOAuthClientId ?? '')
+        setOauthHasSecret(Boolean(sData.googleDriveOAuthHasSecret))
+        setOauthConnected(Boolean(sData.googleDriveOAuthConnected))
+        setOauthUserEmail(sData.googleDriveOAuthUserEmail ?? '')
         setDriveStatus(sData.driveStatus ?? null)
       }
-    } catch (err) {
+    } catch {
       toast.error('Failed to load backup details.')
     } finally {
       setLoading(false)
@@ -111,8 +126,63 @@ export default function BackupsSettingsPage() {
         }
       })
       .catch(() => {})
+
     loadData()
+
+    // Handle OAuth callback parameters in URL
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('drive_connected') === 'true') {
+        toast.success('Google Drive connected! Backups will now be uploaded to your 5 TB My Drive.')
+        window.history.replaceState({}, document.title, window.location.pathname)
+      } else if (params.get('drive_error')) {
+        toast.error(`Google Drive Connection Failed: ${decodeURIComponent(params.get('drive_error')!)}`)
+        window.history.replaceState({}, document.title, window.location.pathname)
+      }
+    }
   }, [loadData])
+
+  const handleConnectGoogle = async () => {
+    setConnectingDrive(true)
+    try {
+      const res = await fetch('/api/auth/google/authorize')
+      const data = await res.json()
+      if (res.ok && data.url) {
+        window.location.href = data.url
+      } else {
+        toast.error(
+          data.error ||
+            'Failed to initiate Google OAuth. Please ensure your OAuth Client ID & Secret are set.',
+        )
+      }
+    } catch {
+      toast.error('Network error connecting to Google.')
+    } finally {
+      setConnectingDrive(false)
+    }
+  }
+
+  const handleDisconnectGoogle = async () => {
+    if (!confirm('Are you sure you want to disconnect Google Drive? Automated uploads will pause until reconnected.')) {
+      return
+    }
+    setDisconnectingDrive(true)
+    try {
+      const res = await fetch('/api/auth/google/disconnect', { method: 'POST' })
+      if (res.ok) {
+        toast.success('Google Drive disconnected.')
+        setOauthConnected(false)
+        setOauthUserEmail('')
+        loadData()
+      } else {
+        toast.error('Failed to disconnect Google Drive.')
+      }
+    } catch {
+      toast.error('Error disconnecting Google Drive.')
+    } finally {
+      setDisconnectingDrive(false)
+    }
+  }
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -126,8 +196,8 @@ export default function BackupsSettingsPage() {
           scheduleTime,
           retentionCount: parseInt(retentionCount, 10) || 8,
           googleDriveFolderId: driveFolderId,
-          googleDriveClientEmail: driveClientEmail,
-          googleDrivePrivateKey: drivePrivateKey || undefined,
+          googleDriveOAuthClientId: oauthClientId || undefined,
+          googleDriveOAuthClientSecret: oauthClientSecret || undefined,
         }),
       })
 
@@ -135,11 +205,12 @@ export default function BackupsSettingsPage() {
       if (res.ok) {
         toast.success('Backup settings saved successfully.')
         if (data.driveStatus) setDriveStatus(data.driveStatus)
-        setDrivePrivateKey('')
+        setOauthClientSecret('')
+        loadData()
       } else {
         toast.error(data.error || 'Failed to save settings.')
       }
-    } catch (err) {
+    } catch {
       toast.error('Network error saving settings.')
     } finally {
       setSaving(false)
@@ -159,7 +230,7 @@ export default function BackupsSettingsPage() {
           toast.error(data.driveStatus?.message || 'Google Drive connection failed.')
         }
       }
-    } catch (err) {
+    } catch {
       toast.error('Could not test Google Drive connection.')
     } finally {
       setTestingDrive(false)
@@ -180,7 +251,7 @@ export default function BackupsSettingsPage() {
             <div>
               <h1 className="font-bold text-2xl tracking-tight">CRM Backups & Protection</h1>
               <p className="text-sm text-muted-foreground">
-                Automated weekly multi-sheet Excel backups with Google Drive storage and relational integrity.
+                Automated multi-sheet Excel backups stored directly in your personal 5 TB Google Drive.
               </p>
             </div>
           </div>
@@ -206,7 +277,7 @@ export default function BackupsSettingsPage() {
         </div>
       </div>
 
-      {/* Hero Health Banner (Req #7, #24) */}
+      {/* Hero Health Banner */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="md:col-span-2 border-border shadow-sm">
           <CardHeader className="pb-3">
@@ -218,11 +289,11 @@ export default function BackupsSettingsPage() {
               {latest ? (
                 latest.status === 'SUCCESS' ? (
                   <Badge tone="emerald" size="sm">
-                    <CheckCircle2 className="size-3.5 mr-1" /> Successful
+                    <CheckCircle2 className="size-3.5 mr-1" /> Successful &amp; Stored in Drive
                   </Badge>
                 ) : latest.status === 'PARTIAL_SUCCESS' ? (
                   <Badge tone="amber" size="sm">
-                    <AlertTriangle className="size-3.5 mr-1" /> Drive Upload Pending
+                    <AlertTriangle className="size-3.5 mr-1" /> Local Backup Ready (Drive Pending)
                   </Badge>
                 ) : (
                   <Badge tone="rose" size="sm">
@@ -302,57 +373,51 @@ export default function BackupsSettingsPage() {
                       onClick={() => window.open(`/api/backups/${latest.id}/download`, '_blank')}
                       icon={<Download className="size-3.5" />}
                     >
-                      Download Backup
+                      Download Copy
                     </Button>
                   </div>
                 </div>
               </>
             ) : (
-              <div className="p-4 text-center text-sm text-muted-foreground">
-                Click &ldquo;Create Backup Now&rdquo; above to generate your initial complete backup.
+              <div className="p-6 text-center text-sm text-muted-foreground">
+                Click &quot;Create Backup Now&quot; to execute your first verified database snapshot.
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Schedule Summary Card */}
+        {/* Schedule & Retention Summary */}
         <Card className="border-border shadow-sm flex flex-col justify-between">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <Clock className="size-5 text-primary" />
-              <CardTitle className="text-base">Automatic Schedule</CardTitle>
-            </div>
-            <CardDescription>Scheduled weekly cron execution</CardDescription>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Automatic Cadence</CardTitle>
+            <CardDescription>Scheduled serverless cron execution.</CardDescription>
           </CardHeader>
 
-          <CardContent className="space-y-3">
-            <div className="rounded-lg bg-surface border border-border p-3.5 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground font-medium">Cadence:</span>
-                <span className="font-semibold text-foreground">Every {scheduleDay}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground font-medium">Time:</span>
-                <span className="font-semibold text-foreground">{scheduleTime} (IST)</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground font-medium">Retention:</span>
-                <span className="font-semibold text-foreground">{retentionCount} weekly files</span>
-              </div>
-              <div className="flex items-center justify-between text-xs pt-1 border-t border-border/60">
-                <span className="text-muted-foreground font-medium">Format:</span>
-                <span className="font-mono text-[11px] font-semibold text-primary">Multi-Sheet .xlsx</span>
-              </div>
+          <CardContent className="space-y-3.5 text-sm">
+            <div className="flex justify-between items-center py-1.5 border-b border-border/60">
+              <span className="text-muted-foreground text-xs font-medium">Weekly Cadence</span>
+              <span className="font-semibold text-foreground text-xs">Every {scheduleDay} at {scheduleTime}</span>
             </div>
 
-            <div className="text-[11px] text-muted-foreground">
-              {driveStatus?.connected ? (
-                <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium">
-                  <CheckCircle2 className="size-3.5" /> Google Drive connected
+            <div className="flex justify-between items-center py-1.5 border-b border-border/60">
+              <span className="text-muted-foreground text-xs font-medium">Monthly Archive</span>
+              <span className="font-semibold text-foreground text-xs">1st of every month at 00:00 UTC</span>
+            </div>
+
+            <div className="flex justify-between items-center py-1.5 border-b border-border/60">
+              <span className="text-muted-foreground text-xs font-medium">Retention Policy</span>
+              <span className="font-semibold text-foreground text-xs">{retentionCount} weekly archives retained</span>
+            </div>
+
+            <div className="flex justify-between items-center py-1.5">
+              <span className="text-muted-foreground text-xs font-medium">Drive Destination</span>
+              {oauthConnected ? (
+                <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium text-xs">
+                  <CheckCircle2 className="size-3.5" /> 5 TB My Drive Active
                 </span>
               ) : (
-                <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1 font-medium">
-                  <AlertTriangle className="size-3.5" /> Google Drive pending config
+                <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1 font-medium text-xs">
+                  <AlertTriangle className="size-3.5" /> Google OAuth Pending
                 </span>
               )}
             </div>
@@ -360,7 +425,114 @@ export default function BackupsSettingsPage() {
         </Card>
       </div>
 
-      {/* Backup History Table (Req #6, #7) */}
+      {/* Google OAuth 2.0 Connection Banner (5 TB My Drive) */}
+      <Card className={cn(
+        'border transition-all shadow-sm',
+        oauthConnected ? 'border-emerald-500/30 bg-emerald-500/[0.02]' : 'border-amber-500/30 bg-amber-500/[0.02]'
+      )}>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-base">Google Drive OAuth 2.0 (5 TB Storage)</CardTitle>
+                {oauthConnected ? (
+                  <Badge tone="emerald" size="sm">
+                    <CheckCircle2 className="size-3 mr-1" /> Connected
+                  </Badge>
+                ) : (
+                  <Badge tone="amber" size="sm">
+                    <AlertTriangle className="size-3 mr-1" /> Not Connected
+                  </Badge>
+                )}
+              </div>
+              <CardDescription>
+                Backups are uploaded using your Google account so they are stored directly in your My Drive and consume your 5 TB storage quota.
+              </CardDescription>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {oauthConnected ? (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleTestDrive}
+                    loading={testingDrive}
+                    icon={<RefreshCw className="size-3.5" />}
+                  >
+                    Test Drive Access
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={handleDisconnectGoogle}
+                    loading={disconnectingDrive}
+                    icon={<Unlink className="size-3.5" />}
+                  >
+                    Disconnect
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleConnectGoogle}
+                  loading={connectingDrive}
+                  icon={<Link2 className="size-4" />}
+                >
+                  Connect with Google
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-4 pt-0">
+          {oauthConnected ? (
+            <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="space-y-1">
+                <div className="font-semibold text-emerald-950 dark:text-emerald-200">
+                  Google Account: {oauthUserEmail || 'Authenticated User'}
+                </div>
+                <div className="text-muted-foreground">
+                  Target Folder ID: <span className="font-mono text-foreground">{driveFolderId}</span>
+                </div>
+              </div>
+              {driveStatus?.folderName && (
+                <Badge tone="slate" size="sm">
+                  Folder Name: {driveStatus.folderName}
+                </Badge>
+              )}
+            </div>
+          ) : (
+            <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 space-y-2 text-xs text-muted-foreground">
+              <p className="font-medium text-amber-950 dark:text-amber-200">
+                To start automated uploads to your My Drive:
+              </p>
+              <ol className="list-decimal list-inside space-y-1 pl-1">
+                <li>Ensure your Google OAuth 2.0 Web Client ID is configured below (or in Vercel environment variables).</li>
+                <li>Click <strong>&quot;Connect with Google&quot;</strong> and authorize Leadwise with the Google account that has the 5 TB quota.</li>
+                <li>All automated weekly and monthly backups will immediately sync into your My Drive folder.</li>
+              </ol>
+            </div>
+          )}
+
+          {driveStatus && (
+            <div
+              className={cn(
+                'rounded-lg p-3 text-xs font-medium border',
+                driveStatus.connected
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
+                  : 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300',
+              )}
+            >
+              {driveStatus.message}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Backup History Table */}
       <Card className="border-border shadow-sm">
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -466,26 +638,16 @@ export default function BackupsSettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Backup & Google Drive Configuration Form */}
+      {/* Backup Schedule & Advanced Settings Form */}
       <Card className="border-border shadow-sm">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-base">Backup Schedule & Google Drive Settings</CardTitle>
+              <CardTitle className="text-base">Backup Schedule &amp; Target Folder</CardTitle>
               <CardDescription>
-                Configure the weekly automatic backup schedule, retention count, and Google Drive destination folder.
+                Configure the weekly automatic backup schedule, retention count, and target folder ID.
               </CardDescription>
             </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleTestDrive}
-              loading={testingDrive}
-              icon={<ExternalLink className="size-3.5" />}
-            >
-              Test Connection
-            </Button>
           </div>
         </CardHeader>
 
@@ -528,56 +690,55 @@ export default function BackupsSettingsPage() {
             </div>
 
             <div className="border-t border-border pt-4 space-y-4">
-              <h3 className="font-semibold text-sm">Google Drive Destination</h3>
-
               <Field
-                label="Google Drive Folder ID"
-                hint="Target folder ID extracted from the Google Drive URL (e.g. 1a2B3c4D...)"
+                label="Google Drive Target Folder ID"
+                hint="ID of the folder in your 5 TB My Drive (default: 1Rg8Gr68cwglbsq_HYZphghMADlafrGCg)"
               >
                 <Input
-                  placeholder="e.g. 1Z9_xW8vUtSrQpOnMlKj"
+                  placeholder="1Rg8Gr68cwglbsq_HYZphghMADlafrGCg"
                   value={driveFolderId}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDriveFolderId(e.target.value)}
                 />
               </Field>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field
-                  label="Service Account Email"
-                  hint="Google Cloud service account email"
+              {/* Collapsible Advanced OAuth Credentials */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvancedCredentials((prev) => !prev)}
+                  className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground font-medium transition-colors"
                 >
-                  <Input
-                    placeholder="crm-backup@project-id.iam.gserviceaccount.com"
-                    value={driveClientEmail}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDriveClientEmail(e.target.value)}
-                  />
-                </Field>
+                  {showAdvancedCredentials ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+                  <span>{showAdvancedCredentials ? 'Hide' : 'Show'} Google Cloud OAuth 2.0 Credentials (Optional overrides)</span>
+                </button>
 
-                <Field
-                  label="Private Key (PEM)"
-                  hint="Leave blank to keep existing configured private key"
-                >
-                  <Input
-                    type="password"
-                    placeholder="-----BEGIN PRIVATE KEY----- ... -----END PRIVATE KEY-----"
-                    value={drivePrivateKey}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDrivePrivateKey(e.target.value)}
-                  />
-                </Field>
+                {showAdvancedCredentials && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3 p-4 rounded-lg border border-border/70 bg-muted/20">
+                    <Field
+                      label="OAuth Client ID"
+                      hint="From Google Cloud Console (Web Application)"
+                    >
+                      <Input
+                        placeholder="e.g. 123456789-xyz.apps.googleusercontent.com"
+                        value={oauthClientId}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOauthClientId(e.target.value)}
+                      />
+                    </Field>
+
+                    <Field
+                      label="OAuth Client Secret"
+                      hint={oauthHasSecret ? 'Secret is securely configured. Leave blank to keep.' : 'From Google Cloud Console'}
+                    >
+                      <Input
+                        type="password"
+                        placeholder={oauthHasSecret ? '••••••••••••••••••••••••••••' : 'Enter client secret'}
+                        value={oauthClientSecret}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOauthClientSecret(e.target.value)}
+                      />
+                    </Field>
+                  </div>
+                )}
               </div>
-
-              {driveStatus && (
-                <div
-                  className={cn(
-                    'rounded-lg p-3 text-xs font-medium border',
-                    driveStatus.connected
-                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
-                      : 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300',
-                  )}
-                >
-                  {driveStatus.message}
-                </div>
-              )}
             </div>
 
             <div className="flex items-center justify-end pt-2">
