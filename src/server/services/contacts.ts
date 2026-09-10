@@ -12,7 +12,7 @@ import {
 import { CONTACT_STATUS_META } from '@/lib/constants'
 import type { ContactCreateInput, ContactUpdateInput } from '@/lib/validation'
 import { NotFoundError } from '@/server/errors'
-import { writeAudit } from './audit'
+import { writeAudit, writeAuditSafe } from './audit'
 import { findContactDuplicates, type ContactDuplicate } from './duplicates'
 
 /**
@@ -216,57 +216,49 @@ export async function createContact(
     ? (input.assignedToId ?? org.assignedToId ?? user.id)
     : (org.assignedToId ?? user.id)
 
-  const contact = await prisma.$transaction(async (tx) => {
-    // If the organisation had no handler, assign it to this creator so they handle the lead throughout
-    if (!org.assignedToId && assignedToId) {
-      await tx.organisation.update({
-        where: { id: org.id },
-        data: { assignedToId, status: 'ASSIGNED' },
-      })
-    }
-
-    const created = await tx.contact.create({
-      data: {
-        organisationId: input.organisationId,
-        name: input.name,
-        nameNormalized: normalizePersonName(input.name),
-        designation: input.designation ?? null,
-        department: input.department ?? null,
-        email: input.email ?? null,
-        emailNormalized: normalizeEmail(input.email),
-        phone: input.phone ?? null,
-        phoneNormalized: normalizePhone(input.phone),
-        linkedinUrl: normalizeLinkedInUrl(input.linkedinUrl),
-        linkedinHandle: normalizeLinkedIn(input.linkedinUrl),
-        isDecisionMaker: input.isDecisionMaker,
-        priority: input.priority,
-        status: input.status ?? 'NEW',
-        notes: input.notes ?? null,
-        assignedToId,
-        createdById: user.id,
-      },
-      select: { id: true, name: true, isDecisionMaker: true },
+  if (!org.assignedToId && assignedToId) {
+    await prisma.organisation.update({
+      where: { id: org.id },
+      data: { assignedToId, status: 'ASSIGNED' },
     })
+  }
 
-    await writeAudit(
-      {
-        userId: user.id,
-        action: 'contact.created',
-        entityType: 'contact',
-        entityId: created.id,
-        entityLabel: `${created.name} · ${org.name}`,
-        summary: `Added contact ${created.name}${
-          created.isDecisionMaker ? ' (decision maker)' : ''
-        } at ${org.name}`,
-        after: { organisationId: org.id, isDecisionMaker: created.isDecisionMaker },
-      },
-      tx,
-    )
-
-    return created
+  const created = await prisma.contact.create({
+    data: {
+      organisationId: input.organisationId,
+      name: input.name,
+      nameNormalized: normalizePersonName(input.name),
+      designation: input.designation ?? null,
+      department: input.department ?? null,
+      email: input.email ?? null,
+      emailNormalized: normalizeEmail(input.email),
+      phone: input.phone ?? null,
+      phoneNormalized: normalizePhone(input.phone),
+      linkedinUrl: normalizeLinkedInUrl(input.linkedinUrl),
+      linkedinHandle: normalizeLinkedIn(input.linkedinUrl),
+      isDecisionMaker: input.isDecisionMaker,
+      priority: input.priority,
+      status: input.status ?? 'NEW',
+      notes: input.notes ?? null,
+      assignedToId,
+      createdById: user.id,
+    },
+    select: { id: true, name: true, isDecisionMaker: true },
   })
 
-  return { status: 'CREATED', id: contact.id, name: contact.name }
+  await writeAuditSafe({
+    userId: user.id,
+    action: 'contact.created',
+    entityType: 'contact',
+    entityId: created.id,
+    entityLabel: `${created.name} · ${org.name}`,
+    summary: `Added contact ${created.name}${
+      created.isDecisionMaker ? ' (decision maker)' : ''
+    } at ${org.name}`,
+    after: { organisationId: org.id, isDecisionMaker: created.isDecisionMaker },
+  })
+
+  return { status: 'CREATED', id: created.id, name: created.name }
 }
 
 export async function updateContact(
@@ -310,67 +302,59 @@ export async function updateContact(
     if (duplicates.length > 0) return { status: 'DUPLICATE', duplicates }
   }
 
-  await prisma.$transaction(async (tx) => {
-    const updated = await tx.contact.update({
-      where: { id: existing.id },
-      data: {
-        name: input.name,
-        nameNormalized: normalizePersonName(input.name),
-        designation: input.designation ?? null,
-        department: input.department ?? null,
-        email: input.email ?? null,
-        emailNormalized: normalizeEmail(input.email),
-        phone: input.phone ?? null,
-        phoneNormalized: normalizePhone(input.phone),
-        linkedinUrl: normalizeLinkedInUrl(input.linkedinUrl),
-        linkedinHandle: normalizeLinkedIn(input.linkedinUrl),
-        isDecisionMaker: input.isDecisionMaker,
-        priority: input.priority,
-        notes: input.notes ?? null,
-        ...(input.status ? { status: input.status } : {}),
-        ...(can(user, 'org:assign') ? { assignedToId: input.assignedToId ?? null } : {}),
-      },
-      select: { id: true, name: true, status: true, isDecisionMaker: true },
-    })
-
-    await writeAudit(
-      {
-        userId: user.id,
-        action: 'contact.updated',
-        entityType: 'contact',
-        entityId: updated.id,
-        entityLabel: `${updated.name} · ${existing.organisation.name}`,
-        summary: `Updated contact ${updated.name}`,
-        before: {
-          name: existing.name,
-          email: existing.email,
-          phone: existing.phone,
-          designation: existing.designation,
-          isDecisionMaker: existing.isDecisionMaker,
-        },
-        after: { name: updated.name, isDecisionMaker: updated.isDecisionMaker },
-      },
-      tx,
-    )
-
-    if (existing.status !== updated.status) {
-      await writeAudit(
-        {
-          userId: user.id,
-          action: 'contact.status_changed',
-          entityType: 'contact',
-          entityId: updated.id,
-          entityLabel: `${updated.name} · ${existing.organisation.name}`,
-          summary: `Contact status ${CONTACT_STATUS_META[existing.status].label} → ${
-            CONTACT_STATUS_META[updated.status].label
-          }`,
-          before: { status: existing.status },
-          after: { status: updated.status },
-        },
-        tx,
-      )
-    }
+  const updated = await prisma.contact.update({
+    where: { id: existing.id },
+    data: {
+      name: input.name,
+      nameNormalized: normalizePersonName(input.name),
+      designation: input.designation ?? null,
+      department: input.department ?? null,
+      email: input.email ?? null,
+      emailNormalized: normalizeEmail(input.email),
+      phone: input.phone ?? null,
+      phoneNormalized: normalizePhone(input.phone),
+      linkedinUrl: normalizeLinkedInUrl(input.linkedinUrl),
+      linkedinHandle: normalizeLinkedIn(input.linkedinUrl),
+      isDecisionMaker: input.isDecisionMaker,
+      priority: input.priority,
+      notes: input.notes ?? null,
+      ...(input.status ? { status: input.status } : {}),
+      ...(can(user, 'org:assign') ? { assignedToId: input.assignedToId ?? null } : {}),
+    },
+    select: { id: true, name: true, status: true, isDecisionMaker: true },
   })
+
+  await writeAuditSafe({
+    userId: user.id,
+    action: 'contact.updated',
+    entityType: 'contact',
+    entityId: updated.id,
+    entityLabel: `${updated.name} · ${existing.organisation.name}`,
+    summary: `Updated contact ${updated.name}`,
+    before: {
+      name: existing.name,
+      email: existing.email,
+      phone: existing.phone,
+      designation: existing.designation,
+      isDecisionMaker: existing.isDecisionMaker,
+    },
+    after: { name: updated.name, isDecisionMaker: updated.isDecisionMaker },
+  })
+
+  if (existing.status !== updated.status) {
+    await writeAuditSafe({
+      userId: user.id,
+      action: 'contact.status_changed',
+      entityType: 'contact',
+      entityId: updated.id,
+      entityLabel: `${updated.name} · ${existing.organisation.name}`,
+      summary: `Contact status ${CONTACT_STATUS_META[existing.status].label} → ${
+        CONTACT_STATUS_META[updated.status].label
+      }`,
+      before: { status: existing.status },
+      after: { status: updated.status },
+    })
+  }
 
   return { status: 'CREATED', id: existing.id, name: input.name }
 }
@@ -392,25 +376,20 @@ export async function setDecisionMaker(
   if (!contact) throw new NotFoundError('Contact')
   if (!canWriteOrganisation(user, contact.organisation)) throw new ForbiddenError()
 
-  await prisma.$transaction(async (tx) => {
-    await tx.contact.update({
-      where: { id: contact.id },
-      data: { isDecisionMaker: input.isDecisionMaker },
-    })
-    await writeAudit(
-      {
-        userId: user.id,
-        action: 'contact.updated',
-        entityType: 'contact',
-        entityId: contact.id,
-        entityLabel: `${contact.name} · ${contact.organisation.name}`,
-        summary: input.isDecisionMaker
-          ? `Marked ${contact.name} as decision maker`
-          : `Removed decision-maker flag from ${contact.name}`,
-        after: { isDecisionMaker: input.isDecisionMaker },
-      },
-      tx,
-    )
+  await prisma.contact.update({
+    where: { id: contact.id },
+    data: { isDecisionMaker: input.isDecisionMaker },
+  })
+  await writeAuditSafe({
+    userId: user.id,
+    action: 'contact.updated',
+    entityType: 'contact',
+    entityId: contact.id,
+    entityLabel: `${contact.name} · ${contact.organisation.name}`,
+    summary: input.isDecisionMaker
+      ? `Marked ${contact.name} as decision maker`
+      : `Removed decision-maker flag from ${contact.name}`,
+    after: { isDecisionMaker: input.isDecisionMaker },
   })
 }
 
@@ -423,25 +402,20 @@ export async function softDeleteContact(user: CurrentUser, id: string): Promise<
   })
   if (!contact) throw new NotFoundError('Contact')
 
-  await prisma.$transaction(async (tx) => {
-    // The contact is archived; its activities stay on the organisation timeline
-    // so history is never lost (spec §32).
-    await tx.contact.update({ where: { id }, data: { deletedAt: new Date() } })
-    await tx.followUp.updateMany({
-      where: { contactId: id, status: 'PENDING', deletedAt: null },
-      data: { contactId: null },
-    })
+  // The contact is archived; its activities stay on the organisation timeline
+  // so history is never lost (spec §32).
+  await prisma.contact.update({ where: { id }, data: { deletedAt: new Date() } })
+  await prisma.followUp.updateMany({
+    where: { contactId: id, status: 'PENDING', deletedAt: null },
+    data: { contactId: null },
+  })
 
-    await writeAudit(
-      {
-        userId: user.id,
-        action: 'contact.deleted',
-        entityType: 'contact',
-        entityId: id,
-        entityLabel: `${contact.name} · ${contact.organisation.name}`,
-        summary: `Archived contact ${contact.name} (activity history retained)`,
-      },
-      tx,
-    )
+  await writeAuditSafe({
+    userId: user.id,
+    action: 'contact.deleted',
+    entityType: 'contact',
+    entityId: id,
+    entityLabel: `${contact.name} · ${contact.organisation.name}`,
+    summary: `Archived contact ${contact.name} (activity history retained)`,
   })
 }

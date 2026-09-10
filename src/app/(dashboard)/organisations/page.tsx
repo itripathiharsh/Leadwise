@@ -54,10 +54,18 @@ export default function OrganisationsPage() {
 
   // Filters
   const [search, setSearch] = React.useState('')
+  const [debouncedSearch, setDebouncedSearch] = React.useState('')
   const [statusFilter, setStatusFilter] = React.useState('')
   const [priorityFilter, setPriorityFilter] = React.useState('')
   const [assigneeFilter, setAssigneeFilter] = React.useState('')
   const [usersList, setUsersList] = React.useState<Array<{ id: string; name: string }>>([])
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search)
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [search])
 
   // Selection & Bulk Actions
   const [selectedIds, setSelectedIds] = React.useState<string[]>([])
@@ -73,7 +81,7 @@ export default function OrganisationsPage() {
     setLoading(true)
     try {
       const params = new URLSearchParams()
-      if (search.trim()) params.set('q', search.trim())
+      if (debouncedSearch.trim()) params.set('q', debouncedSearch.trim())
       if (statusFilter) params.set('status', statusFilter)
       if (priorityFilter) params.set('priority', priorityFilter)
       if (assigneeFilter) params.set('assignee', assigneeFilter)
@@ -91,7 +99,7 @@ export default function OrganisationsPage() {
     } finally {
       setLoading(false)
     }
-  }, [search, statusFilter, priorityFilter, assigneeFilter, page])
+  }, [debouncedSearch, statusFilter, priorityFilter, assigneeFilter, page])
 
   React.useEffect(() => {
     fetchOrganisations()

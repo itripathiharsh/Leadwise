@@ -21,7 +21,7 @@ import { ORG_STATUS_META } from '@/lib/constants'
 import { addDaysToKey, startOfDayUtc, todayKey } from '@/lib/dates'
 import type { OrganisationCreateInput, OrganisationUpdateInput } from '@/lib/validation'
 import { NotFoundError } from '@/server/errors'
-import { writeAudit } from './audit'
+import { writeAudit, writeAuditSafe } from './audit'
 import { findOrganisationDuplicates, type OrganisationDuplicate } from './duplicates'
 import { recomputeOrganisationCaches } from './caches'
 import { createNotification, notifyOwnersAndTLs } from './notifications'
@@ -352,34 +352,34 @@ export async function createOrganisation(
     customFields.numberOfProfessionals = input.numberOfProfessionals
   }
 
-  const org = await prisma.$transaction(async (tx) => {
-    const created = await tx.organisation.create({
-      data: {
-        name: input.name,
-        nameNormalized: normalizeOrgName(input.name),
-        category: input.category ?? input.domain ?? null,
-        website,
-        domain,
-        leadSource,
-        generalEmail: input.generalEmail ?? null,
-        generalPhone: input.generalPhone ?? null,
-        linkedinUrl: normalizeLinkedInUrl(input.linkedinUrl),
-        location: input.location ?? null,
-        priority: input.priority,
-        status,
-        nextAction,
-        notes: input.notes ?? null,
-        customFields: Object.keys(customFields).length > 0 ? (customFields as Prisma.InputJsonValue) : undefined,
-        assignedToId,
-        createdById: user.id,
-      },
-      select: { id: true, name: true, status: true, assignedToId: true },
-    })
+  const created = await prisma.organisation.create({
+    data: {
+      name: input.name,
+      nameNormalized: normalizeOrgName(input.name),
+      category: input.category ?? input.domain ?? null,
+      website,
+      domain,
+      leadSource,
+      generalEmail: input.generalEmail ?? null,
+      generalPhone: input.generalPhone ?? null,
+      linkedinUrl: normalizeLinkedInUrl(input.linkedinUrl),
+      location: input.location ?? null,
+      priority: input.priority,
+      status,
+      nextAction,
+      notes: input.notes ?? null,
+      customFields: Object.keys(customFields).length > 0 ? (customFields as Prisma.InputJsonValue) : undefined,
+      assignedToId,
+      createdById: user.id,
+    },
+    select: { id: true, name: true, status: true, assignedToId: true },
+  })
 
-    // Create primary contact if name is provided
-    if (input.primaryContact?.name?.trim()) {
-      const contactName = input.primaryContact.name.trim()
-      await tx.contact.create({
+  // Create primary contact if name is provided
+  if (input.primaryContact?.name?.trim()) {
+    const contactName = input.primaryContact.name.trim()
+    try {
+      await prisma.contact.create({
         data: {
           organisationId: created.id,
           name: contactName,
@@ -396,14 +396,18 @@ export async function createOrganisation(
           createdById: user.id,
         },
       })
+    } catch (contactErr) {
+      console.error('Failed to create primary contact:', contactErr)
     }
+  }
 
-    // Link or create tags if provided
-    if (input.tags && input.tags.length > 0) {
-      for (const rawTag of input.tags) {
-        const tagName = rawTag.trim()
-        if (!tagName) continue
-        const tag = await tx.tag.upsert({
+  // Link or create tags if provided
+  if (input.tags && input.tags.length > 0) {
+    for (const rawTag of input.tags) {
+      const tagName = rawTag.trim()
+      if (!tagName) continue
+      try {
+        const tag = await prisma.tag.upsert({
           where: { name: tagName },
           update: { isArchived: false },
           create: {
@@ -412,7 +416,7 @@ export async function createOrganisation(
             createdById: user.id,
           },
         })
-        await tx.organisationTag.upsert({
+        await prisma.organisationTag.upsert({
           where: {
             organisationId_tagId: {
               organisationId: created.id,
@@ -425,26 +429,23 @@ export async function createOrganisation(
             tagId: tag.id,
           },
         })
+      } catch (tagErr) {
+        console.error('Failed to attach tag:', tagErr)
       }
     }
+  }
 
-    await writeAudit(
-      {
-        userId: user.id,
-        action: 'organisation.created',
-        entityType: 'organisation',
-        entityId: created.id,
-        entityLabel: created.name,
-        summary: `Created organisation "${created.name}"`,
-        after: { status: created.status, assignedToId: created.assignedToId },
-      },
-      tx,
-    )
-
-    return created
+  await writeAuditSafe({
+    userId: user.id,
+    action: 'organisation.created',
+    entityType: 'organisation',
+    entityId: created.id,
+    entityLabel: created.name,
+    summary: `Created organisation "${created.name}"`,
+    after: { status: created.status, assignedToId: created.assignedToId },
   })
 
-  return { status: 'CREATED', id: org.id, name: org.name }
+  return { status: 'CREATED', id: created.id, name: created.name }
 }
 
 export async function updateOrganisation(
@@ -484,66 +485,58 @@ export async function updateOrganisation(
   // details keeps the existing assignee.
   const assignedToId = can(user, 'org:assign') ? (input.assignedToId ?? null) : existing.assignedToId
 
-  await prisma.$transaction(async (tx) => {
-    const updated = await tx.organisation.update({
-      where: { id: input.id },
-      data: {
-        name: input.name,
-        nameNormalized: normalizeOrgName(input.name),
-        category: input.category ?? null,
-        website,
-        domain: normalizeDomain(website),
-        generalEmail: input.generalEmail ?? null,
-        generalPhone: input.generalPhone ?? null,
-        linkedinUrl: normalizeLinkedInUrl(input.linkedinUrl),
-        location: input.location ?? null,
-        notes: input.notes ?? null,
-        assignedToId,
-        ...(input.status && input.status !== 'FOLLOW_UP' && can(user, 'org:changeStatus')
-          ? { status: input.status as OrgStatus }
-          : {}),
-      },
-      select: { id: true, name: true, status: true, priority: true, assignedToId: true },
-    })
-
-    await writeAudit(
-      {
-        userId: user.id,
-        action: 'organisation.updated',
-        entityType: 'organisation',
-        entityId: updated.id,
-        entityLabel: updated.name,
-        summary: `Updated organisation "${updated.name}"`,
-        before: {
-          name: existing.name,
-          priority: existing.priority,
-          website: existing.website,
-          category: existing.category,
-          location: existing.location,
-        },
-        after: { name: updated.name, priority: updated.priority },
-      },
-      tx,
-    )
-
-    if (existing.status !== updated.status) {
-      await writeAudit(
-        {
-          userId: user.id,
-          action: 'organisation.status_changed',
-          entityType: 'organisation',
-          entityId: updated.id,
-          entityLabel: updated.name,
-          summary: `Status ${ORG_STATUS_META[existing.status].label} → ${
-            ORG_STATUS_META[updated.status].label
-          }`,
-          before: { status: existing.status },
-          after: { status: updated.status },
-        },
-        tx,
-      )
-    }
+  const updated = await prisma.organisation.update({
+    where: { id: input.id },
+    data: {
+      name: input.name,
+      nameNormalized: normalizeOrgName(input.name),
+      category: input.category ?? null,
+      website,
+      domain: normalizeDomain(website),
+      generalEmail: input.generalEmail ?? null,
+      generalPhone: input.generalPhone ?? null,
+      linkedinUrl: normalizeLinkedInUrl(input.linkedinUrl),
+      location: input.location ?? null,
+      notes: input.notes ?? null,
+      assignedToId,
+      ...(input.status && input.status !== 'FOLLOW_UP' && can(user, 'org:changeStatus')
+        ? { status: input.status as OrgStatus }
+        : {}),
+    },
+    select: { id: true, name: true, status: true, priority: true, assignedToId: true },
   })
+
+  await writeAuditSafe({
+    userId: user.id,
+    action: 'organisation.updated',
+    entityType: 'organisation',
+    entityId: updated.id,
+    entityLabel: updated.name,
+    summary: `Updated organisation "${updated.name}"`,
+    before: {
+      name: existing.name,
+      priority: existing.priority,
+      website: existing.website,
+      category: existing.category,
+      location: existing.location,
+    },
+    after: { name: updated.name, priority: updated.priority },
+  })
+
+  if (existing.status !== updated.status) {
+    await writeAuditSafe({
+      userId: user.id,
+      action: 'organisation.status_changed',
+      entityType: 'organisation',
+      entityId: updated.id,
+      entityLabel: updated.name,
+      summary: `Status ${ORG_STATUS_META[existing.status].label} → ${
+        ORG_STATUS_META[updated.status].label
+      }`,
+      before: { status: existing.status },
+      after: { status: updated.status },
+    })
+  }
 
   return { status: 'CREATED', id: input.id, name: input.name }
 }
@@ -611,48 +604,43 @@ export async function assignOrganisation(
     if (!assignee) throw new NotFoundError('Team member')
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.organisation.update({
-      where: { id: org.id },
-      data: {
-        assignedToId: nextId,
-        // Handing over an untouched organisation moves it out of NEW.
-        ...(nextId && org.status === 'NEW' ? { status: 'ASSIGNED' } : {}),
-      },
+  await prisma.organisation.update({
+    where: { id: org.id },
+    data: {
+      assignedToId: nextId,
+      // Handing over an untouched organisation moves it out of NEW.
+      ...(nextId && org.status === 'NEW' ? { status: 'ASSIGNED' } : {}),
+    },
+  })
+
+  // Pending follow-ups travel with the organisation, otherwise the previous
+  // owner keeps seeing work they no longer hold.
+  if (nextId) {
+    await prisma.followUp.updateMany({
+      where: { organisationId: org.id, status: 'PENDING', deletedAt: null },
+      data: { assignedToId: nextId },
     })
+  }
 
-    // Pending follow-ups travel with the organisation, otherwise the previous
-    // owner keeps seeing work they no longer hold.
-    if (nextId) {
-      await tx.followUp.updateMany({
-        where: { organisationId: org.id, status: 'PENDING', deletedAt: null },
-        data: { assignedToId: nextId },
-      })
-    }
+  const action = org.assignedTo ? (nextId ? 'reassigned' : 'unassigned') : 'assigned'
+  const summary = !nextId
+    ? `Unassigned from ${org.assignedTo?.name ?? 'nobody'}`
+    : org.assignedTo
+      ? `Reassigned from ${org.assignedTo.name} to ${assignee!.name}`
+      : `Assigned to ${assignee!.name}`
 
-    const action = org.assignedTo ? (nextId ? 'reassigned' : 'unassigned') : 'assigned'
-    const summary = !nextId
-      ? `Unassigned from ${org.assignedTo?.name ?? 'nobody'}`
-      : org.assignedTo
-        ? `Reassigned from ${org.assignedTo.name} to ${assignee!.name}`
-        : `Assigned to ${assignee!.name}`
-
-    await writeAudit(
-      {
-        userId: user.id,
-        action: `organisation.${action}` as
-          | 'organisation.assigned'
-          | 'organisation.unassigned'
-          | 'organisation.reassigned',
-        entityType: 'organisation',
-        entityId: org.id,
-        entityLabel: org.name,
-        summary,
-        before: { assignedToId: org.assignedToId, assignee: org.assignedTo?.name ?? null },
-        after: { assignedToId: nextId, assignee: assignee?.name ?? null },
-      },
-      tx,
-    )
+  await writeAuditSafe({
+    userId: user.id,
+    action: `organisation.${action}` as
+      | 'organisation.assigned'
+      | 'organisation.unassigned'
+      | 'organisation.reassigned',
+    entityType: 'organisation',
+    entityId: org.id,
+    entityLabel: org.name,
+    summary,
+    before: { assignedToId: org.assignedToId, assignee: org.assignedTo?.name ?? null },
+    after: { assignedToId: nextId, assignee: assignee?.name ?? null },
   })
 
   if (nextId && nextId !== user.id) {
@@ -692,40 +680,35 @@ export async function bulkAssignOrganisations(
     select: { id: true, name: true, status: true, assignedToId: true },
   })
 
-  await prisma.$transaction(async (tx) => {
-    for (const target of targets) {
-      if (target.assignedToId === nextId) continue
+  for (const target of targets) {
+    if (target.assignedToId === nextId) continue
 
-      await tx.organisation.update({
-        where: { id: target.id },
-        data: {
-          assignedToId: nextId,
-          ...(nextId && target.status === 'NEW' ? { status: 'ASSIGNED' } : {}),
-        },
+    await prisma.organisation.update({
+      where: { id: target.id },
+      data: {
+        assignedToId: nextId,
+        ...(nextId && target.status === 'NEW' ? { status: 'ASSIGNED' } : {}),
+      },
+    })
+
+    if (nextId) {
+      await prisma.followUp.updateMany({
+        where: { organisationId: target.id, status: 'PENDING', deletedAt: null },
+        data: { assignedToId: nextId },
       })
-
-      if (nextId) {
-        await tx.followUp.updateMany({
-          where: { organisationId: target.id, status: 'PENDING', deletedAt: null },
-          data: { assignedToId: nextId },
-        })
-      }
-
-      await writeAudit(
-        {
-          userId: user.id,
-          action: nextId ? 'organisation.assigned' : 'organisation.unassigned',
-          entityType: 'organisation',
-          entityId: target.id,
-          entityLabel: target.name,
-          summary: nextId ? `Bulk assigned to ${assignee!.name}` : 'Bulk unassigned',
-          before: { assignedToId: target.assignedToId },
-          after: { assignedToId: nextId },
-        },
-        tx,
-      )
     }
-  })
+
+    await writeAuditSafe({
+      userId: user.id,
+      action: nextId ? 'organisation.assigned' : 'organisation.unassigned',
+      entityType: 'organisation',
+      entityId: target.id,
+      entityLabel: target.name,
+      summary: nextId ? `Bulk assigned to ${assignee!.name}` : 'Bulk unassigned',
+      before: { assignedToId: target.assignedToId },
+      after: { assignedToId: nextId },
+    })
+  }
 
   if (nextId && nextId !== user.id && targets.length > 0) {
     await createNotification({
@@ -759,30 +742,25 @@ export async function changeOrganisationStatus(
 
   if (org.status === input.status) return { from: org.status, to: input.status }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.organisation.update({
-      where: { id: org.id },
-      data: {
-        status: input.status,
-        ...(org.assignedToId === null ? { assignedToId: user.id } : {}),
-      },
-    })
+  await prisma.organisation.update({
+    where: { id: org.id },
+    data: {
+      status: input.status,
+      ...(org.assignedToId === null ? { assignedToId: user.id } : {}),
+    },
+  })
 
-    await writeAudit(
-      {
-        userId: user.id,
-        action: 'organisation.status_changed',
-        entityType: 'organisation',
-        entityId: org.id,
-        entityLabel: org.name,
-        summary: `Status ${ORG_STATUS_META[org.status].label} → ${
-          ORG_STATUS_META[input.status].label
-        }${input.reason ? ` — ${input.reason}` : ''}`,
-        before: { status: org.status },
-        after: { status: input.status, reason: input.reason ?? null },
-      },
-      tx,
-    )
+  await writeAuditSafe({
+    userId: user.id,
+    action: 'organisation.status_changed',
+    entityType: 'organisation',
+    entityId: org.id,
+    entityLabel: org.name,
+    summary: `Status ${ORG_STATUS_META[org.status].label} → ${
+      ORG_STATUS_META[input.status].label
+    }${input.reason ? ` — ${input.reason}` : ''}`,
+    before: { status: org.status },
+    after: { status: input.status, reason: input.reason ?? null },
   })
 
   // Drop notification to TL and OWNER when moved by an intern
@@ -821,31 +799,23 @@ export async function softDeleteOrganisation(user: CurrentUser, id: string): Pro
 
   const now = new Date()
 
-  await prisma.$transaction(async (tx) => {
-    // Archive the organisation and its dependents together. Activities are kept
-    // intact so the historical record survives (spec §32) — they simply stop
-    // appearing in active views.
-    await tx.organisation.update({ where: { id }, data: { deletedAt: now } })
-    await tx.contact.updateMany({
-      where: { organisationId: id, deletedAt: null },
-      data: { deletedAt: now },
-    })
-    await tx.followUp.updateMany({
-      where: { organisationId: id, deletedAt: null, status: 'PENDING' },
-      data: { deletedAt: now, status: 'CANCELLED' },
-    })
+  await prisma.organisation.update({ where: { id }, data: { deletedAt: now } })
+  await prisma.contact.updateMany({
+    where: { organisationId: id, deletedAt: null },
+    data: { deletedAt: now },
+  })
+  await prisma.followUp.updateMany({
+    where: { organisationId: id, deletedAt: null, status: 'PENDING' },
+    data: { deletedAt: now, status: 'CANCELLED' },
+  })
 
-    await writeAudit(
-      {
-        userId: user.id,
-        action: 'organisation.deleted',
-        entityType: 'organisation',
-        entityId: id,
-        entityLabel: org.name,
-        summary: `Archived organisation "${org.name}" (recoverable)`,
-      },
-      tx,
-    )
+  await writeAuditSafe({
+    userId: user.id,
+    action: 'organisation.deleted',
+    entityType: 'organisation',
+    entityId: id,
+    entityLabel: org.name,
+    summary: `Archived organisation "${org.name}" (recoverable)`,
   })
 }
 
@@ -858,22 +828,17 @@ export async function restoreOrganisation(user: CurrentUser, id: string): Promis
   })
   if (!org) throw new NotFoundError('Archived organisation')
 
-  await prisma.$transaction(async (tx) => {
-    await tx.organisation.update({ where: { id }, data: { deletedAt: null } })
-    await tx.contact.updateMany({ where: { organisationId: id }, data: { deletedAt: null } })
-    await recomputeOrganisationCaches(tx, id)
+  await prisma.organisation.update({ where: { id }, data: { deletedAt: null } })
+  await prisma.contact.updateMany({ where: { organisationId: id }, data: { deletedAt: null } })
+  await recomputeOrganisationCaches(prisma, id)
 
-    await writeAudit(
-      {
-        userId: user.id,
-        action: 'organisation.restored',
-        entityType: 'organisation',
-        entityId: id,
-        entityLabel: org.name,
-        summary: `Restored organisation "${org.name}"`,
-      },
-      tx,
-    )
+  await writeAuditSafe({
+    userId: user.id,
+    action: 'organisation.restored',
+    entityType: 'organisation',
+    entityId: id,
+    entityLabel: org.name,
+    summary: `Restored organisation "${org.name}"`,
   })
 }
 
@@ -896,35 +861,30 @@ export async function requestReassignment(
     select: { id: true },
   })
 
-  await prisma.$transaction(async (tx) => {
-    if (existing) {
-      await tx.reassignmentRequest.update({
-        where: { id: existing.id },
-        data: { reason: input.reason ?? null, currentAssigneeId: org.assignedToId },
-      })
-    } else {
-      await tx.reassignmentRequest.create({
-        data: {
-          organisationId: org.id,
-          requestedById: user.id,
-          currentAssigneeId: org.assignedToId,
-          reason: input.reason ?? null,
-        },
-      })
-    }
-
-    await writeAudit(
-      {
-        userId: user.id,
-        action: 'reassignment.requested',
-        entityType: 'organisation',
-        entityId: org.id,
-        entityLabel: org.name,
-        summary: `${user.name} requested reassignment of "${org.name}"`,
-        after: { reason: input.reason ?? null },
+  if (existing) {
+    await prisma.reassignmentRequest.update({
+      where: { id: existing.id },
+      data: { reason: input.reason ?? null, currentAssigneeId: org.assignedToId },
+    })
+  } else {
+    await prisma.reassignmentRequest.create({
+      data: {
+        organisationId: org.id,
+        requestedById: user.id,
+        currentAssigneeId: org.assignedToId,
+        reason: input.reason ?? null,
       },
-      tx,
-    )
+    })
+  }
+
+  await writeAuditSafe({
+    userId: user.id,
+    action: 'reassignment.requested',
+    entityType: 'organisation',
+    entityId: org.id,
+    entityLabel: org.name,
+    summary: `${user.name} requested reassignment of "${org.name}"`,
+    after: { reason: input.reason ?? null },
   })
 
   return { organisationName: org.name }
@@ -971,45 +931,40 @@ export async function decideReassignment(
   if (!request) throw new NotFoundError('Reassignment request')
   if (request.status !== 'PENDING') throw new NotFoundError('Pending reassignment request')
 
-  await prisma.$transaction(async (tx) => {
-    await tx.reassignmentRequest.update({
-      where: { id: request.id },
+  await prisma.reassignmentRequest.update({
+    where: { id: request.id },
+    data: {
+      status: input.approve ? 'APPROVED' : 'REJECTED',
+      decidedById: user.id,
+      decidedAt: new Date(),
+      decisionNote: input.decisionNote ?? null,
+    },
+  })
+
+  if (input.approve) {
+    await prisma.organisation.update({
+      where: { id: request.organisationId },
       data: {
-        status: input.approve ? 'APPROVED' : 'REJECTED',
-        decidedById: user.id,
-        decidedAt: new Date(),
-        decisionNote: input.decisionNote ?? null,
+        assignedToId: request.requestedById,
+        ...(request.organisation.status === 'NEW' ? { status: 'ASSIGNED' } : {}),
       },
     })
+    await prisma.followUp.updateMany({
+      where: { organisationId: request.organisationId, status: 'PENDING', deletedAt: null },
+      data: { assignedToId: request.requestedById },
+    })
+  }
 
-    if (input.approve) {
-      await tx.organisation.update({
-        where: { id: request.organisationId },
-        data: {
-          assignedToId: request.requestedById,
-          ...(request.organisation.status === 'NEW' ? { status: 'ASSIGNED' } : {}),
-        },
-      })
-      await tx.followUp.updateMany({
-        where: { organisationId: request.organisationId, status: 'PENDING', deletedAt: null },
-        data: { assignedToId: request.requestedById },
-      })
-    }
-
-    await writeAudit(
-      {
-        userId: user.id,
-        action: input.approve ? 'reassignment.approved' : 'reassignment.rejected',
-        entityType: 'organisation',
-        entityId: request.organisationId,
-        entityLabel: request.organisation.name,
-        summary: input.approve
-          ? `Approved reassignment of "${request.organisation.name}" to ${request.requestedBy.name}`
-          : `Rejected reassignment of "${request.organisation.name}"`,
-        after: { note: input.decisionNote ?? null },
-      },
-      tx,
-    )
+  await writeAuditSafe({
+    userId: user.id,
+    action: input.approve ? 'reassignment.approved' : 'reassignment.rejected',
+    entityType: 'organisation',
+    entityId: request.organisationId,
+    entityLabel: request.organisation.name,
+    summary: input.approve
+      ? `Approved reassignment of "${request.organisation.name}" to ${request.requestedBy.name}`
+      : `Rejected reassignment of "${request.organisation.name}"`,
+    after: { note: input.decisionNote ?? null },
   })
 
   return { organisationName: request.organisation.name, approved: input.approve }
