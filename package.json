@@ -15,6 +15,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
+    "db:restore": "tsx scripts/restore-from-backup.ts",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset --force",
     "postinstall": "prisma generate"
