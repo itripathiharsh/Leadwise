@@ -21,29 +21,25 @@ export interface GoogleDriveOAuthConfig {
  * Never logs or returns secrets to client-facing callers.
  */
 export async function getGoogleDriveConfig(): Promise<GoogleDriveOAuthConfig> {
-  const clientId =
-    process.env.GOOGLE_OAUTH_CLIENT_ID ||
-    (await getAppSetting('google_drive_oauth_client_id')) ||
-    ''
+  const dbClientId = await getAppSetting('google_drive_oauth_client_id')
+  const clientId = (dbClientId || process.env.GOOGLE_OAUTH_CLIENT_ID || '').trim()
 
-  const clientSecret =
-    process.env.GOOGLE_OAUTH_CLIENT_SECRET ||
-    (await getAppSetting('google_drive_oauth_client_secret')) ||
-    ''
+  const dbClientSecret = await getAppSetting('google_drive_oauth_client_secret')
+  const clientSecret = (dbClientSecret || process.env.GOOGLE_OAUTH_CLIENT_SECRET || '').trim()
 
-  const refreshToken =
-    process.env.GOOGLE_OAUTH_REFRESH_TOKEN ||
-    (await getAppSetting('google_drive_oauth_refresh_token')) ||
-    ''
+  const dbRefreshToken = await getAppSetting('google_drive_oauth_refresh_token')
+  const refreshToken = (dbRefreshToken || process.env.GOOGLE_OAUTH_REFRESH_TOKEN || '').trim()
 
   const userEmail =
     (await getAppSetting('google_drive_oauth_user_email')) ||
     ''
 
-  const folderId =
+  const dbFolderId = await getAppSetting('google_drive_backup_folder_id')
+  const folderId = (
+    dbFolderId ||
     process.env.GOOGLE_DRIVE_BACKUP_FOLDER_ID ||
-    (await getAppSetting('google_drive_backup_folder_id')) ||
     '1Rg8Gr68cwglbsq_HYZphghMADlafrGCg'
+  ).trim()
 
   return { clientId, clientSecret, refreshToken, userEmail, folderId }
 }
@@ -69,8 +65,16 @@ async function getOAuth2AccessToken(
   })
 
   if (!response.ok) {
+    const errorBody = await response.text().catch(() => '')
+    let detail = ''
+    try {
+      const parsed = JSON.parse(errorBody)
+      detail = parsed.error_description || parsed.error || errorBody
+    } catch {
+      detail = errorBody
+    }
     throw new Error(
-      `Google OAuth token refresh failed with status ${response.status}. Re-authentication in Settings > Backups may be required.`,
+      `Google OAuth token refresh failed with status ${response.status}${detail ? `: ${detail}` : ''}. Re-authentication in Settings > Backups may be required.`,
     )
   }
 
@@ -400,8 +404,16 @@ export async function exchangeOAuthCodeForTokens(
   })
 
   if (!response.ok) {
+    const errorBody = await response.text().catch(() => '')
+    let detail = ''
+    try {
+      const parsed = JSON.parse(errorBody)
+      detail = parsed.error_description || parsed.error || errorBody
+    } catch {
+      detail = errorBody
+    }
     throw new Error(
-      `Google OAuth code exchange failed (${response.status}). Verify that redirect URI matches your Google Cloud Console configuration.`,
+      `Google OAuth code exchange failed (${response.status}): ${detail || 'Verify redirect URI and credentials.'}`,
     )
   }
 
