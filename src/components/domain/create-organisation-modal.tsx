@@ -660,10 +660,18 @@ export function CreateOrganisationModal({
         body: JSON.stringify(payload),
       })
 
-      const data = await res.json()
+      let data: any = null
+      try {
+        data = await res.json()
+      } catch {
+        const text = await res.text().catch(() => '')
+        toast.error(text || `Server error (${res.status})`)
+        setLoading(false)
+        return
+      }
 
-      if (!res.ok || data.error) {
-        toast.error(data.error || 'Failed to create organization.')
+      if (!res.ok || data?.error) {
+        toast.error(data?.error || 'Failed to create organization.')
         setLoading(false)
         return
       }
@@ -678,8 +686,9 @@ export function CreateOrganisationModal({
       toast.success(`Organization "${name}" added successfully!`)
       onOpenChange(false)
       onSuccess?.({ id: data.id, name })
-    } catch {
-      toast.error('Network error creating organization.')
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      toast.error(msg || 'Network error creating organization.')
     } finally {
       setLoading(false)
     }
