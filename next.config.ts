@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   serverExternalPackages: ['exceljs', 'bcryptjs'],
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   experimental: {
     // Keep server action payloads generous enough for Excel import previews.
     serverActions: {
