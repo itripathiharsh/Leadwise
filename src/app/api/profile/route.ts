@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/current-user'
 import { prisma } from '@/lib/db'
 import { profileUpdateSchema } from '@/lib/validation'
-import { getPersonMetrics } from '@/server/services/metrics'
+import { getPersonMetrics, getTeamMetrics } from '@/server/services/metrics'
 import { changeOwnPassword } from '@/server/services/users'
 import { addDaysToKey, startOfDayUtc, todayKey } from '@/lib/dates'
 import { writeAudit } from '@/server/services/audit'
@@ -16,8 +16,9 @@ export async function GET() {
   const today = todayKey()
   const weekStart = addDaysToKey(today, -6)
   const startOfToday = startOfDayUtc(today)
+  const isOwner = user.role === 'OWNER'
 
-  const [dbUser, overdueFollowUps, todayMetrics, weekMetrics, recentActivities] =
+  const [dbUser, overdueFollowUps, todayMetrics, weekMetrics, recentActivities, teamCounts] =
     await Promise.all([
       prisma.user.findUnique({
         where: { id: user.id },
@@ -53,16 +54,19 @@ export async function GET() {
       }),
       prisma.followUp.count({
         where: {
-          assignedToId: user.id,
+          ...(isOwner ? {} : { assignedToId: user.id }),
           deletedAt: null,
           status: 'PENDING',
           dueDate: { lt: startOfToday },
+          organisation: { deletedAt: null },
         },
       }),
-      getPersonMetrics(user.id, today, today),
-      getPersonMetrics(user.id, weekStart, today),
+      isOwner ? getTeamMetrics(today, today) : getPersonMetrics(user.id, today, today),
+      isOwner ? getTeamMetrics(weekStart, today) : getPersonMetrics(user.id, weekStart, today),
       prisma.activity.findMany({
-        where: { performedById: user.id, deletedAt: null },
+        where: isOwner
+          ? { deletedAt: null, organisation: { deletedAt: null } }
+          : { performedById: user.id, deletedAt: null, organisation: { deletedAt: null } },
         select: {
           id: true,
           type: true,
@@ -72,10 +76,20 @@ export async function GET() {
           activityDate: true,
           organisation: { select: { id: true, name: true } },
           contact: { select: { id: true, name: true } },
+          performedBy: { select: { id: true, name: true, avatarColor: true } },
         },
         orderBy: { activityDate: 'desc' },
         take: 10,
       }),
+      isOwner
+        ? Promise.all([
+            prisma.organisation.count({ where: { deletedAt: null } }),
+            prisma.contact.count({ where: { deletedAt: null } }),
+            prisma.activity.count({ where: { deletedAt: null } }),
+            prisma.followUp.count({ where: { deletedAt: null, status: 'PENDING' } }),
+            prisma.followUp.count({ where: { deletedAt: null, status: 'DONE' } }),
+          ])
+        : Promise.resolve(null),
     ])
 
   if (!dbUser) {
@@ -85,14 +99,23 @@ export async function GET() {
   return NextResponse.json({
     profile: {
       ...dbUser,
-      counts: {
-        assignedOrganisations: dbUser._count.organisationsAssigned,
-        assignedContacts: dbUser._count.contactsAssigned,
-        totalActivities: dbUser._count.activities,
-        pendingFollowUps: dbUser._count.followUpsAssigned,
-        completedFollowUps: dbUser._count.followUpsCompleted,
-        overdueFollowUps,
-      },
+      counts: isOwner && teamCounts
+        ? {
+            assignedOrganisations: teamCounts[0],
+            assignedContacts: teamCounts[1],
+            totalActivities: teamCounts[2],
+            pendingFollowUps: teamCounts[3],
+            completedFollowUps: teamCounts[4],
+            overdueFollowUps,
+          }
+        : {
+            assignedOrganisations: dbUser._count.organisationsAssigned,
+            assignedContacts: dbUser._count.contactsAssigned,
+            totalActivities: dbUser._count.activities,
+            pendingFollowUps: dbUser._count.followUpsAssigned,
+            completedFollowUps: dbUser._count.followUpsCompleted,
+            overdueFollowUps,
+          },
       metrics: {
         today: todayMetrics,
         week: weekMetrics,

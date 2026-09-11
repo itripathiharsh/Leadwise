@@ -40,12 +40,13 @@ export default async function DashboardPage() {
   const user = await requireUser()
   const today = todayKey()
 
+  const isOwner = user.role === 'OWNER'
   const isLeader = user.role === 'OWNER' || user.role === 'TL'
 
   // Fetch all primary dashboard metrics and pipeline distribution in parallel
   const [
     todayMetrics,
-    teamMetrics,
+    teamMetricsRaw,
     dueTodayFollowups,
     overdueFollowups,
     recentActivities,
@@ -59,7 +60,7 @@ export default async function DashboardPage() {
     listFollowUps(user, { bucket: 'OVERDUE', pageSize: 6 }),
     listActivities(user, { pageSize: 8 }),
     listOrganisations(user, { status: ['INTERESTED', 'MEETING', 'PARTNERSHIP'], pageSize: 5 }),
-    recommendTodayPriorities(user),
+    !isOwner ? recommendTodayPriorities(user) : Promise.resolve([]),
     prisma.organisation.groupBy({
       by: ['status'],
       _count: { id: true },
@@ -69,6 +70,9 @@ export default async function DashboardPage() {
       },
     }),
   ])
+
+  // Owner only overviews; only reps and outreach team members are shown in outreach velocity
+  const teamMetrics = teamMetricsRaw.filter((tm) => tm.role !== 'OWNER')
 
   // Greeting based on time of day
   const hour = new Date().getHours()
@@ -101,11 +105,19 @@ export default async function DashboardPage() {
               {greeting}, {user.name}
             </h1>
             <Badge tone="indigo" size="sm" dot>
-              Live Mission Control
+              {isOwner ? 'Executive Overview' : 'Live Mission Control'}
             </Badge>
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground">
-            {urgentTotal > 0 ? (
+            {isOwner ? (
+              urgentTotal > 0 ? (
+                <span className="text-amber-700 dark:text-amber-300 font-medium">
+                  {urgentTotal} team outreach action{urgentTotal === 1 ? '' : 's'} require follow-up across reps today.
+                </span>
+              ) : (
+                <span>All team follow-up pipelines are currently up to date. Overviewing active outreach velocity.</span>
+              )
+            ) : urgentTotal > 0 ? (
               <span className="text-amber-700 dark:text-amber-300 font-medium">
                 {urgentTotal} outreach action{urgentTotal === 1 ? '' : 's'} require attention today.
               </span>
@@ -134,7 +146,7 @@ export default async function DashboardPage() {
         >
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-              Overdue
+              {isOwner ? 'Team Overdue' : 'Overdue'}
             </span>
             <div
               className={cn(
@@ -155,7 +167,7 @@ export default async function DashboardPage() {
               {overdueFollowups.total}
             </div>
             <div className="text-[11px] text-muted-foreground mt-1.5 flex items-center gap-1 group-hover:text-rose-400 transition-colors">
-              <span>Immediate check-in required</span>
+              <span>{isOwner ? 'Pending across team reps' : 'Immediate check-in required'}</span>
               <ArrowRight className="size-3 opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
           </div>
@@ -172,7 +184,7 @@ export default async function DashboardPage() {
         >
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-              Due Today
+              {isOwner ? 'Team Due Today' : 'Due Today'}
             </span>
             <div
               className={cn(
@@ -193,7 +205,7 @@ export default async function DashboardPage() {
               {dueTodayFollowups.total}
             </div>
             <div className="text-[11px] text-muted-foreground mt-1.5 flex items-center gap-1 group-hover:text-amber-400 transition-colors">
-              <span>Scheduled touchpoints</span>
+              <span>{isOwner ? 'Scheduled team touchpoints' : 'Scheduled touchpoints'}</span>
               <ArrowRight className="size-3 opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
           </div>
@@ -205,7 +217,7 @@ export default async function DashboardPage() {
         >
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-              Meetings Today
+              {isOwner ? 'Team Meetings' : 'Meetings Today'}
             </span>
             <div className="size-9 rounded-xl bg-violet-500/20 text-violet-400 border border-violet-500/40 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 shadow-[0_0_15px_rgba(139,92,246,0.4)]">
               <Calendar className="size-4.5" />
@@ -228,7 +240,7 @@ export default async function DashboardPage() {
         >
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-              Warm Prospects
+              {isOwner ? 'Active Pipeline Deals' : 'Warm Prospects'}
             </span>
             <div className="size-9 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 shadow-[0_0_15px_rgba(16,185,129,0.4)]">
               <Flame className="size-4.5" />
@@ -370,7 +382,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Who Should I Contact Today? AI Priority Recommendation Strip */}
-      {todayPriorities.length > 0 && (
+      {!isOwner && todayPriorities.length > 0 && (
         <div className="ai-intel-glow rounded-2xl border border-cyan-400/40 dark:border-cyan-500/40 bg-gradient-to-br from-cyan-50/80 via-surface to-surface dark:from-cyan-950/30 dark:via-surface/90 dark:to-surface/95 backdrop-blur-xl p-6 shadow-sm dark:shadow-2xl space-y-4 rim-highlight">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-cyan-500/20">
             <div className="flex items-center gap-3">
@@ -586,7 +598,9 @@ export default async function DashboardPage() {
                         <th className="pb-2.5 text-center font-bold">Calls</th>
                         <th className="pb-2.5 text-center font-bold">Emails</th>
                         <th className="pb-2.5 text-center font-bold">Resp</th>
-                        <th className="pb-2.5 text-right font-bold">Interested</th>
+                        <th className="pb-2.5 text-center font-bold">Interested</th>
+                        <th className="pb-2.5 text-center font-bold">Due Today</th>
+                        <th className="pb-2.5 text-right font-bold">Overdue</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/40 font-mono">
@@ -603,7 +617,25 @@ export default async function DashboardPage() {
                           <td className="py-2.5 text-center tabular text-foreground">{tm.calls}</td>
                           <td className="py-2.5 text-center tabular text-foreground">{tm.emails}</td>
                           <td className="py-2.5 text-center tabular text-emerald-400 font-semibold">{tm.responses}</td>
-                          <td className="py-2.5 text-right tabular text-amber-400 font-bold">{tm.interested}</td>
+                          <td className="py-2.5 text-center tabular text-amber-400 font-bold">{tm.interested}</td>
+                          <td className="py-2.5 text-center tabular">
+                            {tm.followUpsDueToday > 0 ? (
+                              <span className="px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold border border-amber-500/30 text-[11px]">
+                                {tm.followUpsDueToday}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground/60 text-[11px]">0</span>
+                            )}
+                          </td>
+                          <td className="py-2.5 text-right tabular">
+                            {tm.followUpsOverdue > 0 ? (
+                              <span className="px-1.5 py-0.5 rounded-md bg-rose-500/15 text-rose-600 dark:text-rose-400 font-bold border border-rose-500/30 text-[11px]">
+                                {tm.followUpsOverdue}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground/60 text-[11px]">0</span>
+                            )}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -625,7 +657,7 @@ export default async function DashboardPage() {
                     <AlertTriangle className="size-3.5" />
                   </div>
                   <CardTitle className="text-sm font-bold text-rose-400">
-                    Overdue Queue ({overdueFollowups.total})
+                    {isOwner ? 'Team Overdue Queue' : 'Overdue Queue'} ({overdueFollowups.total})
                   </CardTitle>
                 </div>
                 <Link
@@ -652,6 +684,13 @@ export default async function DashboardPage() {
                       {item.contact ? `${item.contact.name} • ` : ''}
                       {item.note || 'Overdue check-in action'}
                     </div>
+                    {item.assignedTo && (
+                      <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-rose-500/20 text-[10.5px]">
+                        <span className="text-muted-foreground">Assignee:</span>
+                        <Avatar name={item.assignedTo.name} color={item.assignedTo.avatarColor} size="xs" />
+                        <span className="font-semibold text-foreground truncate">{item.assignedTo.name}</span>
+                      </div>
+                    )}
                   </Link>
                 ))}
               </CardContent>
@@ -665,7 +704,9 @@ export default async function DashboardPage() {
                 <div className="size-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shadow-[0_0_8px_rgba(245,158,11,0.3)]">
                   <Clock className="size-3.5" />
                 </div>
-                <CardTitle className="text-sm font-bold">Due Today ({dueTodayFollowups.total})</CardTitle>
+                <CardTitle className="text-sm font-bold">
+                  {isOwner ? 'Team Due Today' : 'Due Today'} ({dueTodayFollowups.total})
+                </CardTitle>
               </div>
               <Link
                 href="/followups?bucket=TODAY"
@@ -680,8 +721,12 @@ export default async function DashboardPage() {
                   <div className="size-10 mx-auto rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.3)]">
                     <CheckCircle2 className="size-5" />
                   </div>
-                  <p className="font-bold text-foreground">You are all caught up!</p>
-                  <p className="text-[11px] text-muted-foreground">No pending follow-ups due today.</p>
+                  <p className="font-bold text-foreground">
+                    {isOwner ? 'All team follow-ups caught up!' : 'You are all caught up!'}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {isOwner ? 'No pending follow-ups due across the team today.' : 'No pending follow-ups due today.'}
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2.5">
@@ -701,6 +746,13 @@ export default async function DashboardPage() {
                         {item.contact ? `${item.contact.name} • ` : ''}
                         {item.note || 'Scheduled outreach follow-up'}
                       </div>
+                      {item.assignedTo && (
+                        <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-border/60 text-[10.5px]">
+                          <span className="text-muted-foreground">Assignee:</span>
+                          <Avatar name={item.assignedTo.name} color={item.assignedTo.avatarColor} size="xs" />
+                          <span className="font-semibold text-foreground truncate">{item.assignedTo.name}</span>
+                        </div>
+                      )}
                     </Link>
                   ))}
                 </div>

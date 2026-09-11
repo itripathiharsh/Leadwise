@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs'
+import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db'
 import type { CurrentUser } from '@/lib/auth/current-user'
 import { assertCan, contactScope, followUpScope } from '@/lib/rbac'
@@ -96,32 +97,40 @@ async function exportOrganisations(
     { header: 'Notes', width: 44 },
   ])
 
+async function fetchOrgBatch(where: Prisma.OrganisationWhereInput, cursor?: string) {
+  return prisma.organisation.findMany({
+    where,
+    orderBy: { id: 'asc' },
+    take: PAGE,
+    cursor: cursor ? { id: cursor } : undefined,
+    skip: cursor ? 1 : 0,
+    select: {
+      id: true,
+      name: true,
+      category: true,
+      status: true,
+      priority: true,
+      location: true,
+      website: true,
+      generalEmail: true,
+      generalPhone: true,
+      lastContactedAt: true,
+      nextFollowupAt: true,
+      createdAt: true,
+      notes: true,
+      activityCount: true,
+      assignedTo: { select: { name: true } },
+      _count: { select: { contacts: { where: { deletedAt: null } } } },
+    },
+  })
+}
+
   const where = buildOrganisationWhere(user, params)
-  for (let skip = 0; ; skip += PAGE) {
-    const rows = await prisma.organisation.findMany({
-      where,
-      orderBy: { name: 'asc' },
-      skip,
-      take: PAGE,
-      select: {
-        name: true,
-        category: true,
-        status: true,
-        priority: true,
-        location: true,
-        website: true,
-        generalEmail: true,
-        generalPhone: true,
-        lastContactedAt: true,
-        nextFollowupAt: true,
-        createdAt: true,
-        notes: true,
-        activityCount: true,
-        assignedTo: { select: { name: true } },
-        _count: { select: { contacts: { where: { deletedAt: null } } } },
-      },
-    })
+  let orgCursor: string | undefined = undefined
+  while (true) {
+    const rows = await fetchOrgBatch(where, orgCursor)
     if (rows.length === 0) break
+    orgCursor = rows[rows.length - 1].id
 
     for (const row of rows) {
       sheet.addRow([
@@ -170,32 +179,43 @@ async function exportContacts(user: CurrentUser, params: OrganisationListParams)
   // Contacts inherit the organisation filters that are on screen.
   const organisationWhere = buildOrganisationWhere(user, params)
 
-  for (let skip = 0; ; skip += PAGE) {
-    const rows = await prisma.contact.findMany({
-      where: {
+async function fetchContactBatch(where: Prisma.ContactWhereInput, cursor?: string) {
+  return prisma.contact.findMany({
+    where,
+    orderBy: { id: 'asc' },
+    take: PAGE,
+    cursor: cursor ? { id: cursor } : undefined,
+    skip: cursor ? 1 : 0,
+    select: {
+      id: true,
+      name: true,
+      designation: true,
+      isDecisionMaker: true,
+      email: true,
+      phone: true,
+      linkedinUrl: true,
+      status: true,
+      priority: true,
+      lastContactedAt: true,
+      notes: true,
+      organisation: { select: { name: true } },
+      assignedTo: { select: { name: true } },
+    },
+  })
+}
+
+  let contactCursor: string | undefined = undefined
+  while (true) {
+    const rows = await fetchContactBatch(
+      {
         deletedAt: null,
         organisation: organisationWhere,
         AND: [contactScope(user)],
       },
-      orderBy: [{ organisation: { name: 'asc' } }, { isDecisionMaker: 'desc' }, { name: 'asc' }],
-      skip,
-      take: PAGE,
-      select: {
-        name: true,
-        designation: true,
-        isDecisionMaker: true,
-        email: true,
-        phone: true,
-        linkedinUrl: true,
-        status: true,
-        priority: true,
-        lastContactedAt: true,
-        notes: true,
-        organisation: { select: { name: true } },
-        assignedTo: { select: { name: true } },
-      },
-    })
+      contactCursor,
+    )
     if (rows.length === 0) break
+    contactCursor = rows[rows.length - 1].id
 
     for (const row of rows) {
       sheet.addRow([
@@ -236,27 +256,35 @@ async function exportActivities(user: CurrentUser, params: ActivityListParams) {
     { header: 'Notes', width: 60 },
   ])
 
+async function fetchActivityBatch(where: Prisma.ActivityWhereInput, cursor?: string) {
+  return prisma.activity.findMany({
+    where,
+    orderBy: { id: 'asc' },
+    take: PAGE,
+    cursor: cursor ? { id: cursor } : undefined,
+    skip: cursor ? 1 : 0,
+    select: {
+      id: true,
+      activityDate: true,
+      type: true,
+      outcome: true,
+      statusAfter: true,
+      nextFollowupDate: true,
+      emailSubject: true,
+      notes: true,
+      organisation: { select: { name: true } },
+      contact: { select: { name: true } },
+      performedBy: { select: { name: true } },
+    },
+  })
+}
+
   const where = buildActivityWhere(user, params)
-  for (let skip = 0; ; skip += PAGE) {
-    const rows = await prisma.activity.findMany({
-      where,
-      orderBy: { activityDate: 'desc' },
-      skip,
-      take: PAGE,
-      select: {
-        activityDate: true,
-        type: true,
-        outcome: true,
-        statusAfter: true,
-        nextFollowupDate: true,
-        emailSubject: true,
-        notes: true,
-        organisation: { select: { name: true } },
-        contact: { select: { name: true } },
-        performedBy: { select: { name: true } },
-      },
-    })
+  let actCursor: string | undefined = undefined
+  while (true) {
+    const rows = await fetchActivityBatch(where, actCursor)
     if (rows.length === 0) break
+    actCursor = rows[rows.length - 1].id
 
     for (const row of rows) {
       sheet.addRow([
@@ -294,28 +322,39 @@ async function exportFollowUps(user: CurrentUser) {
     { header: 'Note', width: 50 },
   ])
 
-  for (let skip = 0; ; skip += PAGE) {
-    const rows = await prisma.followUp.findMany({
-      where: {
+async function fetchFollowUpBatch(where: Prisma.FollowUpWhereInput, cursor?: string) {
+  return prisma.followUp.findMany({
+    where,
+    orderBy: { id: 'asc' },
+    take: PAGE,
+    cursor: cursor ? { id: cursor } : undefined,
+    skip: cursor ? 1 : 0,
+    select: {
+      id: true,
+      dueDate: true,
+      status: true,
+      note: true,
+      organisation: {
+        select: { name: true, status: true, priority: true, lastContactedAt: true },
+      },
+      contact: { select: { name: true } },
+      assignedTo: { select: { name: true } },
+    },
+  })
+}
+
+  let followUpCursor: string | undefined = undefined
+  while (true) {
+    const rows = await fetchFollowUpBatch(
+      {
         deletedAt: null,
         organisation: { deletedAt: null },
         AND: [followUpScope(user)],
       },
-      orderBy: [{ status: 'asc' }, { dueDate: 'asc' }],
-      skip,
-      take: PAGE,
-      select: {
-        dueDate: true,
-        status: true,
-        note: true,
-        organisation: {
-          select: { name: true, status: true, priority: true, lastContactedAt: true },
-        },
-        contact: { select: { name: true } },
-        assignedTo: { select: { name: true } },
-      },
-    })
+      followUpCursor,
+    )
     if (rows.length === 0) break
+    followUpCursor = rows[rows.length - 1].id
 
     for (const row of rows) {
       sheet.addRow([

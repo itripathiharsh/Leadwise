@@ -89,6 +89,7 @@ interface ProfileData {
     activityDate: string
     organisation: { id: string; name: string } | null
     contact: { id: string; name: string } | null
+    performedBy?: { id: string; name: string; avatarColor: string } | null
   }>
 }
 
@@ -249,6 +250,8 @@ export default function ProfilePage() {
     )
   }
 
+  const isOwner = profile.role === 'OWNER'
+
   const roleLabel =
     profile.role === 'OWNER'
       ? 'Workspace Owner'
@@ -348,7 +351,7 @@ export default function ProfilePage() {
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/70',
             )}
           >
-            My Work & Performance
+            {isOwner ? 'Team Work & Performance' : 'My Work & Performance'}
           </button>
           <button
             type="button"
@@ -398,7 +401,7 @@ export default function ProfilePage() {
               <Card className="h-full border-border bg-surface transition-all duration-150 hover:border-primary/50 hover:shadow-xs p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-muted-foreground">
-                    Assigned Organisations
+                    {isOwner ? 'Total Organisations' : 'Assigned Organisations'}
                   </span>
                   <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                     <Building2 className="size-4" />
@@ -408,7 +411,7 @@ export default function ProfilePage() {
                   {profile.counts.assignedOrganisations}
                 </div>
                 <div className="mt-1 flex items-center text-[11px] text-muted-foreground">
-                  Active outreach accounts
+                  {isOwner ? 'Active workspace accounts' : 'Active outreach accounts'}
                 </div>
               </Card>
             </Link>
@@ -417,7 +420,7 @@ export default function ProfilePage() {
               <Card className="h-full border-border bg-surface transition-all duration-150 hover:border-primary/50 hover:shadow-xs p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-muted-foreground">
-                    Assigned Contacts
+                    {isOwner ? 'Total Contacts' : 'Assigned Contacts'}
                   </span>
                   <div className="p-2 rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400 group-hover:bg-teal-500 group-hover:text-white transition-colors">
                     <Users className="size-4" />
@@ -436,7 +439,7 @@ export default function ProfilePage() {
               <Card className="h-full border-border bg-surface transition-all duration-150 hover:border-primary/50 hover:shadow-xs p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-muted-foreground">
-                    Total Activities Logged
+                    {isOwner ? 'Total Team Activities' : 'Total Activities Logged'}
                   </span>
                   <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-colors">
                     <Activity className="size-4" />
@@ -446,7 +449,7 @@ export default function ProfilePage() {
                   {profile.counts.totalActivities}
                 </div>
                 <div className="mt-1 flex items-center text-[11px] text-muted-foreground">
-                  Calls, emails, meetings, notes
+                  {isOwner ? 'Calls, emails, meetings across team' : 'Calls, emails, meetings, notes'}
                 </div>
               </Card>
             </Link>
@@ -455,7 +458,7 @@ export default function ProfilePage() {
               <Card className="h-full border-border bg-surface transition-all duration-150 hover:border-primary/50 hover:shadow-xs p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-muted-foreground">
-                    Pending Follow-ups
+                    {isOwner ? 'Team Pending Follow-ups' : 'Pending Follow-ups'}
                   </span>
                   <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:bg-amber-500 group-hover:text-white transition-colors">
                     <CalendarClock className="size-4" />
@@ -467,7 +470,7 @@ export default function ProfilePage() {
                 <div className="mt-1 flex items-center text-[11px]">
                   {profile.counts.overdueFollowUps > 0 ? (
                     <span className="text-destructive font-medium">
-                      ⚠️ {profile.counts.overdueFollowUps} overdue
+                      ⚠️ {profile.counts.overdueFollowUps} overdue {isOwner ? 'across team' : ''}
                     </span>
                   ) : (
                     <span className="text-emerald-600 dark:text-emerald-400 font-medium">
@@ -486,9 +489,11 @@ export default function ProfilePage() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-base font-semibold">Today&apos;s Outreach</CardTitle>
+                    <CardTitle className="text-base font-semibold">
+                      {isOwner ? "Today's Team Outreach" : "Today's Outreach"}
+                    </CardTitle>
                     <CardDescription className="text-xs">
-                      Activities performed by you today
+                      {isOwner ? 'Activities performed across the team today' : 'Activities performed by you today'}
                     </CardDescription>
                   </div>
                   <Badge tone="emerald" size="sm">
@@ -566,9 +571,11 @@ export default function ProfilePage() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-base font-semibold">Last 7 Days Outreach</CardTitle>
+                    <CardTitle className="text-base font-semibold">
+                      {isOwner ? 'Last 7 Days Team Outreach' : 'Last 7 Days Outreach'}
+                    </CardTitle>
                     <CardDescription className="text-xs">
-                      Rolling weekly progress and output
+                      {isOwner ? 'Rolling weekly team progress and output' : 'Rolling weekly progress and output'}
                     </CardDescription>
                   </div>
                   <Badge tone="blue" size="sm">
@@ -700,9 +707,13 @@ export default function ProfilePage() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-base font-semibold">Your Recent Outreach</CardTitle>
+                  <CardTitle className="text-base font-semibold">
+                    {isOwner ? 'Recent Team Outreach' : 'Your Recent Outreach'}
+                  </CardTitle>
                   <CardDescription className="text-xs">
-                    Latest interactions and calls logged by you
+                    {isOwner
+                      ? 'Latest interactions and touchpoints logged across the team'
+                      : 'Latest interactions and calls logged by you'}
                   </CardDescription>
                 </div>
                 <Link
@@ -717,14 +728,16 @@ export default function ProfilePage() {
             <CardContent>
               {profile.recentActivities.length === 0 ? (
                 <div className="py-8 text-center text-xs text-muted-foreground">
-                  No outreach activity logged yet. Click &quot;Log Activity&quot; in the sidebar to start!
+                  {isOwner
+                    ? 'No outreach activities logged across the team yet.'
+                    : 'No outreach activity logged yet. Click "Log Activity" in the sidebar to start!'}
                 </div>
               ) : (
                 <div className="divide-y divide-border/60">
                   {profile.recentActivities.map((act) => (
                     <div key={act.id} className="py-3 flex items-start justify-between gap-4">
                       <div className="space-y-1 min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-xs font-semibold text-foreground">
                             {act.type}
                           </span>
@@ -735,6 +748,11 @@ export default function ProfilePage() {
                           {act.contact && (
                             <span className="text-[11px] text-muted-foreground truncate">
                               ({act.contact.name})
+                            </span>
+                          )}
+                          {isOwner && act.performedBy && (
+                            <span className="text-[10px] font-medium text-foreground/80 bg-surface-muted px-1.5 py-0.5 rounded border border-border/60">
+                              by {act.performedBy.name}
                             </span>
                           )}
                         </div>

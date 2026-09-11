@@ -8,7 +8,7 @@ import { addDaysToKey, startOfDayUtc, todayKey } from '@/lib/dates'
 import type { UserCreateInput, UserUpdateInput } from '@/lib/validation'
 import { ConflictError, NotFoundError, ValidationError } from '@/server/errors'
 import { writeAudit } from './audit'
-import { getPersonMetrics, type CoreMetrics } from './metrics'
+import { accumulate, type CoreMetrics } from './metrics'
 
 /**
  * User & team management (spec §4).
@@ -501,9 +501,11 @@ export async function getTeamPerformance(user: CurrentUser): Promise<TeamPerform
   const today = todayKey()
   const weekStart = addDaysToKey(today, -6)
   const startOfToday = startOfDayUtc(today)
+  const startOfWeek = startOfDayUtc(weekStart)
+  const endOfToday = startOfDayUtc(addDaysToKey(today, 1))
 
   const members = await prisma.user.findMany({
-    where: { deletedAt: null },
+    where: { deletedAt: null, role: { not: 'OWNER' } },
     select: {
       id: true,
       name: true,
@@ -520,41 +522,81 @@ export async function getTeamPerformance(user: CurrentUser): Promise<TeamPerform
     orderBy: [{ role: 'asc' }, { name: 'asc' }],
   })
 
-  return Promise.all(
-    members.map(async (member) => {
-      const [todayMetrics, weekMetrics, overdueFollowUps, lastActivity] = await Promise.all([
-        getPersonMetrics(member.id, today, today),
-        getPersonMetrics(member.id, weekStart, today),
-        prisma.followUp.count({
-          where: {
-            assignedToId: member.id,
-            deletedAt: null,
-            status: 'PENDING',
-            dueDate: { lt: startOfToday },
-          },
-        }),
-        prisma.activity.findFirst({
-          where: { performedById: member.id, deletedAt: null },
-          select: { activityDate: true },
-          orderBy: { activityDate: 'desc' },
-        }),
-      ])
+  if (members.length === 0) return []
+  const memberIds = members.map((m) => m.id)
 
-      return {
-        userId: member.id,
-        name: member.name,
-        role: member.role,
-        avatarColor: member.avatarColor,
-        isActive: member.isActive,
-        today: todayMetrics,
-        week: weekMetrics,
-        assignedOrganisations: member._count.organisationsAssigned,
-        pendingFollowUps: member._count.followUpsAssigned,
-        overdueFollowUps,
-        lastActivityAt: lastActivity?.activityDate ?? null,
-      }
+  // Batch queries: 1 for overdue follow-ups, 1 for week activities, 1 for all-time last activity
+  const [overdueGroups, weekActivities, lastActivityGroups] = await Promise.all([
+    prisma.followUp.groupBy({
+      by: ['assignedToId'],
+      _count: { id: true },
+      where: {
+        assignedToId: { in: memberIds },
+        deletedAt: null,
+        status: 'PENDING',
+        dueDate: { lt: startOfToday },
+      },
     }),
+    prisma.activity.findMany({
+      where: {
+        performedById: { in: memberIds },
+        activityDate: { gte: startOfWeek, lt: endOfToday },
+        deletedAt: null,
+        organisation: { deletedAt: null },
+      },
+      select: {
+        performedById: true,
+        organisationId: true,
+        type: true,
+        outcome: true,
+        activityDate: true,
+      },
+      orderBy: { activityDate: 'desc' },
+    }),
+    prisma.activity.groupBy({
+      by: ['performedById'],
+      _max: { activityDate: true },
+      where: {
+        performedById: { in: memberIds },
+        deletedAt: null,
+      },
+    }),
+  ])
+
+  const overdueMap = new Map(overdueGroups.map((g) => [g.assignedToId, g._count.id]))
+  const lastActivityMap = new Map(
+    lastActivityGroups.map((g) => [g.performedById, g._max.activityDate]),
   )
+
+  // Partition week activities by member
+  const activitiesByMember = new Map<string, typeof weekActivities>()
+  for (const act of weekActivities) {
+    let list = activitiesByMember.get(act.performedById)
+    if (!list) {
+      list = []
+      activitiesByMember.set(act.performedById, list)
+    }
+    list.push(act)
+  }
+
+  return members.map((member) => {
+    const memberActs = activitiesByMember.get(member.id) ?? []
+    const todayActs = memberActs.filter((a) => a.activityDate >= startOfToday)
+
+    return {
+      userId: member.id,
+      name: member.name,
+      role: member.role,
+      avatarColor: member.avatarColor,
+      isActive: member.isActive,
+      today: accumulate(todayActs),
+      week: accumulate(memberActs),
+      assignedOrganisations: member._count.organisationsAssigned,
+      pendingFollowUps: member._count.followUpsAssigned,
+      overdueFollowUps: overdueMap.get(member.id) ?? 0,
+      lastActivityAt: lastActivityMap.get(member.id) ?? null,
+    }
+  })
 }
 
 /** List new signups in PENDING status awaiting TL/Owner review. */

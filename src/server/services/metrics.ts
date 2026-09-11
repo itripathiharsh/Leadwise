@@ -67,6 +67,8 @@ export interface UserMetrics extends CoreMetrics {
   name: string
   role: Role
   avatarColor: string
+  followUpsDueToday: number
+  followUpsOverdue: number
 }
 
 interface ActivityRow {
@@ -92,7 +94,7 @@ const EMPTY_CORE = (): CoreMetrics => ({
   rejected: 0,
 })
 
-function accumulate(rows: ActivityRow[]): CoreMetrics {
+export function accumulate(rows: ActivityRow[]): CoreMetrics {
   const core = EMPTY_CORE()
   const contactedOrgs = new Set<string>()
   const interestedOrgs = new Set<string>()
@@ -219,17 +221,40 @@ export async function getUserDayMetrics(
 ): Promise<UserMetrics[]> {
   const { start, end } = dayRangeUtc(dateKey)
 
-  const [rows, users] = await Promise.all([
+  const [rows, users, overdueGroups, dueTodayGroups] = await Promise.all([
     prisma.activity.findMany({
       where: activityWindowWhere(user, start, end),
       select: { performedById: true, organisationId: true, type: true, outcome: true },
     }),
     prisma.user.findMany({
-      where: { deletedAt: null, isActive: true },
+      where: { deletedAt: null, isActive: true, role: { not: 'OWNER' } },
       select: { id: true, name: true, role: true, avatarColor: true },
       orderBy: [{ role: 'asc' }, { name: 'asc' }],
     }),
+    prisma.followUp.groupBy({
+      by: ['assignedToId'],
+      _count: { id: true },
+      where: {
+        deletedAt: null,
+        status: 'PENDING',
+        dueDate: { lt: start },
+        organisation: { deletedAt: null },
+      },
+    }),
+    prisma.followUp.groupBy({
+      by: ['assignedToId'],
+      _count: { id: true },
+      where: {
+        deletedAt: null,
+        status: 'PENDING',
+        dueDate: { gte: start, lt: end },
+        organisation: { deletedAt: null },
+      },
+    }),
   ])
+
+  const overdueByUser = new Map(overdueGroups.map((g) => [g.assignedToId, g._count.id]))
+  const dueTodayByUser = new Map(dueTodayGroups.map((g) => [g.assignedToId, g._count.id]))
 
   const byUser = new Map<string, ActivityRow[]>()
   for (const row of rows) {
@@ -243,6 +268,8 @@ export async function getUserDayMetrics(
     name: u.name,
     role: u.role,
     avatarColor: u.avatarColor,
+    followUpsDueToday: dueTodayByUser.get(u.id) ?? 0,
+    followUpsOverdue: overdueByUser.get(u.id) ?? 0,
     ...accumulate(byUser.get(u.id) ?? []),
   }))
 
@@ -253,12 +280,14 @@ export async function getUserDayMetrics(
       where: { id: userId },
       select: { id: true, name: true, role: true, avatarColor: true },
     })
-    if (!person) continue
+    if (!person || person.role === 'OWNER') continue
     result.push({
       userId: person.id,
       name: person.name,
       role: person.role,
       avatarColor: person.avatarColor,
+      followUpsDueToday: dueTodayByUser.get(person.id) ?? 0,
+      followUpsOverdue: overdueByUser.get(person.id) ?? 0,
       ...accumulate(userRows),
     })
   }
@@ -277,6 +306,23 @@ export async function getPersonMetrics(
     where: {
       deletedAt: null,
       performedById: userId,
+      activityDate: { gte: start, lt: end },
+      organisation: { deletedAt: null },
+    },
+    select: { performedById: true, organisationId: true, type: true, outcome: true },
+  })
+  return accumulate(rows)
+}
+
+/** Metrics for the whole team over an arbitrary window (workspace owner / team view). */
+export async function getTeamMetrics(
+  fromKey: DateKey,
+  toKey: DateKey,
+): Promise<CoreMetrics> {
+  const { start, end } = rangeUtc(fromKey, toKey)
+  const rows = await prisma.activity.findMany({
+    where: {
+      deletedAt: null,
       activityDate: { gte: start, lt: end },
       organisation: { deletedAt: null },
     },

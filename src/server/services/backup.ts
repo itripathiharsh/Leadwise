@@ -94,7 +94,7 @@ export async function buildFullBackupWorkbook(): Promise<{
   ]
   formatWorksheetHeader(orgSheet)
 
-  const orgs = await prisma.organisation.findMany({ orderBy: { createdAt: 'asc' } })
+  const orgs = await prisma.organisation.findMany({ orderBy: { createdAt: 'asc' }, take: 50000 })
   for (const org of orgs) {
     orgSheet.addRow({
       ...org,
@@ -134,7 +134,7 @@ export async function buildFullBackupWorkbook(): Promise<{
   ]
   formatWorksheetHeader(contactSheet)
 
-  const contacts = await prisma.contact.findMany({ orderBy: { createdAt: 'asc' } })
+  const contacts = await prisma.contact.findMany({ orderBy: { createdAt: 'asc' }, take: 50000 })
   for (const c of contacts) {
     contactSheet.addRow({
       ...c,
@@ -172,7 +172,7 @@ export async function buildFullBackupWorkbook(): Promise<{
   ]
   formatWorksheetHeader(actSheet)
 
-  const activities = await prisma.activity.findMany({ orderBy: { activityDate: 'asc' } })
+  const activities = await prisma.activity.findMany({ orderBy: { activityDate: 'asc' }, take: 50000 })
   for (const a of activities) {
     actSheet.addRow({
       ...a,
@@ -207,7 +207,7 @@ export async function buildFullBackupWorkbook(): Promise<{
   ]
   formatWorksheetHeader(followSheet)
 
-  const followups = await prisma.followUp.findMany({ orderBy: { dueDate: 'asc' } })
+  const followups = await prisma.followUp.findMany({ orderBy: { dueDate: 'asc' }, take: 50000 })
   for (const f of followups) {
     followSheet.addRow({
       ...f,

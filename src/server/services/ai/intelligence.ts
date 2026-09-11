@@ -209,6 +209,9 @@ export async function scoreOrganisation(orgId: string): Promise<OrganisationInte
 export async function recommendTodayPriorities(
   user: Pick<CurrentUser, 'id' | 'role'>,
 ): Promise<TodayPriorityItem[]> {
+  // Owner only overviews; never assigned personal outreach priorities
+  if (user.role === 'OWNER') return []
+
   // Strictly prioritize organisations assigned to the current user or created by the current user
   let orgs = await prisma.organisation.findMany({
     where: {

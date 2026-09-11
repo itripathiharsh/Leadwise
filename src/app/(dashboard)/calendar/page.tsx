@@ -28,7 +28,7 @@ export default function CalendarPage() {
   const fetchEvents = React.useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/followups?limit=100')
+      const res = await fetch('/api/followups?pageSize=100')
       if (res.ok) {
         const json = await res.json()
         setEvents(json.items || [])

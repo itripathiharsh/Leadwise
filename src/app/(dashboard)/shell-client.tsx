@@ -124,7 +124,6 @@ export function DashboardShell({
             items: [
               { label: 'Analytics', href: '/analytics', icon: TrendingUp },
               { label: 'AI & Funnel', href: '/analytics/advanced', icon: Sparkles },
-              { label: 'EOD Reports', href: '/eod', icon: FileSpreadsheet },
               { label: 'Weekly Report', href: '/reports/weekly', icon: BarChart3 },
               { label: 'Monthly Report', href: '/reports/monthly', icon: CalendarCheck },
             ],

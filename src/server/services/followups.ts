@@ -365,27 +365,59 @@ export async function listFollowUps(
     bucket?: 'TODAY' | 'OVERDUE' | 'TOMORROW' | 'UPCOMING'
     page?: number
     pageSize?: number
+    assignee?: string
   } = {},
 ) {
-  const board = await getFollowUpBoard(user, {})
-  let items: any[] = []
-
-  if (params.bucket === 'TODAY') items = board.today
-  else if (params.bucket === 'OVERDUE') items = board.overdue
-  else if (params.bucket === 'TOMORROW') items = board.tomorrow
-  else if (params.bucket === 'UPCOMING') items = board.upcoming
-  else items = [...board.overdue, ...board.today, ...board.tomorrow, ...board.upcoming]
-
   const page = Math.max(1, params.page ?? 1)
   const pageSize = Math.min(100, Math.max(1, params.pageSize ?? 25))
-  const total = items.length
-  const paginated = items.slice((page - 1) * pageSize, page * pageSize)
+  const skip = (page - 1) * pageSize
+
+  const today = todayKey()
+  const startToday = startOfDayUtc(today)
+  const startTomorrow = startOfDayUtc(addDaysToKey(today, 1))
+  const startDayAfter = startOfDayUtc(addDaysToKey(today, 2))
+  const upcomingEnd = startOfDayUtc(addDaysToKey(today, 15))
+
+  const baseWhere: Prisma.FollowUpWhereInput = {
+    deletedAt: null,
+    status: 'PENDING',
+    organisation: { deletedAt: null },
+    AND: [assigneeClause(user, params.assignee)],
+  }
+
+  let dateFilter: Prisma.FollowUpWhereInput = {}
+  if (params.bucket === 'OVERDUE') {
+    dateFilter = { dueDate: { lt: startToday } }
+  } else if (params.bucket === 'TODAY') {
+    dateFilter = { dueDate: { gte: startToday, lt: startTomorrow } }
+  } else if (params.bucket === 'TOMORROW') {
+    dateFilter = { dueDate: { gte: startTomorrow, lt: startDayAfter } }
+  } else if (params.bucket === 'UPCOMING') {
+    dateFilter = { dueDate: { gte: startDayAfter, lt: upcomingEnd } }
+  }
+
+  const where: Prisma.FollowUpWhereInput = {
+    ...baseWhere,
+    ...dateFilter,
+  }
+
+  const [items, total] = await Promise.all([
+    prisma.followUp.findMany({
+      where,
+      include: followUpInclude,
+      orderBy: [{ dueDate: 'asc' }, { organisation: { priority: 'asc' } }],
+      skip,
+      take: pageSize,
+    }),
+    prisma.followUp.count({ where }),
+  ])
 
   return {
-    items: paginated,
+    items,
     total,
     page,
     pageSize,
     pageCount: Math.max(1, Math.ceil(total / pageSize)),
   }
 }
+
