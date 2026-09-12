@@ -1,7 +1,7 @@
 import type { FollowUpStatus, Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db'
 import type { CurrentUser } from '@/lib/auth/current-user'
-import { assertCan, can, followUpScope, ForbiddenError, organisationScope } from '@/lib/rbac'
+import { assertCan, can, canReadOrganisation, followUpScope, ForbiddenError, organisationScope } from '@/lib/rbac'
 import { addDaysToKey, startOfDayUtc, todayKey, type DateKey } from '@/lib/dates'
 import type { FollowUpCreateInput } from '@/lib/validation'
 import { NotFoundError } from '@/server/errors'
@@ -25,6 +25,8 @@ const followUpInclude = {
       status: true,
       priority: true,
       lastContactedAt: true,
+      assignedToId: true,
+      createdById: true,
       assignedTo: { select: { id: true, name: true, avatarColor: true } },
     },
   },
@@ -352,6 +354,38 @@ export async function completeFollowUp(user: CurrentUser, id: string) {
   return setFollowUpStatus(user, { id, status: 'DONE' })
 }
 
+export async function getFollowUp(user: CurrentUser, id: string) {
+  const followUp = await prisma.followUp.findFirst({
+    where: { id, deletedAt: null },
+    include: followUpInclude,
+  })
+  if (!followUp) throw new NotFoundError('Follow-up')
+  if (!canReadOrganisation(user, followUp.organisation)) throw new ForbiddenError()
+  return followUp
+}
+
+export async function softDeleteFollowUp(user: CurrentUser, id: string): Promise<void> {
+  const followUp = await loadWritableFollowUp(user, id)
+  await prisma.$transaction(async (tx) => {
+    await tx.followUp.update({
+      where: { id: followUp.id },
+      data: { deletedAt: new Date() },
+    })
+    await recomputeOrganisationCaches(tx, followUp.organisationId)
+    await writeAudit(
+      {
+        userId: user.id,
+        action: 'followup.cancelled',
+        entityType: 'followup',
+        entityId: followUp.id,
+        entityLabel: followUp.organisation.name,
+        summary: `Follow-up for ${followUp.organisation.name} deleted`,
+      },
+      tx,
+    )
+  })
+}
+
 export async function listFollowUpsForOrganisation(
   user: Pick<CurrentUser, 'id' | 'role'>,
   organisationId: string,
@@ -363,6 +397,8 @@ export async function listFollowUps(
   user: Pick<CurrentUser, 'id' | 'role'>,
   params: {
     bucket?: 'TODAY' | 'OVERDUE' | 'TOMORROW' | 'UPCOMING'
+    from?: string
+    to?: string
     page?: number
     pageSize?: number
     assignee?: string
@@ -386,7 +422,16 @@ export async function listFollowUps(
   }
 
   let dateFilter: Prisma.FollowUpWhereInput = {}
-  if (params.bucket === 'OVERDUE') {
+  if (params.from || params.to) {
+    const fromDate = params.from ? startOfDayUtc(params.from as DateKey) : undefined
+    const toDate = params.to ? startOfDayUtc(addDaysToKey(params.to as DateKey, 1)) : undefined
+    dateFilter = {
+      dueDate: {
+        ...(fromDate ? { gte: fromDate } : {}),
+        ...(toDate ? { lt: toDate } : {}),
+      },
+    }
+  } else if (params.bucket === 'OVERDUE') {
     dateFilter = { dueDate: { lt: startToday } }
   } else if (params.bucket === 'TODAY') {
     dateFilter = { dueDate: { gte: startToday, lt: startTomorrow } }

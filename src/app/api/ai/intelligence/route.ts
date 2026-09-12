@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/current-user'
+import { prisma } from '@/lib/db'
+import { canReadOrganisation } from '@/lib/rbac'
 import { scoreOrganisation, recommendTodayPriorities } from '@/server/services/ai/intelligence'
 
 export async function GET(req: Request) {
@@ -19,6 +21,17 @@ export async function GET(req: Request) {
     }
 
     if (orgId) {
+      const org = await prisma.organisation.findFirst({
+        where: { id: orgId, deletedAt: null },
+        select: { id: true, assignedToId: true, createdById: true },
+      })
+      if (!org) {
+        return NextResponse.json({ error: 'Organisation not found' }, { status: 404 })
+      }
+      if (!canReadOrganisation(user, org)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+
       const intel = await scoreOrganisation(orgId)
       return NextResponse.json({ intelligence: intel })
     }

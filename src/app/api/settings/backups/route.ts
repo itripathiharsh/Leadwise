@@ -41,7 +41,7 @@ export async function GET() {
     scheduleDay: scheduleDay || 'Saturday',
     scheduleTime: scheduleTime || '19:00',
     retentionCount: retentionCount ? parseInt(retentionCount, 10) : 8,
-    googleDriveFolderId: config.folderId || '1Rg8Gr68cwglbsq_HYZphghMADlafrGCg',
+    googleDriveFolderId: config.folderId || '',
     googleDriveOAuthClientId: config.clientId || '',
     googleDriveOAuthHasSecret: Boolean(config.clientSecret),
     googleDriveOAuthConnected: Boolean(config.refreshToken),

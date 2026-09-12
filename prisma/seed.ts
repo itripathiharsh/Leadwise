@@ -1,5 +1,6 @@
 import { PrismaClient, Role, UserStatus } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+import crypto from 'node:crypto'
 
 const prisma = new PrismaClient()
 
@@ -34,7 +35,7 @@ async function main() {
   console.log('🧹 Purged all demo and mock CRM records.')
 
   // Securely hash initial administrative credentials from environment
-  const seedPassword = process.env.SEED_PASSWORD || 'Sentio@123'
+  const seedPassword = process.env.SEED_PASSWORD || crypto.randomBytes(16).toString('hex')
   const passwordHash = await bcrypt.hash(seedPassword, 10)
 
   // 2. Create ONLY the two permanent administrative accounts

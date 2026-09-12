@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 import {
   getGoogleDriveConfig,
   exchangeOAuthCodeForTokens,
@@ -10,13 +11,27 @@ export async function GET(req: Request) {
   const urlObj = new URL(req.url)
   const code = urlObj.searchParams.get('code')
   const error = urlObj.searchParams.get('error')
+  const state = urlObj.searchParams.get('state')
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || urlObj.origin
   const redirectTarget = `${appUrl}/settings/backups`
 
+  const cookieStore = await cookies()
+  const expectedState = cookieStore.get('gdrive_oauth_state')?.value
+
+  // Verify OAuth CSRF state
+  if (!state || !expectedState || state !== expectedState) {
+    const errorMsg = encodeURIComponent('Invalid or expired OAuth state parameter. Request rejected for security.')
+    const res = NextResponse.redirect(`${redirectTarget}?drive_error=${errorMsg}`)
+    res.cookies.delete('gdrive_oauth_state')
+    return res
+  }
+
   if (error || !code) {
     const errorMsg = encodeURIComponent(error || 'Missing authorization code from Google.')
-    return NextResponse.redirect(`${redirectTarget}?drive_error=${errorMsg}`)
+    const res = NextResponse.redirect(`${redirectTarget}?drive_error=${errorMsg}`)
+    res.cookies.delete('gdrive_oauth_state')
+    return res
   }
 
   try {
@@ -53,11 +68,15 @@ export async function GET(req: Request) {
       summary: `Google Drive connected successfully via OAuth 2.0${tokens.email ? ` for account ${tokens.email}` : ''}.`,
     })
 
-    return NextResponse.redirect(`${redirectTarget}?drive_connected=true`)
+    const res = NextResponse.redirect(`${redirectTarget}?drive_connected=true`)
+    res.cookies.delete('gdrive_oauth_state')
+    return res
   } catch (err: unknown) {
     const errorMsg = encodeURIComponent(
       err instanceof Error ? err.message : 'Failed to connect Google Drive OAuth.',
     )
-    return NextResponse.redirect(`${redirectTarget}?drive_error=${errorMsg}`)
+    const res = NextResponse.redirect(`${redirectTarget}?drive_error=${errorMsg}`)
+    res.cookies.delete('gdrive_oauth_state')
+    return res
   }
 }

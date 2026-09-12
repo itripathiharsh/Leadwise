@@ -47,8 +47,8 @@ export const ORG_STATUS_META: Record<OrgStatus, OrgStatusMeta> = {
   ASSIGNED: { label: 'Assigned', tone: 'blue', rank: 1, description: 'Allocated to rep, outreach pending.' },
   CONTACTED: { label: 'Contacted', tone: 'indigo', rank: 2, description: 'Initial outreach call, email, or message initiated.' },
   RESPONDED: { label: 'Responded', tone: 'cyan', rank: 3, description: 'Target responded or engaged with outreach.' },
-  MEETING: { label: 'Meeting Scheduled', tone: 'violet', rank: 4, description: 'Discovery call or clinical demo scheduled.' },
-  INTERESTED: { label: 'Warm / Interested', tone: 'amber', rank: 5, description: 'Qualified interest expressed in partnership.' },
+  INTERESTED: { label: 'Warm / Interested', tone: 'amber', rank: 4, description: 'Qualified interest expressed in partnership.' },
+  MEETING: { label: 'Meeting Scheduled', tone: 'violet', rank: 5, description: 'Discovery call or clinical demo scheduled.' },
   PARTNERSHIP: { label: 'Partnership Signed', tone: 'emerald', rank: 6, description: 'Formal partnership agreement executed and active.' },
   REJECTED: { label: 'Disqualified / Cold', tone: 'rose', rank: -1, description: 'Disqualified, unresponsive, or gone cold.' },
 }
@@ -58,8 +58,8 @@ export const ORG_STATUS_ORDER: OrgStatus[] = [
   'ASSIGNED',
   'CONTACTED',
   'RESPONDED',
-  'MEETING',
   'INTERESTED',
+  'MEETING',
   'PARTNERSHIP',
   'REJECTED',
 ]

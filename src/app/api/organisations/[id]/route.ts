@@ -5,6 +5,8 @@ import {
   updateOrganisation,
   changeOrganisationStatus,
   assignOrganisation,
+  softDeleteOrganisation,
+  restoreOrganisation,
 } from '@/server/services/organisations'
 import { listActivitiesForOrganisation } from '@/server/services/activities'
 import { listFollowUpsForOrganisation } from '@/server/services/followups'
@@ -99,6 +101,30 @@ export async function PATCH(
     }
 
     return NextResponse.json({ error: 'Invalid patch payload' }, { status: 400 })
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err)
+    return NextResponse.json({ error: msg }, { status: 400 })
+  }
+}
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const user = await getCurrentUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { id } = await params
+  const { searchParams } = new URL(req.url)
+  const restore = searchParams.get('restore') === 'true'
+
+  try {
+    if (restore) {
+      await restoreOrganisation(user, id)
+      return NextResponse.json({ success: true, message: 'Organisation restored' })
+    }
+    await softDeleteOrganisation(user, id)
+    return NextResponse.json({ success: true, message: 'Organisation archived' })
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
     return NextResponse.json({ error: msg }, { status: 400 })

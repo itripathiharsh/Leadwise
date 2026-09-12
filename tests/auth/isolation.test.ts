@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import {
   can,
   assertCan,
+  canReadOrganisation,
   canWriteOrganisation,
   organisationScope,
   contactScope,
@@ -10,6 +11,7 @@ import {
   ForbiddenError,
 } from '../../src/lib/rbac'
 import type { CurrentUser } from '../../src/lib/auth/current-user'
+import { isCronAuthorized } from '../../src/lib/auth/cron-auth'
 
 describe('Authentication & Organisation / Tenant Isolation', () => {
   const ownerUser: CurrentUser = {
@@ -18,6 +20,7 @@ describe('Authentication & Organisation / Tenant Isolation', () => {
     email: 'owner@sentiomind.com',
     phone: null,
     role: 'OWNER',
+    status: 'APPROVED',
     avatarColor: 'violet',
     isActive: true,
   }
@@ -28,6 +31,7 @@ describe('Authentication & Organisation / Tenant Isolation', () => {
     email: 'tl@sentiomind.com',
     phone: null,
     role: 'TL',
+    status: 'APPROVED',
     avatarColor: 'teal',
     isActive: true,
   }
@@ -38,6 +42,7 @@ describe('Authentication & Organisation / Tenant Isolation', () => {
     email: 'rahul@sentiomind.com',
     phone: null,
     role: 'INTERN',
+    status: 'APPROVED',
     avatarColor: 'blue',
     isActive: true,
   }
@@ -48,6 +53,7 @@ describe('Authentication & Organisation / Tenant Isolation', () => {
     email: 'ananya@sentiomind.com',
     phone: null,
     role: 'INTERN',
+    status: 'APPROVED',
     avatarColor: 'amber',
     isActive: true,
   }
@@ -172,6 +178,70 @@ describe('Authentication & Organisation / Tenant Isolation', () => {
       expect(activityScope(tlUser)).toEqual({})
       expect(followUpScope(ownerUser)).toEqual({})
       expect(followUpScope(tlUser)).toEqual({})
+    })
+  })
+
+  describe('canReadOrganisation Scoping', () => {
+    it('allows interns to read assigned or created organisations only', () => {
+      expect(canReadOrganisation(internA, orgAssignedToA)).toBe(true)
+      expect(canReadOrganisation(internA, orgAssignedToB)).toBe(false)
+    })
+
+    it('allows Owner and TL to read any organisation', () => {
+      expect(canReadOrganisation(ownerUser, orgAssignedToB)).toBe(true)
+      expect(canReadOrganisation(tlUser, orgAssignedToA)).toBe(true)
+    })
+  })
+
+  describe('Privileged Operations RBAC (SEC-02, DATA-05)', () => {
+    it('prevents interns from managing backups or exporting filtered data', () => {
+      expect(() => assertCan(internA, 'backup:manage')).toThrow(ForbiddenError)
+      expect(() => assertCan(internA, 'data:export')).toThrow(ForbiddenError)
+    })
+
+    it('allows Owner and TL to manage backups and export data', () => {
+      expect(() => assertCan(ownerUser, 'backup:manage')).not.toThrow()
+      expect(() => assertCan(tlUser, 'backup:manage')).not.toThrow()
+      expect(() => assertCan(ownerUser, 'data:export')).not.toThrow()
+      expect(() => assertCan(tlUser, 'data:export')).not.toThrow()
+    })
+  })
+
+  describe('Cron Authentication Fail-Closed Behavior (SEC-01)', () => {
+    const originalSecret = process.env.CRON_SECRET
+
+    afterEach(() => {
+      process.env.CRON_SECRET = originalSecret
+    })
+
+    it('rejects when CRON_SECRET is not configured', () => {
+      delete process.env.CRON_SECRET
+      const req = new Request('http://localhost/api/cron/reminders')
+      expect(isCronAuthorized(req)).toBe(false)
+    })
+
+    it('rejects when header is missing or mismatched', () => {
+      process.env.CRON_SECRET = 'super-secret-cron-token'
+      const unauthReq = new Request('http://localhost/api/cron/reminders')
+      expect(isCronAuthorized(unauthReq)).toBe(false)
+
+      const badReq = new Request('http://localhost/api/cron/reminders', {
+        headers: { authorization: 'Bearer wrong-secret' },
+      })
+      expect(isCronAuthorized(badReq)).toBe(false)
+    })
+
+    it('accepts valid Bearer token or x-cron-secret header', () => {
+      process.env.CRON_SECRET = 'super-secret-cron-token'
+      const bearerReq = new Request('http://localhost/api/cron/reminders', {
+        headers: { authorization: 'Bearer super-secret-cron-token' },
+      })
+      expect(isCronAuthorized(bearerReq)).toBe(true)
+
+      const headerReq = new Request('http://localhost/api/cron/reminders', {
+        headers: { 'x-cron-secret': 'super-secret-cron-token' },
+      })
+      expect(isCronAuthorized(headerReq)).toBe(true)
     })
   })
 })

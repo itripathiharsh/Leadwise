@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -116,7 +117,7 @@ export default function LoginPage() {
   ]
 
   return (
-    <div className="flex min-h-screen w-full bg-canvas text-foreground overflow-hidden">
+    <main id="main-content" className="flex min-h-screen w-full bg-canvas text-foreground overflow-hidden">
       {/* LEFT SIDE: Brand Showcase & Animated Interactive Command Center */}
       <div className="relative hidden lg:flex lg:w-[54%] flex-col justify-between p-12 xl:p-16 border-r border-border bg-gradient-to-br from-surface to-canvas overflow-hidden">
         {/* Ambient Glows */}
@@ -129,14 +130,20 @@ export default function LoginPage() {
         <div className="relative z-10 flex items-center justify-between">
           <div className="flex items-center gap-5">
             <div className="relative flex items-center">
-              <img
+              <Image
                 src="/logo-white-text.png"
                 alt="Leadwise"
+                width={180}
+                height={48}
+                priority
                 className="h-12 xl:h-14 w-auto object-contain drop-shadow-[0_0_25px_rgba(99,102,241,0.4)] hidden dark:block"
               />
-              <img
+              <Image
                 src="/logo-dark-text.png"
                 alt="Leadwise"
+                width={180}
+                height={48}
+                priority
                 className="h-12 xl:h-14 w-auto object-contain block dark:hidden"
               />
             </div>
@@ -166,9 +173,9 @@ export default function LoginPage() {
               <Sparkle className="size-3.5" />
               <span>Turn high-friction outreach into verified partnerships</span>
             </div>
-            <h1 className="font-display text-4xl xl:text-5xl font-black tracking-tight text-foreground leading-[1.15]">
+            <h2 className="font-display text-4xl xl:text-5xl font-black tracking-tight text-foreground leading-[1.15]">
               The Partnership Intelligence Command Center.
-            </h1>
+            </h2>
             <p className="text-sm xl:text-base text-muted-foreground leading-relaxed">
               Orchestrate executive-tier clinical outreach, map authenticated institutional decision-makers, and convert strategic relationships into verified partnerships with zero friction.
             </p>
@@ -269,14 +276,20 @@ export default function LoginPage() {
         <div className="w-full max-w-md space-y-6 relative z-10">
           {/* Mobile Brand Header */}
           <div className="flex flex-col items-center text-center space-y-2.5 lg:hidden">
-            <img
+            <Image
               src="/logo-white-text.png"
               alt="Leadwise"
+              width={160}
+              height={44}
+              priority
               className="h-14 w-auto object-contain drop-shadow-[0_0_25px_rgba(99,102,241,0.4)] mb-1 hidden dark:block"
             />
-            <img
+            <Image
               src="/logo-dark-text.png"
               alt="Leadwise"
+              width={160}
+              height={44}
+              priority
               className="h-14 w-auto object-contain mb-1 block dark:hidden"
             />
             <p className="text-xs text-muted-foreground max-w-xs font-medium">
@@ -289,14 +302,18 @@ export default function LoginPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between pb-1 border-b border-border/50">
                 <div>
-                  <img
+                  <Image
                     src="/logo-white-text.png"
                     alt="Leadwise"
+                    width={140}
+                    height={36}
                     className="h-9 sm:h-10 w-auto object-contain drop-shadow-[0_0_18px_rgba(99,102,241,0.35)] hidden dark:block"
                   />
-                  <img
+                  <Image
                     src="/logo-dark-text.png"
                     alt="Leadwise"
+                    width={140}
+                    height={36}
                     className="h-9 sm:h-10 w-auto object-contain block dark:hidden"
                   />
                 </div>
@@ -305,9 +322,9 @@ export default function LoginPage() {
                 </span>
               </div>
               <div>
-                <h2 className="font-display font-bold text-xl tracking-tight text-foreground">
+                <h1 className="font-display font-bold text-xl tracking-tight text-foreground">
                   Sign in to Command Center
-                </h2>
+                </h1>
                 <p className="text-xs text-muted-foreground leading-relaxed mt-1">
                   Enter your authorized credentials to access your partnership pipeline, team accounts, and outreach cadences.
                 </p>
@@ -445,6 +462,6 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   )
 }

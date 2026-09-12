@@ -49,7 +49,7 @@ export type Permission = (typeof PERMISSIONS)[number]
 
 const OWNER_PERMISSIONS: Permission[] = [...PERMISSIONS]
 
-const TL_PERMISSIONS: Permission[] = [...PERMISSIONS]
+const TL_PERMISSIONS: Permission[] = PERMISSIONS.filter((p) => p !== 'org:delete')
 
 const INTERN_PERMISSIONS: Permission[] = [
   // Interns see only what is assigned to them — enforced by scope helpers below,
@@ -132,6 +132,17 @@ export function activityScope(user: Pick<CurrentUser, 'id' | 'role'>) {
 export function followUpScope(user: Pick<CurrentUser, 'id' | 'role'>) {
   if (can(user, 'followup:manageAll')) return {}
   return { assignedToId: user.id }
+}
+
+/**
+ * May `user` read records (attachments, comments, intel) for this organisation?
+ */
+export function canReadOrganisation(
+  user: Pick<CurrentUser, 'id' | 'role'>,
+  org: { assignedToId: string | null; createdById: string },
+): boolean {
+  if (can(user, 'org:viewAll')) return true
+  return org.assignedToId === user.id || org.createdById === user.id
 }
 
 /**

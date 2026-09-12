@@ -56,7 +56,7 @@ export default function TeamPage() {
   const [createModalOpen, setCreateModalOpen] = React.useState(false)
   const [name, setName] = React.useState('')
   const [email, setEmail] = React.useState('')
-  const [password, setPassword] = React.useState('Sentio@123')
+  const [password, setPassword] = React.useState('')
   const [role, setRole] = React.useState('INTERN')
   const [phone, setPhone] = React.useState('')
   const [creating, setCreating] = React.useState(false)
@@ -720,13 +720,14 @@ export default function TeamPage() {
                 </Field>
               </div>
 
-              <Field label="Initial Password" required>
+              <Field label="Initial Password" required hint="Min. 8 characters. Rep will be prompted to change upon login.">
                 <Input
-                  type="text"
+                  type="password"
+                  placeholder="Create secure initial password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="h-10 font-mono text-xs"
+                  className="h-10 text-sm"
                 />
               </Field>
             </DialogBody>

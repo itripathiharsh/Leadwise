@@ -29,6 +29,10 @@ import {
   ArrowUpRight,
   Send,
   MessageSquare,
+  Paperclip,
+  Search,
+  Filter,
+  X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -40,6 +44,7 @@ import { MergeOrganisationDialog } from '@/components/domain/merge-dialog'
 import { AiLeadIntelligenceCard } from '@/components/domain/ai-lead-intelligence-card'
 import { CallPrepDialog } from '@/components/domain/call-prep-dialog'
 import { CommentsFeed } from '@/components/domain/comments-feed'
+import { OrganisationAttachments } from '@/components/domain/organisation-attachments'
 import { formatDateTime, formatDate } from '@/lib/dates'
 import { toast } from 'sonner'
 import { OrgStatusBadge } from '@/components/domain/badges'
@@ -62,7 +67,7 @@ export default function OrganisationDetailPage() {
 
   const [loading, setLoading] = React.useState(true)
   const [data, setData] = React.useState<any>(null)
-  const [activeTab, setActiveTab] = React.useState<'overview' | 'contacts' | 'timeline' | 'followups' | 'notes'>('overview')
+  const [activeTab, setActiveTab] = React.useState<'overview' | 'contacts' | 'timeline' | 'followups' | 'notes' | 'attachments'>('overview')
 
   // Modals
   const [logModalOpen, setLogModalOpen] = React.useState(false)
@@ -71,6 +76,11 @@ export default function OrganisationDetailPage() {
   const [createContactOpen, setCreateContactOpen] = React.useState(false)
   const [mergeModalOpen, setMergeModalOpen] = React.useState(false)
   const [callPrepOpen, setCallPrepOpen] = React.useState(false)
+
+  // Timeline filter state
+  const [timelineTypeFilter, setTimelineTypeFilter] = React.useState<string[]>([])
+  const [timelineSearch, setTimelineSearch] = React.useState('')
+  const [timelineDateRange, setTimelineDateRange] = React.useState<'all' | 'today' | 'week' | 'month'>('all')
 
   const fetchDetails = React.useCallback(async () => {
     setLoading(true)
@@ -198,6 +208,7 @@ export default function OrganisationDetailPage() {
   }
 
   const org = data.organisation
+  const isAssignedToMe = Boolean(currentUser && (org.assignedToId === currentUser.id || org.assignedTo?.id === currentUser.id))
   const activities = data.activities || []
   const followups = data.followups || []
   const contacts = org.contacts || []
@@ -589,30 +600,32 @@ export default function OrganisationDetailPage() {
       <AiLeadIntelligenceCard orgId={org.id} />
 
       {/* Modern Dossier Navigation Tabs */}
-      <div className="flex border-b border-border/80 gap-6 text-sm font-semibold">
+      <div className="flex border-b border-border/80 gap-6 text-sm font-semibold overflow-x-auto scrollbar-slim flex-nowrap">
         <button
           type="button"
           onClick={() => setActiveTab('overview')}
           className={cn(
-            'pb-3.5 -mb-px transition-colors border-b-2 text-xs uppercase tracking-wider',
+            'pb-3.5 -mb-px transition-colors border-b-2 text-xs uppercase tracking-wider flex items-center gap-1.5 shrink-0',
             activeTab === 'overview'
               ? 'border-primary text-primary font-bold'
               : 'border-transparent text-muted-foreground hover:text-foreground'
           )}
         >
-          Overview & Intel
+          <Building2 className="size-3.5" />
+          <span>Overview & Intel</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('contacts')}
           className={cn(
-            'pb-3.5 -mb-px transition-colors border-b-2 text-xs uppercase tracking-wider flex items-center gap-1.5',
+            'pb-3.5 -mb-px transition-colors border-b-2 text-xs uppercase tracking-wider flex items-center gap-1.5 shrink-0',
             activeTab === 'contacts'
               ? 'border-primary text-primary font-bold'
               : 'border-transparent text-muted-foreground hover:text-foreground'
           )}
         >
+          <User className="size-3.5" />
           <span>Contacts</span>
           <span className="font-mono text-[10px] px-1.5 py-0.2 rounded-full bg-surface-elevated text-foreground">
             {contacts.length}
@@ -623,12 +636,13 @@ export default function OrganisationDetailPage() {
           type="button"
           onClick={() => setActiveTab('timeline')}
           className={cn(
-            'pb-3.5 -mb-px transition-colors border-b-2 text-xs uppercase tracking-wider flex items-center gap-1.5',
+            'pb-3.5 -mb-px transition-colors border-b-2 text-xs uppercase tracking-wider flex items-center gap-1.5 shrink-0',
             activeTab === 'timeline'
               ? 'border-primary text-primary font-bold'
               : 'border-transparent text-muted-foreground hover:text-foreground'
           )}
         >
+          <Clock className="size-3.5" />
           <span>Activity Timeline</span>
           <span className="font-mono text-[10px] px-1.5 py-0.2 rounded-full bg-surface-elevated text-foreground">
             {activities.length}
@@ -639,12 +653,13 @@ export default function OrganisationDetailPage() {
           type="button"
           onClick={() => setActiveTab('followups')}
           className={cn(
-            'pb-3.5 -mb-px transition-colors border-b-2 text-xs uppercase tracking-wider flex items-center gap-1.5',
+            'pb-3.5 -mb-px transition-colors border-b-2 text-xs uppercase tracking-wider flex items-center gap-1.5 shrink-0',
             activeTab === 'followups'
               ? 'border-primary text-primary font-bold'
               : 'border-transparent text-muted-foreground hover:text-foreground'
           )}
         >
+          <Calendar className="size-3.5" />
           <span>Follow-ups</span>
           <span className="font-mono text-[10px] px-1.5 py-0.2 rounded-full bg-surface-elevated text-foreground">
             {followups.length}
@@ -655,13 +670,28 @@ export default function OrganisationDetailPage() {
           type="button"
           onClick={() => setActiveTab('notes')}
           className={cn(
-            'pb-3.5 -mb-px transition-colors border-b-2 text-xs uppercase tracking-wider',
+            'pb-3.5 -mb-px transition-colors border-b-2 text-xs uppercase tracking-wider flex items-center gap-1.5 shrink-0',
             activeTab === 'notes'
               ? 'border-primary text-primary font-bold'
               : 'border-transparent text-muted-foreground hover:text-foreground'
           )}
         >
-          Team Notes
+          <MessageSquare className="size-3.5" />
+          <span>Team Notes</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('attachments')}
+          className={cn(
+            'pb-3.5 -mb-px transition-colors border-b-2 text-xs uppercase tracking-wider flex items-center gap-1.5 shrink-0',
+            activeTab === 'attachments'
+              ? 'border-primary text-primary font-bold'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          )}
+        >
+          <Paperclip className="size-3.5" />
+          <span>Documents & Files</span>
         </button>
       </div>
 
@@ -828,70 +858,219 @@ export default function OrganisationDetailPage() {
       {/* Tab 3: Activity Timeline */}
       {activeTab === 'timeline' && (
         <div className="space-y-4">
-          {activities.length === 0 ? (
-            <Card className="border-border p-12 text-center space-y-2">
-              <Phone className="size-8 mx-auto text-muted-foreground/50" />
-              <p className="font-bold text-sm text-foreground">No outreach activity recorded yet</p>
-              <p className="text-xs text-muted-foreground">
-                Use the buttons above (+ Call, + Email, + LinkedIn) to log your first touchpoint.
-              </p>
-            </Card>
-          ) : (
-            <div className="relative pl-6 space-y-4 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-border/60">
-              {activities.map((act: any) => (
-                <div key={act.id} className="relative group">
-                  <div className="absolute -left-6 top-2 flex size-5 items-center justify-center rounded-full bg-surface border-2 border-primary text-[10px] text-primary">
-                    <div className="size-1.5 rounded-full bg-primary" />
-                  </div>
-
-                  <div className="glass-card rounded-xl border border-border/80 bg-surface/70 p-4 space-y-2 hover:border-border transition-all">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <Avatar
-                          name={act.performedBy.name}
-                          color={act.performedBy.avatarColor}
-                          size="xs"
-                        />
-                        <span className="text-xs font-bold text-foreground">
-                          {act.performedBy.name}
-                        </span>
-                        <span className="font-mono text-[10px] font-bold uppercase text-primary tracking-wider">
-                          • {act.type}
-                        </span>
-                      </div>
-                      <span className="font-mono text-[11px] text-muted-foreground">
-                        {formatDateTime(act.activityDate)}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Badge tone="blue" size="sm">
-                        Outcome: {act.outcome}
-                      </Badge>
-                      {act.contact && (
-                        <span className="text-xs text-muted-foreground font-medium">
-                          Contact: <strong>{act.contact.name}</strong> {act.contact.designation ? `(${act.contact.designation})` : ''}
-                        </span>
+          {/* Timeline Filter Bar */}
+          {activities.length > 0 && (
+            <div className="glass-panel rounded-xl border border-border/80 bg-surface/70 backdrop-blur-xl p-3 space-y-3">
+              {/* Type Filter Chips */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-mono font-bold text-muted-foreground uppercase tracking-wider mr-1 flex items-center gap-1.5">
+                  <Filter className="size-3.5 text-primary" /> Filter:
+                </span>
+                {['CALL', 'EMAIL', 'LINKEDIN', 'MEETING', 'NOTE', 'FOLLOW_UP'].map((type) => {
+                  const active = timelineTypeFilter.includes(type)
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => {
+                        setTimelineTypeFilter((prev) =>
+                          active ? prev.filter((t) => t !== type) : [...prev, type]
+                        )
+                      }}
+                      className={cn(
+                        'rounded-lg px-2.5 py-1 text-[11px] font-semibold border transition-all duration-150',
+                        active
+                          ? 'bg-primary/15 text-primary border-primary/40 shadow-xs'
+                          : 'bg-surface-elevated/60 text-muted-foreground border-border/60 hover:border-border hover:text-foreground',
                       )}
-                    </div>
+                    >
+                      {type.replace('_', ' ')}
+                    </button>
+                  )
+                })}
 
-                    {act.notes && (
-                      <p className="text-xs text-foreground/90 whitespace-pre-wrap bg-surface-elevated/50 p-3 rounded-lg border border-border/50">
-                        {act.notes}
-                      </p>
-                    )}
+                {(timelineTypeFilter.length > 0 || timelineSearch || timelineDateRange !== 'all') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTimelineTypeFilter([])
+                      setTimelineSearch('')
+                      setTimelineDateRange('all')
+                    }}
+                    className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors ml-1"
+                  >
+                    Clear All
+                  </button>
+                )}
+              </div>
 
-                    {act.nextFollowupDate && (
-                      <div className="text-[11px] text-amber-500 font-medium flex items-center gap-1.5 pt-1">
-                        <Clock className="size-3" />
-                        Follow-up scheduled for {formatDate(act.nextFollowupDate)}
-                      </div>
-                    )}
-                  </div>
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Search */}
+                <div className="relative flex-1 min-w-[200px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder="Search activity notes..."
+                    value={timelineSearch}
+                    onChange={(e) => setTimelineSearch(e.target.value)}
+                    className="w-full rounded-lg border border-border bg-surface-elevated/60 pl-9 pr-8 py-1.5 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition-all"
+                  />
+                  {timelineSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setTimelineSearch('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-muted-foreground hover:text-foreground rounded"
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  )}
                 </div>
-              ))}
+
+                {/* Date Range */}
+                <select
+                  value={timelineDateRange}
+                  onChange={(e) => setTimelineDateRange(e.target.value as typeof timelineDateRange)}
+                  className="rounded-lg border border-border bg-surface-elevated/60 px-3 py-1.5 text-xs text-foreground font-medium focus:border-primary focus:outline-none transition-all"
+                >
+                  <option value="all">All Time</option>
+                  <option value="today">Today</option>
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                </select>
+              </div>
             </div>
           )}
+
+          {(() => {
+            const now = new Date()
+            const filteredActivities = activities.filter((act: any) => {
+              // Type filter
+              if (timelineTypeFilter.length > 0 && !timelineTypeFilter.includes(act.type)) return false
+              // Search filter
+              if (timelineSearch.trim()) {
+                const q = timelineSearch.trim().toLowerCase()
+                const notesMatch = act.notes?.toLowerCase().includes(q)
+                const nameMatch = act.performedBy?.name?.toLowerCase().includes(q)
+                const contactMatch = act.contact?.name?.toLowerCase().includes(q)
+                if (!notesMatch && !nameMatch && !contactMatch) return false
+              }
+              // Date range filter
+              if (timelineDateRange !== 'all' && act.activityDate) {
+                const actDate = new Date(act.activityDate)
+                if (timelineDateRange === 'today') {
+                  if (actDate.toDateString() !== now.toDateString()) return false
+                } else if (timelineDateRange === 'week') {
+                  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+                  if (actDate < weekAgo) return false
+                } else if (timelineDateRange === 'month') {
+                  const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+                  if (actDate < monthAgo) return false
+                }
+              }
+              return true
+            })
+
+            const isFiltered = timelineTypeFilter.length > 0 || timelineSearch.trim() || timelineDateRange !== 'all'
+
+            if (activities.length === 0) {
+              return (
+                <Card className="border-border p-12 text-center space-y-2">
+                  <Phone className="size-8 mx-auto text-muted-foreground/50" />
+                  <p className="font-bold text-sm text-foreground">No outreach activity recorded yet</p>
+                  <p className="text-xs text-muted-foreground">
+                    Use the buttons above (+ Call, + Email, + LinkedIn) to log your first touchpoint.
+                  </p>
+                </Card>
+              )
+            }
+
+            if (filteredActivities.length === 0 && isFiltered) {
+              return (
+                <div className="p-12 text-center space-y-3">
+                  <Filter className="size-8 mx-auto text-muted-foreground/40" />
+                  <p className="font-bold text-sm text-foreground">No activities match your filters</p>
+                  <p className="text-xs text-muted-foreground">
+                    Try adjusting the type, search, or date range filters above.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    onClick={() => {
+                      setTimelineTypeFilter([])
+                      setTimelineSearch('')
+                      setTimelineDateRange('all')
+                    }}
+                  >
+                    Reset Filters
+                  </Button>
+                </div>
+              )
+            }
+
+            return (
+              <>
+                {isFiltered && (
+                  <div className="text-[11px] font-mono text-muted-foreground">
+                    Showing {filteredActivities.length} of {activities.length} activities
+                  </div>
+                )}
+                <div className="relative pl-6 space-y-4 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-border/60">
+                  {filteredActivities.map((act: any) => (
+                    <div key={act.id} className="relative group">
+                      <div className="absolute -left-6 top-2 flex size-5 items-center justify-center rounded-full bg-surface border-2 border-primary text-[10px] text-primary">
+                        <div className="size-1.5 rounded-full bg-primary" />
+                      </div>
+
+                      <div className="glass-card rounded-xl border border-border/80 bg-surface/70 p-4 space-y-2 hover:border-border transition-all">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <Avatar
+                              name={act.performedBy.name}
+                              color={act.performedBy.avatarColor}
+                              size="xs"
+                            />
+                            <span className="text-xs font-bold text-foreground">
+                              {act.performedBy.name}
+                            </span>
+                            <span className="font-mono text-[10px] font-bold uppercase text-primary tracking-wider">
+                              • {act.type}
+                            </span>
+                          </div>
+                          <span className="font-mono text-[11px] text-muted-foreground">
+                            {formatDateTime(act.activityDate)}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Badge tone="blue" size="sm">
+                            Outcome: {act.outcome}
+                          </Badge>
+                          {act.contact && (
+                            <span className="text-xs text-muted-foreground font-medium">
+                              Contact: <strong>{act.contact.name}</strong> {act.contact.designation ? `(${act.contact.designation})` : ''}
+                            </span>
+                          )}
+                        </div>
+
+                        {act.notes && (
+                          <p className="text-xs text-foreground/90 whitespace-pre-wrap bg-surface-elevated/50 p-3 rounded-lg border border-border/50">
+                            {act.notes}
+                          </p>
+                        )}
+
+                        {act.nextFollowupDate && (
+                          <div className="text-[11px] text-amber-500 font-medium flex items-center gap-1.5 pt-1">
+                            <Clock className="size-3" />
+                            Follow-up scheduled for {formatDate(act.nextFollowupDate)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )
+          })()}
         </div>
       )}
 
@@ -940,6 +1119,13 @@ export default function OrganisationDetailPage() {
       {activeTab === 'notes' && (
         <div className="glass-card rounded-2xl border border-border/80 bg-surface/70 p-6 shadow-xs">
           <CommentsFeed organisationId={org.id} />
+        </div>
+      )}
+
+      {/* Tab 6: Documents & Attachments */}
+      {activeTab === 'attachments' && (
+        <div className="glass-card rounded-2xl border border-border/80 bg-surface/70 p-6 shadow-xs">
+          <OrganisationAttachments organisationId={org.id} canEdit={isLeader || isAssignedToMe} />
         </div>
       )}
 

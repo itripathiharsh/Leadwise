@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/current-user'
 import { prisma } from '@/lib/db'
-import { organisationScope } from '@/lib/rbac'
+import { organisationScope, assertCan } from '@/lib/rbac'
 import ExcelJS from 'exceljs'
 import type { Priority, OrgStatus, Prisma } from '@prisma/client'
 
@@ -10,6 +10,8 @@ export async function GET(req: Request) {
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  assertCan(user, 'data:export')
 
   const { searchParams } = new URL(req.url)
   const status = (searchParams.get('status') as OrgStatus) || undefined

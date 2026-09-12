@@ -22,7 +22,14 @@ export function TableWrap({
       )}
       {...props}
     >
-      <div className="scrollbar-slim overflow-x-auto">{children}</div>
+      <div
+        className="scrollbar-slim overflow-x-auto focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none rounded-xl"
+        tabIndex={0}
+        role="region"
+        aria-label="Scrollable data table"
+      >
+        {children}
+      </div>
     </div>
   )
 }
@@ -152,6 +159,11 @@ export function SortButton({
       >
         {direction === 'asc' ? '▲' : '▼'}
       </span>
+      {active && (
+        <span className="sr-only">
+          {direction === 'asc' ? '(sorted ascending)' : '(sorted descending)'}
+        </span>
+      )}
     </button>
   )
 }

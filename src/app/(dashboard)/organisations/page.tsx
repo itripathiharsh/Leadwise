@@ -19,6 +19,7 @@ import {
   CheckSquare,
   Shield,
   Layers,
+  X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -27,6 +28,7 @@ import { CreateOrganisationModal } from '@/components/domain/create-organisation
 import { LogActivityModal } from '@/components/domain/log-activity-modal'
 import { formatDate } from '@/lib/dates'
 import { toast } from 'sonner'
+import { BulkActionsBar } from '@/components/domain/bulk-actions-bar'
 import { cn } from '@/lib/utils'
 
 interface OrganisationItem {
@@ -67,10 +69,8 @@ export default function OrganisationsPage() {
     return () => clearTimeout(timer)
   }, [search])
 
-  // Selection & Bulk Actions
+  // Selection
   const [selectedIds, setSelectedIds] = React.useState<string[]>([])
-  const [bulkAssignee, setBulkAssignee] = React.useState('')
-  const [bulkAssigning, setBulkAssigning] = React.useState(false)
 
   // Modals
   const [createModalOpen, setCreateModalOpen] = React.useState(false)
@@ -145,35 +145,6 @@ export default function OrganisationsPage() {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
     )
-  }
-
-  const handleBulkAssign = async () => {
-    if (!bulkAssignee || selectedIds.length === 0) return
-    setBulkAssigning(true)
-    try {
-      const res = await fetch('/api/organisations', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          bulkAssign: true,
-          ids: selectedIds,
-          assignedToId: bulkAssignee === 'UNASSIGNED' ? null : bulkAssignee,
-        }),
-      })
-
-      if (res.ok) {
-        toast.success(`Assigned ${selectedIds.length} organisations.`)
-        setSelectedIds([])
-        setBulkAssignee('')
-        fetchOrganisations()
-      } else {
-        toast.error('Bulk assignment failed.')
-      }
-    } catch {
-      toast.error('Network error during assignment.')
-    } finally {
-      setBulkAssigning(false)
-    }
   }
 
   const handleQuickReassign = async (orgId: string, assignedToId: string) => {
@@ -263,8 +234,21 @@ export default function OrganisationsPage() {
                 setSearch(e.target.value)
                 setPage(1)
               }}
-              className="w-full rounded-xl border border-border bg-surface-elevated/60 pl-10 pr-4 py-2 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary focus:bg-surface transition-all"
+              className="w-full rounded-xl border border-border bg-surface-elevated/60 pl-10 pr-9 py-2 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary focus:bg-surface transition-all"
             />
+            {search && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch('')
+                  setPage(1)
+                }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground rounded-lg transition-colors"
+                title="Clear search"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
           </div>
 
           {/* Status Filter */}
@@ -345,45 +329,32 @@ export default function OrganisationsPage() {
         </div>
       </div>
 
-      {/* High Density Bulk Selection Floating Bar (Leaders Only) */}
-      {isLeader && selectedIds.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/40 bg-primary/10 backdrop-blur-xl p-3 shadow-lg animate-in fade-in slide-in-from-top-1">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-white bg-primary px-2.5 py-0.5 rounded-full shadow-xs">
-              {selectedIds.length} Selected
-            </span>
-            <span className="text-xs text-muted-foreground">
-              Choose an owner to assign this batch of entities:
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <select
-              value={bulkAssignee}
-              onChange={(e) => setBulkAssignee(e.target.value)}
-              className="rounded-lg border border-border bg-surface px-3 py-1.5 text-xs text-foreground font-medium"
-            >
-              <option value="">Select Target Owner...</option>
-              <option value="UNASSIGNED">Unassign</option>
-              {usersList.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
-
-            <Button
-              variant="primary"
-              size="xs"
-              onClick={handleBulkAssign}
-              loading={bulkAssigning}
-              disabled={!bulkAssignee}
-              className="font-semibold shadow-xs"
-            >
-              Assign Selected
-            </Button>
-          </div>
-        </div>
+      {/* Advanced Bulk Actions Bar (Leaders & Reps) */}
+      {selectedIds.length > 0 && (
+        <BulkActionsBar
+          selectedIds={selectedIds}
+          totalCount={organisations.length}
+          onSelectAll={() => setSelectedIds(organisations.map((o) => o.id))}
+          onClearSelection={() => setSelectedIds([])}
+          usersList={usersList}
+          isLeader={isLeader}
+          entityType="organisation"
+          selectedData={organisations
+            .filter((o) => selectedIds.includes(o.id))
+            .map((o) => ({
+              Name: o.name,
+              Category: o.category || '',
+              Domain: o.domain || '',
+              Status: o.status,
+              Priority: o.priority,
+              Owner: o.assignedTo?.name || 'Unassigned',
+              Contacts: o._count.contacts,
+              Activities: o.activityCount,
+              'Last Activity': o.lastContactedAt || 'Never',
+              'Next Follow-up': o.nextFollowupAt || '',
+            }))}
+          onRefresh={fetchOrganisations}
+        />
       )}
 
       {/* Organizations Intelligence Table */}
@@ -395,28 +366,167 @@ export default function OrganisationsPage() {
             <p className="text-xs text-muted-foreground">Fetching live pipeline records and contact mappings.</p>
           </div>
         ) : organisations.length === 0 ? (
-          <div className="p-16 text-center space-y-4">
-            <div className="flex size-14 mx-auto items-center justify-center rounded-2xl bg-surface-elevated border border-border/80 text-muted-foreground">
-              <Building2 className="size-7" />
+          (search.trim() || statusFilter || priorityFilter || (isLeader && assigneeFilter)) ? (
+            <div className="p-16 text-center space-y-4">
+              <div className="flex size-14 mx-auto items-center justify-center rounded-2xl bg-surface-elevated border border-border/80 text-muted-foreground">
+                <Filter className="size-7 text-primary/70" />
+              </div>
+              <div className="space-y-1">
+                <p className="font-display font-bold text-base text-foreground">No organizations match your filters</p>
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
+                  No records matched the current search criteria. Try clearing search keywords or resetting filters.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearch('')
+                  setStatusFilter('')
+                  setPriorityFilter('')
+                  setAssigneeFilter('')
+                  setPage(1)
+                }}
+                icon={<RefreshCw className="size-3.5" />}
+              >
+                Reset All Filters
+              </Button>
             </div>
-            <div className="space-y-1">
-              <p className="font-display font-bold text-base text-foreground">No organizations yet</p>
-              <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                Your partnership pipeline starts here. Add your first clinical target, corporate enterprise, or health entity to begin tracking outreach.
-              </p>
+          ) : (
+            <div className="p-16 text-center space-y-4">
+              <div className="flex size-14 mx-auto items-center justify-center rounded-2xl bg-surface-elevated border border-border/80 text-muted-foreground">
+                <Building2 className="size-7" />
+              </div>
+              <div className="space-y-1">
+                <p className="font-display font-bold text-base text-foreground">No organizations yet</p>
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
+                  Your partnership pipeline starts here. Add your first clinical target, corporate enterprise, or health entity to begin tracking outreach.
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setCreateModalOpen(true)}
+                icon={<Plus className="size-4" />}
+              >
+                + Add Organization
+              </Button>
             </div>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => setCreateModalOpen(true)}
-              icon={<Plus className="size-4" />}
-            >
-              + Add Organization
-            </Button>
-          </div>
+          )
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm border-collapse">
+          <>
+            {/* Mobile Card Feed (< md) */}
+            <div className="md:hidden divide-y divide-border/60">
+              {organisations.map((org) => {
+                const isSelected = selectedIds.includes(org.id)
+                return (
+                  <div
+                    key={`mobile-${org.id}`}
+                    className={cn(
+                      'p-4 space-y-3 transition-colors',
+                      isSelected ? 'bg-primary/5' : 'hover:bg-surface-elevated/40',
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-1 min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          {isLeader && (
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => handleToggleSelect(org.id)}
+                              className="size-4 rounded border-border text-primary bg-surface mr-1"
+                            />
+                          )}
+                          <Link
+                            href={`/organisations/${org.id}`}
+                            className="font-bold text-sm text-foreground hover:text-primary transition-colors truncate block"
+                          >
+                            {org.name}
+                          </Link>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                          {org.domain && <span className="font-mono text-primary">{org.domain}</span>}
+                          {org.domain && org.category && <span>•</span>}
+                          {org.category && <span>{org.category}</span>}
+                          {org.location && (
+                            <>
+                              <span>•</span>
+                              <span>{org.location}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <Badge
+                          tone={
+                            org.priority === 'HIGH'
+                              ? 'rose'
+                              : org.priority === 'MEDIUM'
+                                ? 'amber'
+                                : 'slate'
+                          }
+                          size="sm"
+                        >
+                          {org.priority}
+                        </Badge>
+                        <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-surface-elevated text-muted-foreground border border-border">
+                          {org.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs pt-2 border-t border-border/40 text-muted-foreground">
+                      <div className="flex items-center gap-1.5">
+                        {org.assignedTo ? (
+                          <>
+                            <Avatar name={org.assignedTo.name} color={org.assignedTo.avatarColor} size="xs" />
+                            <span className="text-[11px] font-medium text-foreground truncate max-w-[120px]">
+                              {org.assignedTo.name}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-[11px] italic font-mono">Unassigned</span>
+                        )}
+                      </div>
+                      {org.nextFollowupAt && (
+                        <span className="text-[11px] font-mono text-amber-500 font-semibold flex items-center gap-1">
+                          <Calendar className="size-3" />
+                          {formatDate(org.nextFollowupAt)}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-1">
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        onClick={() => {
+                          setActiveOrgForLog({ id: org.id, name: org.name })
+                          setLogModalOpen(true)
+                        }}
+                        className="text-xs text-primary font-semibold hover:bg-primary/10"
+                      >
+                        + Touchpoint
+                      </Button>
+                      <Link href={`/organisations/${org.id}`}>
+                        <Button
+                          variant="outline"
+                          size="xs"
+                          className="text-xs border-border/80"
+                        >
+                          Dossier
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Desktop Table (>= md) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-sm border-collapse">
               <thead>
                 <tr className="border-b border-border/80 text-[11px] font-mono uppercase tracking-wider text-muted-foreground bg-surface-elevated/40">
                   {isLeader && (
@@ -632,6 +742,7 @@ export default function OrganisationsPage() {
               </tbody>
             </table>
           </div>
+          </>
         )}
 
         {/* Pagination footer */}

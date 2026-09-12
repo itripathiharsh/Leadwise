@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/current-user'
-import { listComments, addComment } from '@/server/services/comments'
+import { listComments, addComment, deleteComment } from '@/server/services/comments'
 
 const commentCreateSchema = z.object({
   organisationId: z.string().min(1, 'organisationId is required').max(64),
@@ -20,8 +20,13 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'organisationId is required' }, { status: 400 })
   }
 
-  const comments = await listComments(organisationId)
-  return NextResponse.json({ comments })
+  try {
+    const comments = await listComments(user, organisationId)
+    return NextResponse.json({ comments })
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err)
+    return NextResponse.json({ error: msg }, { status: 403 })
+  }
 }
 
 export async function POST(req: Request) {
@@ -45,3 +50,25 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: msg }, { status: 400 })
   }
 }
+
+export async function DELETE(req: Request) {
+  const user = await getCurrentUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { searchParams } = new URL(req.url)
+  const id = searchParams.get('id')
+  if (!id) {
+    return NextResponse.json({ error: 'Comment ID is required' }, { status: 400 })
+  }
+
+  try {
+    await deleteComment(user, id)
+    return NextResponse.json({ success: true })
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err)
+    return NextResponse.json({ error: msg }, { status: 400 })
+  }
+}
+

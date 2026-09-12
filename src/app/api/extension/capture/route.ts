@@ -5,6 +5,7 @@ import { getCurrentUser } from '@/lib/auth/current-user'
 import { prisma } from '@/lib/db'
 import { normalizeOrgName, normalizeDomain, normalizeEmail, normalizePhone } from '@/lib/normalize'
 import { detectDecisionMakerConfidence } from '@/server/services/ai/intelligence'
+import { canWriteOrganisation } from '@/lib/rbac'
 
 async function resolveUser(req: Request) {
   const authHeader = req.headers.get('Authorization')
@@ -54,7 +55,14 @@ export async function POST(req: Request) {
       },
     })
 
-    if (!org) {
+    if (org) {
+      if (!canWriteOrganisation(user, org)) {
+        return NextResponse.json(
+          { error: 'You do not have permission to add contacts to this existing organisation.' },
+          { status: 403 },
+        )
+      }
+    } else {
       org = await prisma.organisation.create({
         data: {
           name: organisationName.trim(),

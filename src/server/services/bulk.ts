@@ -96,3 +96,80 @@ export async function bulkAssignOrganisations(
 
   return { success: true, count: result.count }
 }
+
+export async function bulkUpdatePriority(
+  user: CurrentUser,
+  orgIds: string[],
+  priority: 'HIGH' | 'MEDIUM' | 'LOW',
+) {
+  assertCan(user, 'org:edit')
+  if (!orgIds || orgIds.length === 0) {
+    throw new ValidationError('No organisation IDs provided.')
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    const updated = await tx.organisation.updateMany({
+      where: { id: { in: orgIds }, deletedAt: null },
+      data: { priority },
+    })
+
+    await writeAudit(
+      {
+        userId: user.id,
+        action: 'organisation.updated',
+        entityType: 'organisation',
+        entityId: 'bulk',
+        entityLabel: `${orgIds.length} organisations`,
+        summary: `${user.name} bulk changed priority of ${orgIds.length} organisations to ${priority}`,
+        after: { priority, count: orgIds.length },
+      },
+      tx,
+    )
+
+    return updated
+  })
+
+  return { success: true, count: result.count }
+}
+
+export async function bulkSoftDelete(
+  user: CurrentUser,
+  orgIds: string[],
+) {
+  assertCan(user, 'org:delete')
+  if (!orgIds || orgIds.length === 0) {
+    throw new ValidationError('No organisation IDs provided.')
+  }
+
+  const now = new Date()
+
+  const result = await prisma.$transaction(async (tx) => {
+    const updated = await tx.organisation.updateMany({
+      where: { id: { in: orgIds }, deletedAt: null },
+      data: { deletedAt: now },
+    })
+
+    // Also soft-delete associated contacts
+    await tx.contact.updateMany({
+      where: { organisationId: { in: orgIds }, deletedAt: null },
+      data: { deletedAt: now },
+    })
+
+    await writeAudit(
+      {
+        userId: user.id,
+        action: 'organisation.deleted',
+        entityType: 'organisation',
+        entityId: 'bulk',
+        entityLabel: `${orgIds.length} organisations`,
+        summary: `${user.name} bulk archived ${orgIds.length} organisations`,
+        after: { count: orgIds.length, deletedAt: now.toISOString() },
+      },
+      tx,
+    )
+
+    return updated
+  })
+
+  return { success: true, count: result.count }
+}

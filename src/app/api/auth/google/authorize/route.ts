@@ -32,8 +32,18 @@ export async function GET(req: Request) {
 
   const authUrl = generateGoogleOAuthUrl(redirectUri, state, config.clientId)
 
-  return NextResponse.json({
+  const res = NextResponse.json({
     url: authUrl,
     redirectUri,
   })
+
+  res.cookies.set('gdrive_oauth_state', state, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 10 * 60, // 10 minutes
+  })
+
+  return res
 }

@@ -14,7 +14,7 @@ import { SESSION_COOKIE, verifySessionToken } from './session'
 
 export type CurrentUser = Pick<
   User,
-  'id' | 'name' | 'email' | 'role' | 'phone' | 'avatarColor' | 'isActive'
+  'id' | 'name' | 'email' | 'role' | 'status' | 'phone' | 'avatarColor' | 'isActive'
 >
 
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
@@ -28,12 +28,18 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   // Re-read from the DB: the token is only a claim about identity, never
   // the authority on whether the account is still active or what role it has.
   const user = await prisma.user.findFirst({
-    where: { id: payload.sub, deletedAt: null, isActive: true },
+    where: {
+      id: payload.sub,
+      deletedAt: null,
+      isActive: true,
+      status: 'APPROVED',
+    },
     select: {
       id: true,
       name: true,
       email: true,
       role: true,
+      status: true,
       phone: true,
       avatarColor: true,
       isActive: true,

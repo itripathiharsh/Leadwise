@@ -1,7 +1,9 @@
 'use client'
 
 import * as React from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
+import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard,
@@ -26,12 +28,14 @@ import {
   X,
   Sun,
   Moon,
+  Keyboard,
 } from 'lucide-react'
 import { NotificationCenter } from '@/components/domain/notification-center'
 import { GlobalSearchDialog } from '@/components/domain/global-search-dialog'
 import { LogActivityModal } from '@/components/domain/log-activity-modal'
 import { CreateOrganisationModal } from '@/components/domain/create-organisation-modal'
 import { CreateContactModal } from '@/components/domain/create-contact-modal'
+import { KeyboardShortcutsModal } from '@/components/domain/keyboard-shortcuts-modal'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -61,6 +65,7 @@ export function DashboardShell({
   const [createContactOpen, setCreateContactOpen] = React.useState(false)
   const [preselectedOrg, setPreselectedOrg] = React.useState<{ id: string; name: string } | null>(null)
   const [isDark, setIsDark] = React.useState(true)
+  const [shortcutsOpen, setShortcutsOpen] = React.useState(false)
 
   React.useEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'))
@@ -80,17 +85,81 @@ export function DashboardShell({
 
   const isOwnerOrTL = user.role === 'OWNER' || user.role === 'TL'
 
-  // Keyboard shortcut for Cmd+K / Ctrl+K
+  // Global keyboard shortcuts
   React.useEffect(() => {
+    let gPending = false
+    let gTimer: ReturnType<typeof setTimeout> | null = null
+
+    const isEditable = () => {
+      const el = document.activeElement
+      if (!el) return false
+      const tag = el.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true
+      if ((el as HTMLElement).isContentEditable) return true
+      return false
+    }
+
+    const NAV_MAP: Record<string, string> = {
+      d: '/dashboard',
+      o: '/organisations',
+      c: '/contacts',
+      p: '/pipeline',
+      f: '/followups',
+      a: '/calendar',
+      r: '/reports/weekly',
+      s: '/settings',
+    }
+
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl+K → global search
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
         setSearchOpen((prev) => !prev)
+        return
+      }
+
+      if (isEditable()) return
+
+      // ? → help modal
+      if (e.key === '?' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault()
+        setShortcutsOpen((prev) => !prev)
+        return
+      }
+
+      // N → log activity
+      if (e.key.toLowerCase() === 'n' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+        e.preventDefault()
+        setLogModalOpen(true)
+        return
+      }
+
+      // G+letter chord navigation
+      if (e.key.toLowerCase() === 'g' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        if (!gPending) {
+          gPending = true
+          gTimer = setTimeout(() => { gPending = false }, 600)
+          return
+        }
+      }
+
+      if (gPending) {
+        const target = NAV_MAP[e.key.toLowerCase()]
+        if (target) {
+          e.preventDefault()
+          router.push(target)
+        }
+        gPending = false
+        if (gTimer) clearTimeout(gTimer)
       }
     }
+
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      if (gTimer) clearTimeout(gTimer)
+    }
+  }, [router])
 
   const navGroups = [
     {
@@ -156,14 +225,20 @@ export function DashboardShell({
         {/* Brand */}
         <div className="flex h-16 items-center justify-between px-5 border-b border-border/80">
           <Link href="/dashboard" prefetch={true} className="flex items-center gap-3 group">
-            <img
+            <Image
               src="/logo-white-text.png"
               alt="Leadwise"
+              width={160}
+              height={36}
+              priority
               className="h-9 w-auto max-w-[160px] object-contain drop-shadow-[0_0_15px_rgba(99,102,241,0.35)] group-hover:scale-105 transition-transform duration-200 hidden dark:block"
             />
-            <img
+            <Image
               src="/logo-dark-text.png"
               alt="Leadwise"
+              width={160}
+              height={36}
+              priority
               className="h-9 w-auto max-w-[160px] object-contain group-hover:scale-105 transition-transform duration-200 block dark:hidden"
             />
           </Link>
@@ -245,9 +320,26 @@ export function DashboardShell({
               type="button"
               onClick={handleLogout}
               title="Sign out"
+              aria-label="Sign out"
               className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-destructive transition-colors shrink-0"
             >
               <LogOut className="size-3.5" />
+            </button>
+          </div>
+
+          {/* Keyboard Shortcuts Help Button */}
+          <div className="px-3 pb-3">
+            <button
+              type="button"
+              onClick={() => setShortcutsOpen(true)}
+              className="w-full flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-colors border border-transparent hover:border-border/60"
+              title="Keyboard shortcuts (?)"
+            >
+              <span className="flex items-center gap-2">
+                <Keyboard className="size-3.5" />
+                <span>Shortcuts</span>
+              </span>
+              <kbd className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-semibold border border-border">?</kbd>
             </button>
           </div>
         </div>
@@ -262,6 +354,7 @@ export function DashboardShell({
             <button
               type="button"
               onClick={() => setMobileNavOpen(true)}
+              aria-label="Open navigation menu"
               className="inline-flex lg:hidden size-9 items-center justify-center rounded-lg border border-border bg-surface text-foreground"
             >
               <Menu className="size-5" />
@@ -350,6 +443,7 @@ export function DashboardShell({
             <button
               type="button"
               onClick={toggleTheme}
+              aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
               className="inline-flex size-8 items-center justify-center rounded-lg border border-border/80 bg-surface/80 text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-all duration-150 shadow-xs cursor-pointer active:scale-95"
               title={isDark ? "Switch to light mode" : "Switch to dark mode"}
             >
@@ -365,6 +459,7 @@ export function DashboardShell({
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
+                  aria-label={`${user.name} account menu`}
                   className="flex items-center gap-2 p-0.5 rounded-full hover:ring-2 hover:ring-primary/30 transition-all focus-visible:outline-none cursor-pointer"
                   title={`${user.name} (${user.role})`}
                 >
@@ -404,39 +499,108 @@ export function DashboardShell({
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto bg-surface-muted/30">
+        <main id="main-content" className="flex-1 overflow-y-auto bg-surface-muted/30 outline-none pb-20 lg:pb-0" tabIndex={-1}>
           {children}
         </main>
+
+        {/* Mobile Bottom Navigation Bar for rapid thumb access */}
+        <nav
+          aria-label="Mobile Navigation Bar"
+          className="lg:hidden fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-border/80 bg-surface/95 backdrop-blur-xl px-3 shadow-2xl"
+        >
+          <Link
+            href="/dashboard"
+            prefetch={true}
+            className={cn(
+              'flex flex-col items-center gap-1 text-[10px] font-medium transition-colors',
+              pathname === '/dashboard' ? 'text-primary font-bold' : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <LayoutDashboard className="size-4.5" />
+            <span>Overview</span>
+          </Link>
+
+          <Link
+            href="/organisations"
+            prefetch={true}
+            className={cn(
+              'flex flex-col items-center gap-1 text-[10px] font-medium transition-colors',
+              pathname.startsWith('/organisations') ? 'text-primary font-bold' : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <Building2 className="size-4.5" />
+            <span>Entities</span>
+          </Link>
+
+          {/* Quick Center Action */}
+          <button
+            type="button"
+            onClick={() => setLogModalOpen(true)}
+            className="flex size-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/30 -mt-5 active:scale-95 transition-transform cursor-pointer"
+            aria-label="Log activity"
+            title="Log Touchpoint"
+          >
+            <Plus className="size-5" />
+          </button>
+
+          <Link
+            href="/pipeline"
+            prefetch={true}
+            className={cn(
+              'flex flex-col items-center gap-1 text-[10px] font-medium transition-colors',
+              pathname.startsWith('/pipeline') ? 'text-primary font-bold' : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <Kanban className="size-4.5" />
+            <span>Pipeline</span>
+          </Link>
+
+          <Link
+            href="/followups"
+            prefetch={true}
+            className={cn(
+              'flex flex-col items-center gap-1 text-[10px] font-medium transition-colors',
+              pathname.startsWith('/followups') ? 'text-primary font-bold' : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <CalendarClock className="size-4.5" />
+            <span>Cadence</span>
+          </Link>
+        </nav>
       </div>
 
       {/* Mobile Navigation Drawer */}
-      {mobileNavOpen && (
-        <div className="fixed inset-0 z-50 flex lg:hidden">
-          <div
-            className="fixed inset-0 bg-slate-950/40 backdrop-blur-[2px]"
-            onClick={() => setMobileNavOpen(false)}
-          />
-          <div className="relative flex w-64 flex-col bg-surface border-r border-border shadow-xl p-4 space-y-4">
+      <DialogPrimitive.Root open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-[2px] animate-in fade-in" />
+          <DialogPrimitive.Content
+            aria-describedby={undefined}
+            className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-surface border-r border-border shadow-xl p-4 space-y-4 outline-none animate-in slide-in-from-left duration-200"
+          >
+            <DialogPrimitive.Title className="sr-only">Navigation Menu</DialogPrimitive.Title>
             <div className="flex items-center justify-between pb-3 border-b border-border">
               <div className="flex items-center gap-2">
-                <img
+                <Image
                   src="/logo-white-text.png"
                   alt="Leadwise"
+                  width={130}
+                  height={28}
                   className="h-7 w-auto max-w-[130px] object-contain drop-shadow-[0_0_12px_rgba(99,102,241,0.3)] hidden dark:block"
                 />
-                <img
+                <Image
                   src="/logo-dark-text.png"
                   alt="Leadwise"
+                  width={130}
+                  height={28}
                   className="h-7 w-auto max-w-[130px] object-contain block dark:hidden"
                 />
               </div>
-              <button
-                type="button"
-                onClick={() => setMobileNavOpen(false)}
-                className="p-1 text-muted-foreground hover:text-foreground"
+              <DialogPrimitive.Close
+                aria-label="Close navigation menu"
+                className="p-1 text-muted-foreground hover:text-foreground rounded-lg focus-visible:ring-2 focus-visible:ring-primary"
               >
                 <X className="size-5" />
-              </button>
+              </DialogPrimitive.Close>
             </div>
 
             <Button
@@ -451,7 +615,7 @@ export function DashboardShell({
               Log Activity
             </Button>
 
-            <nav className="flex-1 space-y-3 overflow-y-auto scrollbar-slim">
+            <nav className="flex-1 space-y-3 overflow-y-auto scrollbar-slim" aria-label="Mobile Navigation">
               {navGroups.map((group) => (
                 <div key={group.title} className="space-y-1">
                   <div className="px-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -459,8 +623,11 @@ export function DashboardShell({
                   </div>
                   <div className="space-y-0.5">
                     {group.items.map((item) => {
-                      const active = pathname === item.href
+                      const active =
+                        pathname === item.href ||
+                        (item.href !== '/dashboard' && pathname.startsWith(item.href))
                       const Icon = item.icon
+
                       return (
                         <Link
                           key={item.href}
@@ -468,13 +635,13 @@ export function DashboardShell({
                           prefetch={true}
                           onClick={() => setMobileNavOpen(false)}
                           className={cn(
-                            'flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors',
+                            'flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-colors',
                             active
-                              ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
+                              ? 'bg-primary/10 text-primary font-semibold'
                               : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                           )}
                         >
-                          <Icon className="size-4 shrink-0" />
+                          <Icon className={cn('size-4', active ? 'text-primary' : 'text-muted-foreground')} />
                           <span>{item.label}</span>
                         </Link>
                       )
@@ -497,9 +664,9 @@ export function DashboardShell({
                 Logout
               </Button>
             </div>
-          </div>
-        </div>
-      )}
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
 
       {/* Global Dialog Modals */}
       <GlobalSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
@@ -512,6 +679,10 @@ export function DashboardShell({
           setPreselectedOrg({ id: orgId, name: orgName })
           setCreateContactOpen(true)
         }}
+      />
+      <KeyboardShortcutsModal
+        open={shortcutsOpen}
+        onOpenChange={setShortcutsOpen}
       />
       <CreateContactModal
         open={createContactOpen}

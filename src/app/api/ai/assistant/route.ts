@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/current-user'
+import { prisma } from '@/lib/db'
+import { canReadOrganisation } from '@/lib/rbac'
 import { generateCallPrep, summarizeCallNotes } from '@/server/services/ai/assistant'
 
 const aiAssistantSchema = z.discriminatedUnion('action', [
@@ -30,6 +32,17 @@ export async function POST(req: Request) {
     const body = parsed.data
 
     if (body.action === 'CALL_PREP') {
+      const org = await prisma.organisation.findFirst({
+        where: { id: body.orgId, deletedAt: null },
+        select: { id: true, assignedToId: true, createdById: true },
+      })
+      if (!org) {
+        return NextResponse.json({ error: 'Organisation not found' }, { status: 404 })
+      }
+      if (!canReadOrganisation(user, org)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+
       const prep = await generateCallPrep(body.orgId, body.contactId)
       return NextResponse.json({ callPrep: prep })
     }

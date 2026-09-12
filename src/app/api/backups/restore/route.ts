@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/current-user'
+import { assertCan } from '@/lib/rbac'
 import { validateAndPreviewRestore, executeSafeRestore } from '@/server/services/restore'
 
 export async function POST(req: Request) {
@@ -7,6 +8,8 @@ export async function POST(req: Request) {
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  assertCan(user, 'backup:manage')
 
   try {
     const formData = await req.formData()

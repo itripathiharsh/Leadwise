@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { hashPassword, checkPasswordStrength } from '@/lib/auth/password'
 import { normalizeEmail } from '@/lib/normalize'
-import { checkRateLimit } from '@/lib/rate-limit'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { writeAuditSafe } from '@/server/services/audit'
 import { notifyOwnersAndTLs } from '@/server/services/notifications'
 import { Role, UserStatus, NotificationType, NotificationPriority } from '@prisma/client'
@@ -17,8 +17,7 @@ const signupSchema = z.object({
 
 export async function POST(req: Request) {
   try {
-    const ip = req.headers.get('x-forwarded-for') || 'local'
-    const limit = checkRateLimit(ip)
+    const limit = checkRateLimit(getClientIp(req))
     if (!limit.ok) {
       return NextResponse.json({ error: 'Too many signup attempts. Try again later.' }, { status: 429 })
     }

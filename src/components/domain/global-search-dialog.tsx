@@ -2,7 +2,23 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, Building2, User, Sparkles, ExternalLink, X } from 'lucide-react'
+import {
+  Search,
+  Building2,
+  User,
+  Sparkles,
+  ExternalLink,
+  X,
+  LayoutDashboard,
+  Kanban,
+  CalendarClock,
+  CalendarCheck,
+  Settings,
+  BarChart3,
+  Users,
+  FileText,
+  ArrowRight,
+} from 'lucide-react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -26,6 +42,16 @@ interface SearchResultsState {
   }>
 }
 
+const QUICK_LINKS = [
+  { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, shortcut: 'G D' },
+  { label: 'Organisations', href: '/organisations', icon: Building2, shortcut: 'G O' },
+  { label: 'Contacts', href: '/contacts', icon: Users, shortcut: 'G C' },
+  { label: 'Pipeline', href: '/pipeline', icon: Kanban, shortcut: 'G P' },
+  { label: 'Follow-ups', href: '/followups', icon: CalendarClock, shortcut: 'G F' },
+  { label: 'Calendar', href: '/calendar', icon: CalendarCheck, shortcut: 'G A' },
+  { label: 'Settings', href: '/settings', icon: Settings, shortcut: 'G S' },
+]
+
 export function GlobalSearchDialog({
   open,
   onOpenChange,
@@ -40,6 +66,7 @@ export function GlobalSearchDialog({
     organisations: [],
     contacts: [],
   })
+  const [focusIndex, setFocusIndex] = React.useState(-1)
 
   // Keyboard shortcut listener
   React.useEffect(() => {
@@ -57,11 +84,13 @@ export function GlobalSearchDialog({
     if (!open) {
       setQuery('')
       setResults({ organisations: [], contacts: [] })
+      setFocusIndex(-1)
       return
     }
 
     if (query.trim().length < 2) {
       setResults({ organisations: [], contacts: [] })
+      setFocusIndex(-1)
       return
     }
 
@@ -75,6 +104,7 @@ export function GlobalSearchDialog({
             organisations: data.organisations ?? [],
             contacts: data.contacts ?? [],
           })
+          setFocusIndex(-1)
         }
       } catch (err) {
         console.error('Search failed', err)
@@ -92,18 +122,55 @@ export function GlobalSearchDialog({
   }
 
   const hasResults = results.organisations.length > 0 || results.contacts.length > 0
+  const showQuickLinks = query.trim().length < 2
+
+  // Build flat list of all selectable items for keyboard navigation
+  const allItems = React.useMemo(() => {
+    if (showQuickLinks) {
+      return QUICK_LINKS.map((link) => ({ type: 'quick' as const, url: link.href, label: link.label }))
+    }
+    const items: Array<{ type: 'org' | 'contact'; url: string; label: string }> = []
+    for (const org of results.organisations) {
+      items.push({ type: 'org', url: `/organisations/${org.id}`, label: org.name })
+    }
+    for (const contact of results.contacts) {
+      items.push({ type: 'contact', url: `/organisations/${contact.organisation.id}`, label: contact.name })
+    }
+    return items
+  }, [showQuickLinks, results])
+
+  const handleDialogKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setFocusIndex((prev) => Math.min(prev + 1, allItems.length - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setFocusIndex((prev) => Math.max(prev - 1, -1))
+    } else if (e.key === 'Enter' && focusIndex >= 0 && focusIndex < allItems.length) {
+      e.preventDefault()
+      handleSelect(allItems[focusIndex]!.url)
+    }
+  }
+
+  let itemCounter = 0
 
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-[2px] animate-in fade-in" />
-        <DialogPrimitive.Content className="fixed top-[15%] left-1/2 z-50 w-full max-w-xl -translate-x-1/2 rounded-2xl border border-border bg-popover text-popover-foreground shadow-2xl overflow-hidden outline-none animate-in zoom-in-95 duration-150">
+        <DialogPrimitive.Content
+          aria-describedby={undefined}
+          onKeyDown={handleDialogKeyDown}
+          className="fixed top-[15%] left-1/2 z-50 w-full max-w-xl -translate-x-1/2 rounded-2xl border border-border bg-popover text-popover-foreground shadow-2xl overflow-hidden outline-none animate-in zoom-in-95 duration-150"
+        >
+          <DialogPrimitive.Title className="sr-only">Global Search</DialogPrimitive.Title>
           {/* Input Header */}
           <div className="flex items-center gap-3 border-b border-border px-4 py-3.5">
             <Search className="size-5 text-muted-foreground shrink-0" />
             <input
               type="text"
-              placeholder="Search organisations, contacts, emails, phones, domains... (⌘K)"
+              aria-label="Search records, contacts, and organisations"
+              placeholder="Search organisations, contacts, or navigate... (⌘K)"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="flex-1 bg-transparent text-sm placeholder:text-muted-foreground outline-none text-foreground"
@@ -113,6 +180,7 @@ export function GlobalSearchDialog({
               <button
                 type="button"
                 onClick={() => setQuery('')}
+                aria-label="Clear search query"
                 className="text-muted-foreground hover:text-foreground p-1 rounded-md"
               >
                 <X className="size-4" />
@@ -133,29 +201,37 @@ export function GlobalSearchDialog({
                 <div className="px-3 py-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                   Organisations
                 </div>
-                {results.organisations.map((org) => (
-                  <button
-                    key={org.id}
-                    type="button"
-                    onClick={() => handleSelect(`/organisations/${org.id}`)}
-                    className="w-full flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-xs transition-colors hover:bg-muted/70 focus:outline-none"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="flex size-7 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
-                        <Building2 className="size-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="font-semibold text-foreground truncate">{org.name}</div>
-                        <div className="text-[11px] text-muted-foreground truncate">
-                          {org.category || org.location || 'Organisation'}
+                {results.organisations.map((org) => {
+                  const idx = itemCounter++
+                  return (
+                    <button
+                      key={org.id}
+                      type="button"
+                      onClick={() => handleSelect(`/organisations/${org.id}`)}
+                      className={cn(
+                        'w-full flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-xs transition-colors focus:outline-none',
+                        focusIndex === idx
+                          ? 'bg-primary/10 text-primary'
+                          : 'hover:bg-muted/70',
+                      )}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="flex size-7 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
+                          <Building2 className="size-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-semibold text-foreground truncate">{org.name}</div>
+                          <div className="text-[11px] text-muted-foreground truncate">
+                            {org.category || org.location || 'Organisation'}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <Badge tone="slate" size="sm">
-                      {org.status}
-                    </Badge>
-                  </button>
-                ))}
+                      <Badge tone="slate" size="sm">
+                        {org.status}
+                      </Badge>
+                    </button>
+                  )
+                })}
               </div>
             )}
 
@@ -164,41 +240,87 @@ export function GlobalSearchDialog({
                 <div className="px-3 py-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                   Contacts
                 </div>
-                {results.contacts.map((contact) => (
-                  <button
-                    key={contact.id}
-                    type="button"
-                    onClick={() => handleSelect(`/organisations/${contact.organisation.id}`)}
-                    className="w-full flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-xs transition-colors hover:bg-muted/70 focus:outline-none"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="flex size-7 items-center justify-center rounded-md bg-teal-500/10 text-teal-600 shrink-0">
-                        <User className="size-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-semibold text-foreground truncate">{contact.name}</span>
-                          {contact.isDecisionMaker && (
-                            <Badge tone="amber" size="sm">DM</Badge>
-                          )}
+                {results.contacts.map((contact) => {
+                  const idx = itemCounter++
+                  return (
+                    <button
+                      key={contact.id}
+                      type="button"
+                      onClick={() => handleSelect(`/organisations/${contact.organisation.id}`)}
+                      className={cn(
+                        'w-full flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-xs transition-colors focus:outline-none',
+                        focusIndex === idx
+                          ? 'bg-primary/10 text-primary'
+                          : 'hover:bg-muted/70',
+                      )}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="flex size-7 items-center justify-center rounded-md bg-teal-500/10 text-teal-600 shrink-0">
+                          <User className="size-4" />
                         </div>
-                        <div className="text-[11px] text-muted-foreground truncate">
-                          {contact.designation ? `${contact.designation} • ` : ''}{contact.organisation.name}
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold text-foreground truncate">{contact.name}</span>
+                            {contact.isDecisionMaker && (
+                              <Badge tone="amber" size="sm">DM</Badge>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-muted-foreground truncate">
+                            {contact.designation ? `${contact.designation} • ` : ''}{contact.organisation.name}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <span className="text-[11px] text-muted-foreground font-mono">
-                      {contact.phone || contact.email || ''}
-                    </span>
-                  </button>
-                ))}
+                      <span className="text-[11px] text-muted-foreground font-mono">
+                        {contact.phone || contact.email || ''}
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
             )}
 
-            {query.trim().length < 2 && (
-              <div className="p-6 text-center text-xs text-muted-foreground space-y-1">
-                <p className="font-medium text-foreground">Quick Search</p>
-                <p>Type at least 2 characters to search across all records.</p>
+            {/* Quick Navigation Links (when no query) */}
+            {showQuickLinks && (
+              <div className="py-2 space-y-1">
+                <div className="px-3 py-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Quick Navigation
+                </div>
+                {QUICK_LINKS.map((link) => {
+                  const idx = itemCounter++
+                  const Icon = link.icon
+                  return (
+                    <button
+                      key={link.href}
+                      type="button"
+                      onClick={() => handleSelect(link.href)}
+                      className={cn(
+                        'w-full flex items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-left text-xs transition-colors focus:outline-none',
+                        focusIndex === idx
+                          ? 'bg-primary/10 text-primary'
+                          : 'hover:bg-muted/70',
+                      )}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex size-7 items-center justify-center rounded-md bg-surface-elevated text-muted-foreground shrink-0">
+                          <Icon className="size-4" />
+                        </div>
+                        <span className="font-medium text-foreground">{link.label}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <kbd className="text-[10px] font-mono font-semibold text-muted-foreground bg-muted border border-border px-1.5 py-0.5 rounded">
+                          {link.shortcut}
+                        </kbd>
+                        <ArrowRight className="size-3 text-muted-foreground/60" />
+                      </div>
+                    </button>
+                  )
+                })}
+
+                <div className="px-3 pt-2 mt-1 border-t border-border/40">
+                  <p className="text-[11px] text-muted-foreground">
+                    Type to search across all records, or use arrow keys to navigate.
+                  </p>
+                </div>
               </div>
             )}
           </div>

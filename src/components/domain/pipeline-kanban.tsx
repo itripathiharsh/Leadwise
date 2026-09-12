@@ -3,20 +3,12 @@
 import * as React from 'react'
 import Link from 'next/link'
 import {
-  Building2,
   Clock,
-  User,
   Flame,
   AlertTriangle,
   Snowflake,
-  MoreVertical,
-  Plus,
-  Phone,
-  Mail,
   ChevronRight,
   Sparkles,
-  ArrowRight,
-  Star,
   Target,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -42,8 +34,8 @@ export const PIPELINE_STAGES: OrgStatus[] = [
   'ASSIGNED',
   'CONTACTED',
   'RESPONDED',
-  'MEETING',
   'INTERESTED',
+  'MEETING',
   'PARTNERSHIP',
   'REJECTED',
 ]
@@ -134,6 +126,7 @@ export function PipelineKanban({
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
     e.dataTransfer.setData('text/plain', id)
+    e.dataTransfer.effectAllowed = 'move'
     setDraggedItemId(id)
   }
 
@@ -150,17 +143,19 @@ export function PipelineKanban({
     const orgId = e.dataTransfer.getData('text/plain') || draggedItemId
     if (!orgId) return
 
-    // Find the item
+    // Find the item and its source column
     let currentItem: PipelineCardItem | null = null
+    let sourceStatus: OrgStatus | null = null
     for (const st of Object.keys(board.columns) as OrgStatus[]) {
       const found = board.columns[st].find((i) => i.id === orgId)
       if (found) {
         currentItem = found
+        sourceStatus = st
         break
       }
     }
 
-    if (!currentItem || currentItem.status === targetStatus) return
+    if (!currentItem || !sourceStatus || currentItem.status === targetStatus) return
 
     // If moving to REJECTED, open reason modal
     if (targetStatus === 'REJECTED') {
@@ -169,7 +164,49 @@ export function PipelineKanban({
       return
     }
 
-    await executeStageMove(orgId, targetStatus)
+    // Optimistic update: move card immediately
+    const previousBoard = structuredClone(board)
+    setBoard((prev) => {
+      const next = structuredClone(prev)
+      // Remove from source
+      next.columns[sourceStatus!] = next.columns[sourceStatus!].filter((i) => i.id !== orgId)
+      next.counts[sourceStatus!] = Math.max(0, (next.counts[sourceStatus!] || 0) - 1)
+      // Add to target
+      const movedItem = { ...currentItem!, status: targetStatus }
+      next.columns[targetStatus] = [...(next.columns[targetStatus] || []), movedItem]
+      next.counts[targetStatus] = (next.counts[targetStatus] || 0) + 1
+      return next
+    })
+    setDraggedItemId(null)
+
+    // Fire API call
+    setMoving(true)
+    try {
+      const res = await fetch('/api/pipeline', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: orgId, status: targetStatus }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok || data.error) {
+        // Revert on failure
+        setBoard(previousBoard)
+        toast.error(data.error || 'Failed to move stage.')
+        return
+      }
+
+      toast.success(`Moved to ${STAGE_CONFIG[targetStatus].label} ✓`)
+      onRefresh()
+    } catch {
+      // Revert on network error
+      setBoard(previousBoard)
+      toast.error('Network error moving stage.')
+    } finally {
+      setMoving(false)
+      setDraggedItemId(null)
+    }
   }
 
   const handleConfirmRejection = async (e: React.FormEvent) => {
@@ -193,7 +230,12 @@ export function PipelineKanban({
   return (
     <div className="space-y-4">
       {/* Horizontal Scrollable Kanban Columns */}
-      <div className="flex gap-4 overflow-x-auto pb-6 pt-1 snap-x min-h-[78vh]">
+      <div
+        role="region"
+        aria-label="Pipeline deal stage columns"
+        tabIndex={0}
+        className="flex gap-4 overflow-x-auto pb-6 pt-1 snap-x min-h-[78vh] focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none rounded-xl"
+      >
         {stages.map((stage) => {
           const config = STAGE_CONFIG[stage]
           const items = stage === 'ASSIGNED'
@@ -234,8 +276,13 @@ export function PipelineKanban({
               {/* Cards list */}
               <div className="flex-1 overflow-y-auto pt-3 space-y-3 min-h-[140px]">
                 {items.length === 0 ? (
-                  <div className="flex h-32 flex-col items-center justify-center rounded-xl border border-dashed border-border/60 text-[11px] text-muted-foreground/70">
-                    <span>Drop target entity here</span>
+                  <div className={cn(
+                    'flex h-32 flex-col items-center justify-center rounded-xl border border-dashed text-[11px] transition-all duration-200',
+                    draggedItemId
+                      ? 'border-primary/60 bg-primary/5 text-primary animate-pulse'
+                      : 'border-border/60 text-muted-foreground/70',
+                  )}>
+                    <span>{draggedItemId ? 'Drop here to move' : 'No entities in this stage'}</span>
                   </div>
                 ) : (
                   items.map((org) => (
@@ -368,6 +415,7 @@ export function PipelineKanban({
 
                         <select
                           value={org.status}
+                          aria-label={`Change stage for ${org.name}`}
                           onChange={(e) => {
                             const newSt = e.target.value as OrgStatus
                             if (newSt === 'REJECTED') {
@@ -407,8 +455,9 @@ export function PipelineKanban({
 
           <form onSubmit={handleConfirmRejection} className="flex flex-col flex-1 overflow-hidden">
             <DialogBody className="space-y-4">
-              <Field label="Primary Reason" required>
+              <Field label="Primary Reason" htmlFor="rejection-reason" required>
                 <select
+                  id="rejection-reason"
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
                   className="h-10 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-xs transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -421,8 +470,9 @@ export function PipelineKanban({
                 </select>
               </Field>
 
-              <Field label="Tactical Context / Debrief Notes">
+              <Field label="Tactical Context / Debrief Notes" htmlFor="rejection-notes">
                 <textarea
+                  id="rejection-notes"
                   rows={3}
                   placeholder="Details of objections, gatekeeper hurdles, or when to revisit..."
                   value={rejectionNote}

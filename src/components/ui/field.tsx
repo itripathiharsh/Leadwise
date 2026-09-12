@@ -132,6 +132,9 @@ export function Field({
   className,
   children,
 }: FieldProps) {
+  const errorId = htmlFor ? `${htmlFor}-error` : undefined
+  const hintId = htmlFor ? `${htmlFor}-hint` : undefined
+
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
       {label && (
@@ -141,9 +144,9 @@ export function Field({
       )}
       {children}
       {error ? (
-        <p className="text-xs leading-4 font-medium text-destructive">{error}</p>
+        <p id={errorId} role="alert" className="text-xs leading-4 font-medium text-destructive">{error}</p>
       ) : hint ? (
-        <p className="text-xs leading-4 text-muted-foreground">{hint}</p>
+        <p id={hintId} className="text-xs leading-4 text-muted-foreground">{hint}</p>
       ) : null}
     </div>
   )

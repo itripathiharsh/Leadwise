@@ -1,22 +1,9 @@
 import { NextResponse } from 'next/server'
 import { executeFullBackup } from '@/server/services/backup'
-
-function isAuthorized(req: Request): boolean {
-  const secret = process.env.CRON_SECRET
-  if (!secret) return true // Allow in dev if not configured
-
-  const authHeader = req.headers.get('authorization')
-  const cronHeader = req.headers.get('x-cron-secret')
-
-  if (authHeader === `Bearer ${secret}` || cronHeader === secret) {
-    return true
-  }
-
-  return false
-}
+import { isCronAuthorized } from '@/lib/auth/cron-auth'
 
 export async function GET(req: Request) {
-  if (!isAuthorized(req)) {
+  if (!isCronAuthorized(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

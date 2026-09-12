@@ -7,7 +7,7 @@ import type {
 } from '@prisma/client'
 import { prisma } from '@/lib/db'
 import type { CurrentUser } from '@/lib/auth/current-user'
-import { activityScope, assertCan, can, canWriteOrganisation, ForbiddenError } from '@/lib/rbac'
+import { activityScope, assertCan, can, canReadOrganisation, canWriteOrganisation, ForbiddenError } from '@/lib/rbac'
 import {
   ACTIVITY_TYPE_META,
   CONTACT_STATUS_META,
@@ -277,6 +277,21 @@ export async function logActivity(
     followUpDate: followUpAt,
     closedFollowUps: result.closedFollowUps,
   }
+}
+
+export async function getActivity(user: CurrentUser, id: string) {
+  const activity = await prisma.activity.findFirst({
+    where: { id, deletedAt: null },
+    include: {
+      organisation: { select: { id: true, name: true, assignedToId: true, createdById: true } },
+      contact: { select: { id: true, name: true, designation: true } },
+      performedBy: { select: { id: true, name: true, avatarColor: true } },
+      followUps: true,
+    },
+  })
+  if (!activity) throw new NotFoundError('Activity')
+  if (!canReadOrganisation(user, activity.organisation)) throw new ForbiddenError()
+  return activity
 }
 
 /**

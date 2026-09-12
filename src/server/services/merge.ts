@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db'
 import type { CurrentUser } from '@/lib/auth/current-user'
-import { assertCan } from '@/lib/rbac'
+import { assertCan, canWriteOrganisation } from '@/lib/rbac'
 import { writeAudit } from './audit'
 import { recomputeOrganisationCaches, recomputeContactCache } from './caches'
 import { NotFoundError, ValidationError } from '@/server/errors'
@@ -180,6 +180,20 @@ export async function mergeContacts(
 
   if (!source) throw new NotFoundError('Source contact')
   if (!target) throw new NotFoundError('Target contact')
+
+  if (source.organisationId !== target.organisationId) {
+    throw new ValidationError('Contacts must belong to the same organisation to be merged.')
+  }
+
+  const org = await prisma.organisation.findFirst({
+    where: { id: target.organisationId, deletedAt: null },
+    select: { id: true, assignedToId: true, createdById: true },
+  })
+  if (!org) throw new NotFoundError('Organisation')
+
+  if (!canWriteOrganisation(user, org)) {
+    throw new ValidationError('You do not have permission to modify contacts for this organisation.')
+  }
 
   await prisma.$transaction(async (tx) => {
     // 1. Move activities to target contact

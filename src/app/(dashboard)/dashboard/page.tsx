@@ -1,4 +1,5 @@
 import * as React from 'react'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import {
   Building2,
@@ -35,6 +36,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { DashboardClientActions } from './dashboard-actions'
 import { cn } from '@/lib/utils'
+
+export const metadata: Metadata = {
+  title: 'Command Center',
+  description: 'Partnership intelligence and outreach operations',
+}
 
 export default async function DashboardPage() {
   const user = await requireUser()
@@ -132,6 +138,35 @@ export default async function DashboardPage() {
           <DashboardClientActions isLeader={isLeader} />
         </div>
       </div>
+
+      {/* Urgent Attention Alert Banner */}
+      {overdueFollowups.total > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-rose-500/40 bg-gradient-to-r from-rose-500/15 via-surface/90 to-surface p-4 text-xs shadow-md backdrop-blur-xl animate-in fade-in duration-300">
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30">
+              <AlertTriangle className="size-4.5 animate-pulse" />
+            </div>
+            <div>
+              <span className="font-bold text-sm text-foreground">
+                Urgent Cadence Action Needed:
+              </span>{' '}
+              <span className="text-muted-foreground">
+                {isOwner
+                  ? `${overdueFollowups.total} follow-up task${overdueFollowups.total === 1 ? '' : 's'} are past due across team reps.`
+                  : `You have ${overdueFollowups.total} overdue outreach follow-up${overdueFollowups.total === 1 ? '' : 's'} requiring contact.`}
+              </span>
+            </div>
+          </div>
+
+          <Link
+            href="/followups?bucket=OVERDUE"
+            className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500 text-white font-semibold text-xs hover:bg-rose-600 transition-colors shadow-xs self-start sm:self-auto"
+          >
+            <span>Resolve Overdue Queue</span>
+            <ArrowRight className="size-3" />
+          </Link>
+        </div>
+      )}
 
       {/* Action Attention Tiles */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">

@@ -1,7 +1,18 @@
+import { z } from 'zod'
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/current-user'
 import { listUsers, createUser, getTeamPerformance } from '@/server/services/users'
 import { userCreateSchema } from '@/lib/validation'
+
+const userActionSchema = z.object({
+  userId: z.string().min(1, 'userId is required').max(64),
+  action: z.enum(['APPROVE', 'REJECT', 'DISCONTINUE', 'REACTIVATE']),
+  role: z.enum(['OWNER', 'TL', 'INTERN']).optional(),
+})
+
+const userDeleteSchema = z.object({
+  userId: z.string().min(1, 'userId is required').max(64),
+})
 
 export async function GET(req: Request) {
   const user = await getCurrentUser()
@@ -72,11 +83,13 @@ export async function PATCH(req: Request) {
   }
 
   try {
-    const body = await req.json()
-    const { userId, action, role } = body
-    if (!userId || !action) {
-      return NextResponse.json({ error: 'Missing userId or action.' }, { status: 400 })
+    const rawBody = await req.json()
+    const parsed = userActionSchema.safeParse(rawBody)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid team action input', details: parsed.error.flatten() }, { status: 400 })
     }
+
+    const { userId, action, role } = parsed.data
 
     if (action === 'APPROVE' || action === 'REJECT') {
       const { reviewUserRegistration } = await import('@/server/services/users')
@@ -114,14 +127,14 @@ export async function DELETE(req: Request) {
   }
 
   try {
-    const body = await req.json()
-    const { userId } = body
-    if (!userId) {
-      return NextResponse.json({ error: 'Missing userId.' }, { status: 400 })
+    const rawBody = await req.json()
+    const parsed = userDeleteSchema.safeParse(rawBody)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid user deletion input', details: parsed.error.flatten() }, { status: 400 })
     }
 
     const { deleteUser } = await import('@/server/services/users')
-    const result = await deleteUser(user, userId)
+    const result = await deleteUser(user, parsed.data.userId)
     return NextResponse.json(result)
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)

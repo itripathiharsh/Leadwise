@@ -1,0 +1,33 @@
+# CodeRabbit Configuration
+# Schema: https://docs.coderabbit.ai/reference/configuration
+
+language: "en-US"
+tone_instructions: "Concise, technical, actionable. Prioritize correctness, security, and performance."
+
+reviews:
+  profile: "assertive"
+  auto_review:
+    enabled: true
+    drafts: false
+  tools:
+    biome:
+      enabled: true
+    eslint:
+      enabled: true
+    typescript:
+      enabled: true
+    ruff:
+      enabled: true
+    semgrep:
+      enabled: true
+    betterleaks:
+      enabled: true
+
+chat:
+  auto_reply: true
+
+pre_merge_checks:
+  lint:
+    enabled: true
+  tests:
+    enabled: true

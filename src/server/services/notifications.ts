@@ -132,6 +132,21 @@ export async function markAllNotificationsAsRead(userId: string) {
   })
 }
 
+export async function deleteNotification(userId: string, notificationId: string) {
+  return prisma.notification.deleteMany({
+    where: {
+      id: notificationId,
+      userId,
+    },
+  })
+}
+
+export async function clearAllNotifications(userId: string) {
+  return prisma.notification.deleteMany({
+    where: { userId },
+  })
+}
+
 /**
  * Gets or creates notification preferences for a user.
  */

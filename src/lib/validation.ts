@@ -464,9 +464,10 @@ export function fieldErrorsFrom(error: z.ZodError): Record<string, string> {
 
 // Bulk operations
 export const bulkSchema = z.object({
-  action: z.enum(['STATUS', 'ASSIGN']),
+  action: z.enum(['STATUS', 'ASSIGN', 'PRIORITY', 'DELETE']),
   orgIds: z.array(z.string().min(1)).min(1).max(50),
   status: z.nativeEnum(OrgStatus).optional(),
+  priority: z.enum(['HIGH', 'MEDIUM', 'LOW']).optional(),
   rejectionReason: z.string().max(500).optional(),
   assignedToId: z.string().min(1).max(64).optional(),
 })

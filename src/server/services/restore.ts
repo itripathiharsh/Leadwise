@@ -3,6 +3,7 @@ import type { CurrentUser } from '@/lib/auth/current-user'
 import { assertCan } from '@/lib/rbac'
 import ExcelJS from 'exceljs'
 import bcrypt from 'bcryptjs'
+import crypto from 'node:crypto'
 
 export interface RestorePreview {
   valid: boolean
@@ -126,7 +127,8 @@ export async function executeSafeRestore(
     eodReports: 0,
   }
 
-  const defaultPasswordHash = await bcrypt.hash('Sentio@123', 10)
+  const randomFallbackPassword = crypto.randomBytes(24).toString('base64url')
+  const defaultPasswordHash = await bcrypt.hash(randomFallbackPassword, 10)
 
   // 1. Restore Users
   const userSheet = workbook.getWorksheet('Users')

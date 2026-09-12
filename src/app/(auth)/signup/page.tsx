@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import {
   Sparkles,
@@ -102,7 +103,7 @@ export default function SignupPage() {
   ]
 
   return (
-    <div className="relative flex min-h-screen w-full bg-background overflow-x-hidden">
+    <main id="main-content" className="relative flex min-h-screen w-full bg-background overflow-x-hidden">
       {/* LEFT SIDE: Brand Intelligence Hero Panel */}
       <div className="relative hidden w-1/2 flex-col justify-between p-12 lg:flex border-r border-border/80 overflow-hidden bg-surface-muted/30">
         <div className="absolute -top-32 -left-32 size-96 rounded-full bg-primary/15 blur-3xl pointer-events-none" />
@@ -110,14 +111,20 @@ export default function SignupPage() {
 
         <div className="relative z-10">
           <Link href="/login" className="inline-block transition-transform hover:scale-102">
-            <img
+            <Image
               src="/logo-white-text.png"
               alt="Leadwise"
+              width={160}
+              height={44}
+              priority
               className="h-14 w-auto object-contain drop-shadow-[0_0_20px_rgba(99,102,241,0.35)] hidden dark:block"
             />
-            <img
+            <Image
               src="/logo-dark-text.png"
               alt="Leadwise"
+              width={160}
+              height={44}
+              priority
               className="h-14 w-auto object-contain block dark:hidden"
             />
           </Link>
@@ -132,9 +139,9 @@ export default function SignupPage() {
               <Sparkles className="size-3.5" />
               <span>Controlled Enterprise Access</span>
             </div>
-            <h1 className="font-display text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+            <h2 className="font-display text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
               Join the Leadwise Outreach Command Center
-            </h1>
+            </h2>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Every newly registered team member is reviewed by Team Leadership before CRM pipeline and data access is granted.
             </p>
@@ -193,14 +200,20 @@ export default function SignupPage() {
         <div className="w-full max-w-md space-y-6 relative z-10">
           {/* Mobile Header */}
           <div className="flex flex-col items-center text-center space-y-2 lg:hidden">
-            <img
+            <Image
               src="/logo-white-text.png"
               alt="Leadwise"
+              width={140}
+              height={36}
+              priority
               className="h-12 w-auto object-contain hidden dark:block"
             />
-            <img
+            <Image
               src="/logo-dark-text.png"
               alt="Leadwise"
+              width={140}
+              height={36}
+              priority
               className="h-12 w-auto object-contain block dark:hidden"
             />
             <p className="text-xs text-muted-foreground font-medium">
@@ -219,9 +232,9 @@ export default function SignupPage() {
                 <span className="inline-block text-[11px] font-mono uppercase px-3 py-1 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-bold">
                   Status: PENDING REVIEW
                 </span>
-                <h2 className="font-display font-extrabold text-xl sm:text-2xl text-foreground">
+                <h1 className="font-display font-extrabold text-xl sm:text-2xl text-foreground">
                   Registration Request Submitted
-                </h2>
+                </h1>
                 <p className="text-xs text-muted-foreground leading-relaxed max-w-sm mx-auto">
                   Your account for <span className="font-bold text-foreground">{registeredEmail}</span> has been created.
                 </p>
@@ -265,9 +278,9 @@ export default function SignupPage() {
             <div className="bento-box rounded-2xl border border-border/90 bg-surface/85 backdrop-blur-2xl p-7 sm:p-9 shadow-2xl space-y-6 rim-highlight">
               <div className="space-y-3">
                 <div className="flex items-center justify-between pb-1 border-b border-border/50">
-                  <h2 className="font-display font-bold text-xl tracking-tight text-foreground">
+                  <h1 className="font-display font-bold text-xl tracking-tight text-foreground">
                     Request Account Access
-                  </h2>
+                  </h1>
                   <span className="text-[10px] font-mono uppercase px-2.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-semibold">
                     Requires TL Approval
                   </span>
@@ -401,6 +414,6 @@ export default function SignupPage() {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   )
 }

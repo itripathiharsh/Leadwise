@@ -1,9 +1,16 @@
 import { prisma } from '@/lib/db'
 import type { CurrentUser } from '@/lib/auth/current-user'
-import { assertCan } from '@/lib/rbac'
+import { canReadOrganisation, canWriteOrganisation, ForbiddenError } from '@/lib/rbac'
 import { NotFoundError } from '@/server/errors'
 
-export async function listComments(organisationId: string) {
+export async function listComments(user: CurrentUser, organisationId: string) {
+  const org = await prisma.organisation.findUnique({
+    where: { id: organisationId, deletedAt: null },
+    select: { id: true, assignedToId: true, createdById: true },
+  })
+  if (!org) throw new NotFoundError('Organisation')
+  if (!canReadOrganisation(user, org)) throw new ForbiddenError()
+
   return prisma.comment.findMany({
     where: { organisationId, deletedAt: null },
     include: {
@@ -18,14 +25,15 @@ export async function addComment(
   organisationId: string,
   body: string,
 ) {
-  assertCan(user, 'org:edit')
-
   const org = await prisma.organisation.findUnique({
-    where: { id: organisationId },
-    select: { id: true, name: true },
+    where: { id: organisationId, deletedAt: null },
+    select: { id: true, name: true, assignedToId: true, createdById: true },
   })
 
   if (!org) throw new NotFoundError('Organisation')
+  if (!canWriteOrganisation(user, org)) {
+    throw new ForbiddenError('You do not have permission to comment on this organisation.')
+  }
 
   // Parse @mentions (e.g. @Harsh, @Priya)
   const mentionMatches = body.match(/@(\w+)/g) || []
@@ -74,3 +82,28 @@ export async function addComment(
 
   return comment
 }
+
+export async function deleteComment(user: CurrentUser, commentId: string) {
+  const comment = await prisma.comment.findUnique({
+    where: { id: commentId, deletedAt: null },
+    include: {
+      organisation: { select: { id: true, assignedToId: true, createdById: true } },
+    },
+  })
+  if (!comment) throw new NotFoundError('Comment')
+
+  const mayDelete =
+    user.role === 'OWNER' ||
+    user.role === 'TL' ||
+    comment.authorId === user.id
+
+  if (!mayDelete) {
+    throw new ForbiddenError('You do not have permission to delete this note.')
+  }
+
+  return prisma.comment.update({
+    where: { id: commentId },
+    data: { deletedAt: new Date() },
+  })
+}
+

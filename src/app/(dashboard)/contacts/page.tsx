@@ -15,6 +15,7 @@ import {
   ExternalLink,
   ChevronRight,
   ShieldCheck,
+  X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -143,8 +144,21 @@ export default function ContactsPage() {
               setSearch(e.target.value)
               setPage(1)
             }}
-            className="w-full rounded-xl border border-border bg-surface-elevated/60 pl-10 pr-4 py-2 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary focus:bg-surface transition-all"
+            className="w-full rounded-xl border border-border bg-surface-elevated/60 pl-10 pr-9 py-2 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary focus:bg-surface transition-all"
           />
+          {search && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearch('')
+                setPage(1)
+              }}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground rounded-lg transition-colors"
+              title="Clear search"
+            >
+              <X className="size-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -157,28 +171,130 @@ export default function ContactsPage() {
             <p className="text-xs text-muted-foreground">Fetching decision maker hierarchy and communication channels.</p>
           </div>
         ) : contacts.length === 0 ? (
-          <div className="p-16 text-center space-y-4">
-            <div className="flex size-14 mx-auto items-center justify-center rounded-2xl bg-surface-elevated border border-border/80 text-muted-foreground">
-              <Users className="size-7" />
+          search.trim() ? (
+            <div className="p-16 text-center space-y-4">
+              <div className="flex size-14 mx-auto items-center justify-center rounded-2xl bg-surface-elevated border border-border/80 text-muted-foreground">
+                <Users className="size-7 text-primary/70" />
+              </div>
+              <div className="space-y-1">
+                <p className="font-display font-bold text-base text-foreground">No contacts match your search</p>
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
+                  No stakeholders found matching &ldquo;{search.trim()}&rdquo;. Try another term or clear the search.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearch('')
+                  setPage(1)
+                }}
+                icon={<RefreshCw className="size-3.5" />}
+              >
+                Reset Search
+              </Button>
             </div>
-            <div className="space-y-1">
-              <p className="font-display font-bold text-base text-foreground">No contacts yet</p>
-              <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                Add stakeholders or decision makers from any organization dossier to begin mapping authority.
-              </p>
+          ) : (
+            <div className="p-16 text-center space-y-4">
+              <div className="flex size-14 mx-auto items-center justify-center rounded-2xl bg-surface-elevated border border-border/80 text-muted-foreground">
+                <Users className="size-7" />
+              </div>
+              <div className="space-y-1">
+                <p className="font-display font-bold text-base text-foreground">No contacts yet</p>
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
+                  Add stakeholders or decision makers from any organization dossier to begin mapping authority.
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setCreateContactOpen(true)}
+                icon={<Plus className="size-4" />}
+              >
+                + Add First Contact
+              </Button>
             </div>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => setCreateContactOpen(true)}
-              icon={<Plus className="size-4" />}
-            >
-              + Add First Contact
-            </Button>
-          </div>
+          )
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm border-collapse">
+          <>
+            {/* Mobile Card Feed (< md) */}
+            <div className="md:hidden divide-y divide-border/60">
+              {contacts.map((contact) => (
+                <div key={`mobile-${contact.id}`} className="p-4 space-y-3 hover:bg-surface-elevated/40 transition-colors">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary font-bold text-xs font-mono">
+                        {contact.name.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <span className="font-bold text-xs text-foreground block truncate">
+                          {contact.name}
+                        </span>
+                        <div className="text-[11px] text-muted-foreground truncate">
+                          {contact.designation || 'Stakeholder'} {contact.department ? `· ${contact.department}` : ''}
+                        </div>
+                      </div>
+                    </div>
+
+                    {contact.isDecisionMaker && (
+                      <span className="shrink-0 inline-flex items-center gap-1 font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                        <Star className="size-2.5 fill-amber-400 text-amber-400" /> DM
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="text-xs">
+                    <Link
+                      href={`/organisations/${contact.organisation.id}`}
+                      className="font-semibold text-xs text-primary hover:underline inline-flex items-center gap-1.5"
+                    >
+                      <Building2 className="size-3 text-muted-foreground" />
+                      <span>{contact.organisation.name}</span>
+                    </Link>
+                  </div>
+
+                  {(contact.phone || contact.email) && (
+                    <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-[11px] pt-1 border-t border-border/40 text-muted-foreground">
+                      {contact.phone && (
+                        <a href={`tel:${contact.phone}`} className="hover:text-primary transition-colors flex items-center gap-1">
+                          <Phone className="size-2.5" /> {contact.phone}
+                        </a>
+                      )}
+                      {contact.email && (
+                        <a href={`mailto:${contact.email}`} className="text-primary hover:underline flex items-center gap-1 truncate max-w-[200px]">
+                          <Mail className="size-2.5" /> {contact.email}
+                        </a>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-end gap-2 pt-1 border-t border-border/40">
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      onClick={() => openLog(contact, 'CALL')}
+                      icon={<Phone className="size-3 text-sky-400" />}
+                      className="hover:bg-primary/10 text-xs font-semibold"
+                    >
+                      Call
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      onClick={() => openLog(contact, 'EMAIL')}
+                      icon={<Mail className="size-3 text-indigo-400" />}
+                      className="hover:bg-primary/10 text-xs font-semibold"
+                    >
+                      Email
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table (>= md) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-sm border-collapse">
               <thead>
                 <tr className="border-b border-border/80 text-[11px] font-mono uppercase tracking-wider text-muted-foreground bg-surface-elevated/40">
                   <th className="py-3.5 px-4">Contact</th>
@@ -296,6 +412,7 @@ export default function ContactsPage() {
               </tbody>
             </table>
           </div>
+          </>
         )}
 
         {/* Pagination footer */}

@@ -25,10 +25,14 @@ export default function CalendarPage() {
   const [events, setEvents] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
 
-  const fetchEvents = React.useCallback(async () => {
+  const fetchEvents = React.useCallback(async (date: Date) => {
     setLoading(true)
     try {
-      const res = await fetch('/api/followups?pageSize=100')
+      const year = date.getFullYear()
+      const month = date.getMonth()
+      const from = new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10)
+      const to = new Date(Date.UTC(year, month + 1, 0)).toISOString().slice(0, 10)
+      const res = await fetch(`/api/followups?pageSize=100&from=${from}&to=${to}`)
       if (res.ok) {
         const json = await res.json()
         setEvents(json.items || [])
@@ -41,8 +45,8 @@ export default function CalendarPage() {
   }, [])
 
   React.useEffect(() => {
-    fetchEvents()
-  }, [fetchEvents])
+    fetchEvents(currentMonth)
+  }, [fetchEvents, currentMonth])
 
   const nextMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))
@@ -92,7 +96,7 @@ export default function CalendarPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={fetchEvents}
+            onClick={() => fetchEvents(currentMonth)}
             icon={<RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />}
             className="border-border hover:bg-surface-elevated"
           >
@@ -121,7 +125,9 @@ export default function CalendarPage() {
 
       {/* Calendar Grid */}
       <div className="glass-card rounded-2xl border border-border/90 bg-surface/80 shadow-md overflow-hidden rim-highlight">
-        <div className="grid grid-cols-7 border-b border-border/80 text-center text-xs font-mono font-bold py-3 bg-surface-elevated/50 text-muted-foreground uppercase tracking-wider">
+        <div className="overflow-x-auto">
+          <div className="min-w-[700px]">
+            <div className="grid grid-cols-7 border-b border-border/80 text-center text-xs font-mono font-bold py-3 bg-surface-elevated/50 text-muted-foreground uppercase tracking-wider">
           <div>Sun</div>
           <div>Mon</div>
           <div>Tue</div>
@@ -188,8 +194,10 @@ export default function CalendarPage() {
               </div>
             )
           })}
+          </div>
         </div>
       </div>
     </div>
+  </div>
   )
 }

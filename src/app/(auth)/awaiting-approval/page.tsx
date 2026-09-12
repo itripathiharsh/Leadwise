@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import {
   Clock,
@@ -26,7 +27,7 @@ export default function AwaitingApprovalPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col items-center justify-center p-4 sm:p-6 bg-background selection:bg-primary/20 selection:text-primary">
+    <main id="main-content" className="relative flex min-h-screen w-full flex-col items-center justify-center p-4 sm:p-6 bg-background selection:bg-primary/20 selection:text-primary">
       {/* Background ambient aurora glow */}
       <div className="absolute -top-32 left-1/2 -translate-x-1/2 size-[500px] rounded-full bg-primary/10 blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 right-1/4 size-[400px] rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
@@ -35,14 +36,20 @@ export default function AwaitingApprovalPage() {
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center space-y-2">
           <Link href="/login" className="inline-block transition-transform hover:scale-102">
-            <img
+            <Image
               src="/logo-white-text.png"
               alt="Leadwise"
+              width={140}
+              height={36}
+              priority
               className="h-12 w-auto object-contain drop-shadow-[0_0_15px_rgba(99,102,241,0.3)] hidden dark:block"
             />
-            <img
+            <Image
               src="/logo-dark-text.png"
               alt="Leadwise"
+              width={140}
+              height={36}
+              priority
               className="h-12 w-auto object-contain block dark:hidden"
             />
           </Link>
@@ -136,6 +143,6 @@ export default function AwaitingApprovalPage() {
           <span>Leadwise Enterprise Security Architecture</span>
         </div>
       </div>
-    </div>
+    </main>
   )
 }

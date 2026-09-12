@@ -22,6 +22,8 @@
   --surface: oklch(1 0 0);
   --surface-muted: oklch(0.972 0.004 285);
   --surface-raised: oklch(1 0 0);
+  --surface-elevated: oklch(0.995 0.002 285);
+  --canvas: oklch(0.985 0.003 285);
 
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.21 0.02 280);
@@ -105,6 +107,8 @@
   --surface: oklch(0.145 0.025 260);
   --surface-muted: oklch(0.17 0.025 260);
   --surface-raised: oklch(0.195 0.028 260);
+  --surface-elevated: oklch(0.175 0.025 260);
+  --canvas: oklch(0.11 0.022 260);
 
   --card: oklch(0.145 0.025 260);
   --card-foreground: oklch(0.97 0.006 280);
@@ -184,6 +188,8 @@
   --color-surface: var(--surface);
   --color-surface-muted: var(--surface-muted);
   --color-surface-raised: var(--surface-raised);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-canvas: var(--canvas);
   --color-surface-hover: var(--surface-hover);
   --color-surface-active: var(--surface-active);
 
@@ -237,7 +243,7 @@
   --color-warning-soft: var(--warning-soft);
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-display: var(--font-display), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-inter), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

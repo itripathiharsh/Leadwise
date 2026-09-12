@@ -5,6 +5,8 @@ import {
   getUserNotifications,
   markAllNotificationsAsRead,
   markNotificationAsRead,
+  deleteNotification,
+  clearAllNotifications,
 } from '@/server/services/notifications'
 
 const notificationPatchSchema = z.union([
@@ -61,3 +63,32 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: msg }, { status: 400 })
   }
 }
+
+export async function DELETE(req: Request) {
+  const user = await getCurrentUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { searchParams } = new URL(req.url)
+  const id = searchParams.get('id')
+  const all = searchParams.get('all') === 'true'
+
+  try {
+    if (all) {
+      await clearAllNotifications(user.id)
+      return NextResponse.json({ success: true, clearedAll: true })
+    }
+
+    if (!id) {
+      return NextResponse.json({ error: 'Notification ID or all=true is required' }, { status: 400 })
+    }
+
+    await deleteNotification(user.id, id)
+    return NextResponse.json({ success: true, id })
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err)
+    return NextResponse.json({ error: msg }, { status: 400 })
+  }
+}
+

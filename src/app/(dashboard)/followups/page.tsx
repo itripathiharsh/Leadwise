@@ -13,6 +13,8 @@ import {
   AlertTriangle,
   Flame,
   Check,
+  Search,
+  X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -23,11 +25,28 @@ import { formatDate } from '@/lib/dates'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
+function getOverdueDays(dueDate: string | null | undefined): number {
+  if (!dueDate) return 0
+  return Math.max(1, Math.floor((Date.now() - new Date(dueDate).getTime()) / (1000 * 60 * 60 * 24)))
+}
+
 export default function FollowUpsPage() {
   const [loading, setLoading] = React.useState(true)
   const [bucket, setBucket] = React.useState<'TODAY' | 'OVERDUE' | 'TOMORROW' | 'UPCOMING'>('TODAY')
   const [followups, setFollowups] = React.useState<any[]>([])
   const [total, setTotal] = React.useState(0)
+  const [search, setSearch] = React.useState('')
+
+  const filteredFollowups = React.useMemo(() => {
+    if (!search.trim()) return followups
+    const q = search.trim().toLowerCase()
+    return followups.filter((f) =>
+      f.organisation?.name?.toLowerCase().includes(q) ||
+      f.contact?.name?.toLowerCase().includes(q) ||
+      f.note?.toLowerCase().includes(q) ||
+      f.assignedTo?.name?.toLowerCase().includes(q)
+    )
+  }, [followups, search])
 
   const [logModalOpen, setLogModalOpen] = React.useState(false)
   const [activeItem, setActiveItem] = React.useState<any>(null)
@@ -111,61 +130,85 @@ export default function FollowUpsPage() {
         </Button>
       </div>
 
-      {/* Segmented Bucket Selector Tabs */}
-      <div className="glass-panel rounded-2xl border border-border/80 bg-surface/70 backdrop-blur-xl p-2.5 shadow-sm flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => setBucket('TODAY')}
-          className={cn(
-            'px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 border flex items-center gap-2',
-            bucket === 'TODAY'
-              ? 'bg-amber-500/15 text-amber-400 border-amber-500/40 shadow-xs font-bold ring-1 ring-amber-500/20'
-              : 'bg-surface-elevated/60 text-muted-foreground border-border/70 hover:bg-surface-elevated hover:text-foreground',
-          )}
-        >
-          <Clock className="size-3.5 text-amber-400" />
-          <span>Due Today</span>
-        </button>
+      {/* Segmented Bucket Selector Tabs & Search */}
+      <div className="glass-panel rounded-2xl border border-border/80 bg-surface/70 backdrop-blur-xl p-2.5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setBucket('TODAY')}
+            className={cn(
+              'px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 border flex items-center gap-2',
+              bucket === 'TODAY'
+                ? 'bg-amber-500/15 text-amber-400 border-amber-500/40 shadow-xs font-bold ring-1 ring-amber-500/20'
+                : 'bg-surface-elevated/60 text-muted-foreground border-border/70 hover:bg-surface-elevated hover:text-foreground',
+            )}
+          >
+            <Clock className="size-3.5 text-amber-400" />
+            <span>Due Today</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setBucket('OVERDUE')}
-          className={cn(
-            'px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 border flex items-center gap-2',
-            bucket === 'OVERDUE'
-              ? 'bg-rose-500/15 text-rose-400 border-rose-500/40 shadow-xs font-bold ring-1 ring-rose-500/20'
-              : 'bg-surface-elevated/60 text-muted-foreground border-border/70 hover:bg-surface-elevated hover:text-foreground',
-          )}
-        >
-          <AlertTriangle className="size-3.5 text-rose-400" />
-          <span>Overdue Tasks</span>
-        </button>
+          <button
+            type="button"
+            onClick={() => setBucket('OVERDUE')}
+            className={cn(
+              'px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 border flex items-center gap-2',
+              bucket === 'OVERDUE'
+                ? 'bg-rose-500/15 text-rose-400 border-rose-500/40 shadow-xs font-bold ring-1 ring-rose-500/20'
+                : 'bg-surface-elevated/60 text-muted-foreground border-border/70 hover:bg-surface-elevated hover:text-foreground',
+            )}
+          >
+            <AlertTriangle className="size-3.5 text-rose-400" />
+            <span>Overdue Tasks</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setBucket('TOMORROW')}
-          className={cn(
-            'px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 border flex items-center gap-2',
-            bucket === 'TOMORROW'
-              ? 'bg-blue-500/15 text-blue-400 border-blue-500/40 shadow-xs font-bold ring-1 ring-blue-500/20'
-              : 'bg-surface-elevated/60 text-muted-foreground border-border/70 hover:bg-surface-elevated hover:text-foreground',
-          )}
-        >
-          <span>Tomorrow</span>
-        </button>
+          <button
+            type="button"
+            onClick={() => setBucket('TOMORROW')}
+            className={cn(
+              'px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 border flex items-center gap-2',
+              bucket === 'TOMORROW'
+                ? 'bg-blue-500/15 text-blue-400 border-blue-500/40 shadow-xs font-bold ring-1 ring-blue-500/20'
+                : 'bg-surface-elevated/60 text-muted-foreground border-border/70 hover:bg-surface-elevated hover:text-foreground',
+            )}
+          >
+            <span>Tomorrow</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setBucket('UPCOMING')}
-          className={cn(
-            'px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 border flex items-center gap-2',
-            bucket === 'UPCOMING'
-              ? 'bg-primary/15 text-primary border-primary/40 shadow-xs font-bold ring-1 ring-primary/20'
-              : 'bg-surface-elevated/60 text-muted-foreground border-border/70 hover:bg-surface-elevated hover:text-foreground',
+          <button
+            type="button"
+            onClick={() => setBucket('UPCOMING')}
+            className={cn(
+              'px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 border flex items-center gap-2',
+              bucket === 'UPCOMING'
+                ? 'bg-primary/15 text-primary border-primary/40 shadow-xs font-bold ring-1 ring-primary/20'
+                : 'bg-surface-elevated/60 text-muted-foreground border-border/70 hover:bg-surface-elevated hover:text-foreground',
+            )}
+          >
+            <span>Upcoming Pipeline</span>
+          </button>
+        </div>
+
+        {/* Quick Search */}
+        <div className="relative min-w-[220px] max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search cadence tasks..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-xl border border-border bg-surface-elevated/60 pl-9 pr-8 py-1.5 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary focus:bg-surface transition-all"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-muted-foreground hover:text-foreground rounded transition-colors"
+              title="Clear search"
+            >
+              <X className="size-3" />
+            </button>
           )}
-        >
-          <span>Upcoming Pipeline</span>
-        </button>
+        </div>
       </div>
 
       {/* Follow-up Cards List */}
@@ -176,20 +219,42 @@ export default function FollowUpsPage() {
             <div className="font-semibold text-sm text-foreground">Syncing Cadence Tasks...</div>
             <p className="text-xs text-muted-foreground">Gathering scheduled touchpoint reminders.</p>
           </div>
-        ) : followups.length === 0 ? (
-          <div className="p-16 text-center space-y-4 rounded-2xl border border-border/80 bg-surface/60">
-            <div className="flex size-14 mx-auto items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-              <CheckCircle2 className="size-7" />
+        ) : filteredFollowups.length === 0 ? (
+          search.trim() ? (
+            <div className="p-16 text-center space-y-4 rounded-2xl border border-border/80 bg-surface/60">
+              <div className="flex size-14 mx-auto items-center justify-center rounded-2xl bg-surface-elevated border border-border/80 text-muted-foreground">
+                <Search className="size-7 text-primary/70" />
+              </div>
+              <div className="space-y-1">
+                <p className="font-display font-bold text-base text-foreground">No tasks match your search</p>
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
+                  No scheduled follow-ups matched &ldquo;{search.trim()}&rdquo; in this bucket.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSearch('')}
+                icon={<RefreshCw className="size-3.5" />}
+              >
+                Clear Search
+              </Button>
             </div>
-            <div className="space-y-1">
-              <p className="font-display font-bold text-base text-foreground">Zero pending follow-ups in this queue</p>
-              <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                All scheduled outreach tasks for this timeframe have been resolved. Your lead velocity is on track!
-              </p>
+          ) : (
+            <div className="p-16 text-center space-y-4 rounded-2xl border border-border/80 bg-surface/60">
+              <div className="flex size-14 mx-auto items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                <CheckCircle2 className="size-7" />
+              </div>
+              <div className="space-y-1">
+                <p className="font-display font-bold text-base text-foreground">Zero pending follow-ups in this queue</p>
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
+                  All scheduled outreach tasks for this timeframe have been resolved. Your lead velocity is on track!
+                </p>
+              </div>
             </div>
-          </div>
+          )
         ) : (
-          followups.map((item) => (
+          filteredFollowups.map((item) => (
             <div
               key={item.id}
               className={cn(
@@ -209,7 +274,9 @@ export default function FollowUpsPage() {
                       {item.organisation.name}
                     </Link>
                     <Badge tone={bucket === 'OVERDUE' ? 'rose' : 'amber'} size="sm" dot>
-                      Due: {formatDate(item.dueDate)}
+                      {bucket === 'OVERDUE'
+                        ? `Overdue ${getOverdueDays(item.dueDate)}d · Due ${formatDate(item.dueDate)}`
+                        : `Due: ${formatDate(item.dueDate)}`}
                     </Badge>
                   </div>
 
