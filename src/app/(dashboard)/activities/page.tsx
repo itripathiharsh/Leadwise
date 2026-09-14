@@ -11,14 +11,9 @@ import {
   StickyNote,
   Building2,
   RefreshCw,
-  Clock,
-  Sparkles,
-  ChevronRight,
-  Filter,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Avatar } from '@/components/ui/avatar'
 import { formatDateTime } from '@/lib/dates'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -61,56 +56,56 @@ export default function ActivitiesPage() {
       case 'CALL':
         return {
           icon: Phone,
-          color: 'text-sky-400 bg-sky-500/10 border-sky-500/20',
+          color: 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20',
           badge: 'blue' as const,
         }
       case 'EMAIL':
         return {
           icon: Mail,
-          color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20',
+          color: 'text-sky-600 dark:text-sky-400 bg-sky-500/10 border-sky-500/20',
           badge: 'indigo' as const,
         }
       case 'LINKEDIN':
         return {
           icon: Linkedin,
-          color: 'text-sky-400 bg-sky-500/10 border-sky-500/20',
+          color: 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20',
           badge: 'teal' as const,
         }
       case 'MEETING':
         return {
           icon: Calendar,
-          color: 'text-violet-400 bg-violet-500/10 border-violet-500/20',
+          color: 'text-violet-600 dark:text-violet-400 bg-violet-500/10 border-violet-500/20',
           badge: 'violet' as const,
         }
       default:
         return {
           icon: StickyNote,
-          color: 'text-slate-400 bg-slate-500/10 border-slate-500/20',
+          color: 'text-muted-foreground bg-surface-muted border-border',
           badge: 'slate' as const,
         }
     }
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 p-4 sm:p-6 lg:p-8">
-      {/* Executive Command Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/80 pb-5">
+    <div className="max-w-6xl mx-auto space-y-5 p-4 sm:p-6 lg:p-8">
+      {/* Precision Command Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-5">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary shadow-xs">
-              <Activity className="size-5" />
+            <div className="flex size-9 items-center justify-center rounded-md bg-surface-muted text-foreground border border-border">
+              <Activity className="size-4.5" />
             </div>
             <div>
               <div className="flex items-center gap-2.5">
-                <h1 className="font-display font-extrabold text-2xl tracking-tight text-foreground">
-                  Outreach Activity Timeline
+                <h1 className="font-sans font-bold text-xl sm:text-2xl tracking-tight text-foreground">
+                  Outreach Activity Feed
                 </h1>
-                <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-surface-elevated text-primary border border-primary/20 font-bold">
-                  {total} Logged Events
+                <span className="font-mono text-xs px-2 py-0.5 rounded bg-surface-muted text-muted-foreground border border-border">
+                  {total} Events
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Chronological real-time audit of all partner calls, emails, LinkedIn touchpoints, and scheduled meetings.
+                Chronological ledger of partnership touchpoints, emails, phone calls, and meetings.
               </p>
             </div>
           </div>
@@ -121,14 +116,13 @@ export default function ActivitiesPage() {
           size="sm"
           onClick={fetchActivities}
           icon={<RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />}
-          className="border-border hover:bg-surface-elevated"
         >
           Refresh Feed
         </Button>
       </div>
 
       {/* Channel Switcher Tabs */}
-      <div className="glass-panel rounded-2xl border border-border/80 bg-surface/70 backdrop-blur-xl p-2.5 shadow-sm flex flex-wrap gap-2">
+      <div className="rounded-lg border border-border bg-surface p-2 flex flex-wrap gap-1">
         {[
           { key: '', label: 'All Channels' },
           { key: 'CALL', label: 'Phone Calls' },
@@ -145,10 +139,10 @@ export default function ActivitiesPage() {
               setPage(1)
             }}
             className={cn(
-              'px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 border',
+              'px-3 py-1.5 rounded text-xs font-semibold transition-colors cursor-pointer',
               typeFilter === t.key
-                ? 'bg-primary text-primary-foreground border-primary shadow-xs'
-                : 'bg-surface-elevated/60 text-muted-foreground border-border/70 hover:text-foreground hover:bg-surface-elevated',
+                ? 'bg-surface-muted text-foreground border border-border shadow-xs'
+                : 'text-muted-foreground hover:text-foreground',
             )}
           >
             {t.label}
@@ -157,18 +151,18 @@ export default function ActivitiesPage() {
       </div>
 
       {/* Activity Timeline List */}
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {loading && activities.length === 0 ? (
           <div className="p-16 text-center space-y-3">
-            <RefreshCw className="size-6 mx-auto text-primary animate-spin" />
+            <RefreshCw className="size-5 mx-auto text-primary animate-spin" />
             <div className="font-semibold text-sm text-foreground">Syncing Activity Stream...</div>
             <p className="text-xs text-muted-foreground">Gathering chronological touchpoints from all team reps.</p>
           </div>
         ) : activities.length === 0 ? (
-          <div className="p-16 text-center space-y-4 rounded-2xl border border-border/80 bg-surface/60">
-            <Activity className="size-10 mx-auto text-muted-foreground/50" />
+          <div className="p-16 text-center space-y-4 rounded-lg border border-border bg-surface">
+            <Activity className="size-8 mx-auto text-muted-foreground" />
             <div className="space-y-1">
-              <p className="font-display font-bold text-base text-foreground">No activities recorded</p>
+              <p className="font-semibold text-sm text-foreground">No activities recorded</p>
               <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
                 Log your first phone call, email, or meeting from any organization profile to begin building the timeline.
               </p>
@@ -187,26 +181,26 @@ export default function ActivitiesPage() {
             return (
               <div
                 key={act.id}
-                className="glass-card rounded-2xl border border-border/80 bg-surface/75 backdrop-blur-xl p-4.5 shadow-sm hover:border-primary/40 transition-all duration-200 space-y-3 rim-highlight"
+                className="rounded-lg border border-border bg-surface p-4 hover:border-border-strong transition-[border-color] space-y-2.5"
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div
                       className={cn(
-                        'flex size-9 shrink-0 items-center justify-center rounded-xl border font-bold',
+                        'flex size-8 shrink-0 items-center justify-center rounded-md border font-bold',
                         config.color,
                       )}
                     >
-                      <ChannelIcon className="size-4.5" />
+                      <ChannelIcon className="size-4" />
                     </div>
 
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-foreground">
+                        <span className="text-xs font-semibold text-foreground">
                           {act.performedBy.name}
                         </span>
                         <span className="text-muted-foreground/60">•</span>
-                        <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-primary">
+                        <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-primary">
                           {act.type}
                         </span>
                       </div>
@@ -223,11 +217,11 @@ export default function ActivitiesPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 text-xs pt-1 border-t border-border/50">
+                <div className="flex items-center gap-2 text-xs pt-1 border-t border-border">
                   <Building2 className="size-3.5 text-muted-foreground shrink-0" />
                   <Link
                     href={`/organisations/${act.organisation.id}`}
-                    className="font-bold text-xs text-foreground hover:text-primary transition-colors truncate"
+                    className="font-semibold text-xs text-foreground hover:text-primary transition-colors truncate"
                   >
                     {act.organisation.name}
                   </Link>
@@ -239,7 +233,7 @@ export default function ActivitiesPage() {
                 </div>
 
                 {act.notes && (
-                  <p className="text-xs text-foreground/90 whitespace-pre-wrap bg-surface-elevated/50 p-3 rounded-xl border border-border/50 leading-relaxed font-sans">
+                  <p className="text-xs text-foreground/90 whitespace-pre-wrap bg-surface-muted/50 p-2.5 rounded border border-border leading-relaxed font-sans">
                     {act.notes}
                   </p>
                 )}
@@ -249,11 +243,11 @@ export default function ActivitiesPage() {
         )}
 
         {pageCount > 1 && (
-          <div className="flex items-center justify-between border-t border-border/80 px-4 py-3 text-xs text-muted-foreground">
+          <div className="flex items-center justify-between border-t border-border px-4 py-2.5 text-xs text-muted-foreground">
             <div className="font-mono text-[11px]">
-              Page <span className="text-foreground font-bold">{page}</span> of {pageCount} ({total} activities)
+              Page <span className="text-foreground font-semibold">{page}</span> of {pageCount} ({total} activities)
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <Button
                 variant="outline"
                 size="xs"

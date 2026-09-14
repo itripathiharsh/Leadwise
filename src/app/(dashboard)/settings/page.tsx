@@ -8,11 +8,7 @@ import {
   Bell,
   Shield,
   ArrowRight,
-  Sparkles,
-  Layers,
   User,
-  Sliders,
-  Lock,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 
@@ -39,7 +35,6 @@ export default function SettingsPage() {
       icon: User,
       badge: 'Personal',
       tone: 'violet' as const,
-      accent: 'text-violet-400 bg-violet-500/10 border-violet-500/20',
       show: true,
     },
     {
@@ -50,7 +45,6 @@ export default function SettingsPage() {
       icon: Bell,
       badge: 'Alerts',
       tone: 'blue' as const,
-      accent: 'text-sky-400 bg-sky-500/10 border-sky-500/20',
       show: true,
     },
     {
@@ -61,7 +55,6 @@ export default function SettingsPage() {
       icon: Database,
       badge: 'Governance',
       tone: 'emerald' as const,
-      accent: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
       show: isLeader,
     },
     {
@@ -72,22 +65,21 @@ export default function SettingsPage() {
       icon: Shield,
       badge: 'Compliance',
       tone: 'slate' as const,
-      accent: 'text-slate-400 bg-slate-500/10 border-slate-500/20',
       show: isLeader,
     },
   ].filter((s) => s.show)
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 p-4 sm:p-6 lg:p-8">
-      {/* Executive Command Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/80 pb-5">
+      {/* Command Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary shadow-xs">
+            <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 border border-primary/20 text-primary">
               <Settings className="size-5" />
             </div>
             <div>
-              <h1 className="font-display font-extrabold text-2xl tracking-tight text-foreground">
+              <h1 className="font-display font-bold text-2xl tracking-tight text-foreground">
                 Workspace Preferences & Governance
               </h1>
               <p className="text-xs text-muted-foreground mt-0.5">
@@ -104,13 +96,11 @@ export default function SettingsPage() {
           const Icon = sec.icon
           return (
             <Link key={sec.href} href={sec.href} className="group block">
-              <div className="h-full glass-card rounded-2xl border border-border/80 bg-surface/75 backdrop-blur-xl p-6 shadow-sm hover:border-primary/50 hover:shadow-xl transition-all duration-200 flex flex-col justify-between space-y-5 rim-highlight">
+              <div className="h-full rounded-lg border border-border bg-surface-panel p-5 hover:border-primary/40 hover:bg-surface-elevated/40 transition-[border-color,background-color] duration-150 flex flex-col justify-between space-y-4">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <div
-                      className={`flex size-11 items-center justify-center rounded-xl border transition-transform duration-200 group-hover:scale-105 ${sec.accent}`}
-                    >
-                      <Icon className="size-5" />
+                    <div className="flex size-9 items-center justify-center rounded-md bg-primary/10 border border-primary/20 text-primary">
+                      <Icon className="size-4" aria-hidden="true" />
                     </div>
                     <Badge tone={sec.tone} size="sm">
                       {sec.badge}
@@ -118,7 +108,7 @@ export default function SettingsPage() {
                   </div>
 
                   <div>
-                    <h3 className="font-bold text-base text-foreground group-hover:text-primary transition-colors">
+                    <h3 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">
                       {sec.title}
                     </h3>
                     <p className="text-xs text-muted-foreground leading-relaxed pt-1">
@@ -127,9 +117,9 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-primary pt-3 border-t border-border/60">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-primary pt-3 border-t border-border">
                   <span>Open Configuration</span>
-                  <ArrowRight className="size-3.5 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="size-3.5 group-hover:translate-x-0.5 transition-transform" />
                 </div>
               </div>
             </Link>

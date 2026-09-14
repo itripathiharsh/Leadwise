@@ -16,18 +16,12 @@ import {
   ExternalLink,
   Globe,
   MapPin,
-  ShieldAlert,
   AlertTriangle,
   ArrowLeft,
-  CheckCircle2,
   ChevronRight,
   RefreshCw,
   Sparkles,
-  Award,
   Zap,
-  CheckCircle,
-  ArrowUpRight,
-  Send,
   MessageSquare,
   Paperclip,
   Search,
@@ -187,7 +181,7 @@ export default function OrganisationDetailPage() {
   if (loading && !data) {
     return (
       <div className="flex h-96 flex-col items-center justify-center gap-3 p-8 text-xs text-muted-foreground">
-        <RefreshCw className="size-6 text-primary animate-spin" />
+        <RefreshCw className="size-5 text-primary animate-spin" />
         <span>Loading relationship intelligence dossier...</span>
       </div>
     )
@@ -196,8 +190,8 @@ export default function OrganisationDetailPage() {
   if (!data?.organisation) {
     return (
       <div className="p-16 text-center space-y-4">
-        <Building2 className="size-10 mx-auto text-muted-foreground/60" />
-        <p className="font-display font-bold text-base text-foreground">Organisation not found</p>
+        <Building2 className="size-8 mx-auto text-muted-foreground" />
+        <p className="font-bold text-base text-foreground">Organisation not found</p>
         <Link href="/organisations">
           <Button variant="outline" size="sm">
             Back to Organisations
@@ -225,7 +219,8 @@ export default function OrganisationDetailPage() {
           href="/organisations"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors group"
         >
-          <ArrowLeft className="size-3.5 group-hover:-translate-x-0.5 transition-transform" /> Back to Organizations
+          <ArrowLeft className="size-3.5 group-hover:-translate-x-0.5 transition-transform" />
+          <span>Back to Organizations</span>
         </Link>
 
         <div className="flex items-center gap-2">
@@ -234,7 +229,6 @@ export default function OrganisationDetailPage() {
             size="xs"
             onClick={fetchDetails}
             icon={<RefreshCw className={cn('size-3', loading && 'animate-spin')} />}
-            className="border-border/80 text-xs"
           >
             Refresh Dossier
           </Button>
@@ -243,35 +237,35 @@ export default function OrganisationDetailPage() {
 
       {/* Warning when viewing an organisation assigned to someone else */}
       {currentUser && org.assignedTo && org.assignedTo.id !== currentUser.id && (
-        <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-xs text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm backdrop-blur-md animate-in fade-in duration-200">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="size-5 text-amber-500 shrink-0" />
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="size-4 text-amber-500 shrink-0" />
             <div>
-              <span className="font-bold text-sm text-foreground">
-                Assigned Account Warning:
+              <span className="font-semibold text-foreground">
+                Assigned Account Note:
               </span>{' '}
               <span className="text-muted-foreground">
-                This entity is managed by <strong className="text-foreground font-semibold">{org.assignedTo.name}</strong>. Coordinate internally before initiating outreach.
+                This entity is managed by <strong className="text-foreground font-semibold">{org.assignedTo.name}</strong>. Coordinate internally before outreach.
               </span>
             </div>
           </div>
-          <Badge tone="amber" size="sm" className="shrink-0 font-semibold">
+          <Badge tone="amber" size="sm" className="shrink-0 font-medium">
             Owner: {org.assignedTo.name}
           </Badge>
         </div>
       )}
 
       {/* Organisation Dossier Hero Card */}
-      <div className="glass-card rounded-2xl border border-border/90 bg-surface/85 backdrop-blur-xl p-6 sm:p-8 shadow-md space-y-6 rim-highlight">
-        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+      <div className="rounded-lg border border-border bg-surface p-5 sm:p-6 space-y-5">
+        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-5">
           <div className="flex items-start gap-4">
-            <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-hover text-white font-mono text-xl font-black shadow-lg shadow-primary/20">
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-surface-muted text-foreground border border-border font-mono text-base font-bold">
               {org.name.slice(0, 2).toUpperCase()}
             </div>
 
-            <div className="space-y-1.5">
-              <div className="flex flex-wrap items-center gap-3">
-                <h1 className="font-display font-extrabold text-2xl sm:text-3xl tracking-tight text-foreground">
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h1 className="font-sans font-bold text-xl sm:text-2xl tracking-tight text-foreground">
                   {org.name}
                 </h1>
                 <Badge
@@ -283,14 +277,13 @@ export default function OrganisationDetailPage() {
                         : 'slate'
                   }
                   size="sm"
-                  dot
                 >
                   {org.priority} Priority
                 </Badge>
                 <OrgStatusBadge status={org.status as OrgStatus} size="sm" />
               </div>
 
-              <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-2.5 text-xs text-muted-foreground">
                 {org.category && (
                   <span className="font-medium text-foreground/80">{org.category}</span>
                 )}
@@ -327,15 +320,15 @@ export default function OrganisationDetailPage() {
           </div>
 
           {/* Account Owner & Stage Controls */}
-          <div className="flex flex-wrap items-center gap-3 lg:self-start">
-            <div className="rounded-xl border border-border/80 bg-surface-elevated/70 p-2 px-3">
+          <div className="flex flex-wrap items-center gap-2.5 lg:self-start">
+            <div className="rounded-md border border-border bg-surface-muted/40 p-2 px-3">
               <div className="flex items-center justify-between gap-2 mb-1">
                 <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground block">
                   Assigned Lead
                 </span>
                 {isLeader && (
-                  <span className="text-[9px] font-mono text-primary font-bold uppercase bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20">
-                    Leader Control
+                  <span className="text-[9px] font-mono text-primary font-bold uppercase bg-primary/10 px-1 py-0.2 rounded border border-primary/20">
+                    Leader
                   </span>
                 )}
               </div>
@@ -345,7 +338,7 @@ export default function OrganisationDetailPage() {
                     value={org.assignedTo?.id || 'UNASSIGNED'}
                     onChange={(e) => handleReassign(e.target.value)}
                     disabled={reassigning}
-                    className="rounded-lg border border-border bg-surface px-2.5 py-1 text-xs font-bold text-foreground shadow-xs focus:border-primary focus:outline-none cursor-pointer"
+                    className="rounded border border-border bg-surface px-2 py-0.5 text-xs font-semibold text-foreground focus:border-border-strong focus:outline-none cursor-pointer"
                   >
                     {currentUser && (
                       <option value={currentUser.id}>
@@ -353,7 +346,7 @@ export default function OrganisationDetailPage() {
                       </option>
                     )}
                     <option value="UNASSIGNED">Unassigned (Open Pool)</option>
-                    <optgroup label="Assign to Team Member">
+                    <optgroup label="Team Members">
                       {usersList
                         .filter((u) => u.id !== currentUser?.id)
                         .map((u) => (
@@ -367,21 +360,21 @@ export default function OrganisationDetailPage() {
               ) : org.assignedTo ? (
                 <div className="flex items-center gap-2 mt-0.5">
                   <Avatar name={org.assignedTo.name} color={org.assignedTo.avatarColor} size="xs" />
-                  <span className="text-xs font-bold text-foreground">{org.assignedTo.name}</span>
+                  <span className="text-xs font-semibold text-foreground">{org.assignedTo.name}</span>
                 </div>
               ) : (
                 <span className="text-xs text-muted-foreground italic">Unassigned</span>
               )}
             </div>
 
-            <div className="rounded-xl border border-border/80 bg-surface-elevated/70 p-2 px-3">
+            <div className="rounded-md border border-border bg-surface-muted/40 p-2 px-3">
               <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground block mb-1">
-                Override Stage
+                Stage Control
               </span>
               <select
                 value={org.status}
                 onChange={(e) => handleStatusChange(e.target.value)}
-                className="rounded-lg border border-border bg-surface px-2.5 py-1 text-xs font-bold text-foreground shadow-xs focus:border-primary focus:outline-none"
+                className="rounded border border-border bg-surface px-2 py-0.5 text-xs font-semibold text-foreground focus:border-border-strong focus:outline-none cursor-pointer"
               >
                 <option value="ASSIGNED">Assigned</option>
                 <option value="CONTACTED">Contacted</option>
@@ -395,10 +388,10 @@ export default function OrganisationDetailPage() {
           </div>
         </div>
 
-        {/* Partnership Stage Progression Track */}
-        <div className="rounded-xl border border-border/70 bg-surface-elevated/40 p-4 space-y-2">
+        {/* Partnership Stage Progression Stepper */}
+        <div className="rounded-md border border-border bg-surface-muted/40 p-3.5 space-y-2">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-mono text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+            <span className="font-mono text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
               Partnership Stage Progression
             </span>
             <span className="text-xs font-semibold text-primary">
@@ -418,22 +411,22 @@ export default function OrganisationDetailPage() {
                   type="button"
                   onClick={() => handleStatusChange(s.key)}
                   className={cn(
-                    'flex items-center gap-2 rounded-lg border p-2 text-left transition-all duration-200 text-xs',
+                    'flex items-center gap-2 rounded-md border p-2 text-left transition-[border-color,background-color] duration-150 text-xs cursor-pointer',
                     isCurrent
-                      ? 'border-primary bg-primary/10 text-primary font-bold shadow-xs'
+                      ? 'border-primary bg-primary/10 text-primary font-semibold'
                       : isPassed
-                        ? 'border-border bg-surface-elevated/70 text-foreground/80'
-                        : 'border-border/50 bg-surface/30 text-muted-foreground hover:border-border'
+                        ? 'border-border bg-surface text-foreground'
+                        : 'border-border/60 bg-surface/40 text-muted-foreground hover:border-border hover:text-foreground'
                   )}
                 >
                   <div
                     className={cn(
-                      'flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-mono font-bold',
+                      'flex size-4.5 shrink-0 items-center justify-center rounded-full text-[10px] font-mono font-bold',
                       isCurrent
                         ? 'bg-primary text-primary-foreground'
                         : isPassed
-                          ? 'bg-emerald-500/20 text-emerald-400'
-                          : 'bg-surface-elevated text-muted-foreground'
+                          ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                          : 'bg-surface-muted text-muted-foreground'
                     )}
                   >
                     {isPassed && !isCurrent ? '✓' : idx + 1}
@@ -445,63 +438,57 @@ export default function OrganisationDetailPage() {
           </div>
         </div>
 
-        {/* Primary Action Toolbar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border/60">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-bold text-foreground mr-1">Log Touchpoint:</span>
+        {/* Monochromatic Primary Action Toolbar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-xs font-semibold text-muted-foreground mr-1">Log Touchpoint:</span>
             <Button
               variant="outline"
               size="sm"
               onClick={() => openLog('CALL')}
-              icon={<Phone className="size-3.5 text-sky-400" />}
-              className="border-border/80 hover:bg-surface-elevated"
+              icon={<Phone className="size-3.5 text-muted-foreground" />}
             >
-              + Call
+              Call
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setCallPrepOpen(true)}
-              icon={<Sparkles className="size-3.5 text-amber-400" />}
-              className="border-border/80 hover:bg-surface-elevated"
+              icon={<Sparkles className="size-3.5 text-muted-foreground" />}
             >
-              AI Call Prep
+              Call Prep
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => openLog('EMAIL')}
-              icon={<Mail className="size-3.5 text-indigo-400" />}
-              className="border-border/80 hover:bg-surface-elevated"
+              icon={<Mail className="size-3.5 text-muted-foreground" />}
             >
-              + Email
+              Email
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => openLog('LINKEDIN')}
-              icon={<Linkedin className="size-3.5 text-sky-500" />}
-              className="border-border/80 hover:bg-surface-elevated"
+              icon={<Linkedin className="size-3.5 text-muted-foreground" />}
             >
-              + LinkedIn
+              LinkedIn
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => openLog('MEETING')}
-              icon={<Calendar className="size-3.5 text-violet-400" />}
-              className="border-border/80 hover:bg-surface-elevated"
+              icon={<Calendar className="size-3.5 text-muted-foreground" />}
             >
-              + Meeting
+              Meeting
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => openLog('NOTE')}
-              icon={<StickyNote className="size-3.5 text-slate-400" />}
-              className="border-border/80 hover:bg-surface-elevated"
+              icon={<StickyNote className="size-3.5 text-muted-foreground" />}
             >
-              + Note
+              Note
             </Button>
           </div>
 
@@ -518,28 +505,27 @@ export default function OrganisationDetailPage() {
               variant="primary"
               size="sm"
               onClick={() => setCreateContactOpen(true)}
-              icon={<Plus className="size-4" />}
-              className="shadow-xs"
+              icon={<Plus className="size-3.5" />}
             >
-              + Add Key Contact
+              Add Contact
             </Button>
           </div>
         </div>
       </div>
 
-      {/* HIGH VISIBILITY: Next Recommended Action Dossier */}
-      <div className="rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/10 via-surface to-surface p-5 shadow-sm space-y-3 rim-highlight">
+      {/* High-Priority Next Action Spotlight (Clean Precision Surface) */}
+      <div className="rounded-lg border border-border bg-surface p-4 space-y-2">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Zap className="size-4 text-primary animate-pulse" />
-              <span className="font-mono text-xs font-extrabold uppercase tracking-wider text-primary">
-                High-Priority Next Action
+            <div className="flex items-center gap-1.5">
+              <Zap className="size-3.5 text-primary" />
+              <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-primary">
+                Next Recommended Action
               </span>
             </div>
             {nextPendingFollowup ? (
               <div>
-                <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
                   Follow-up Due: {formatDate(nextPendingFollowup.dueDate)}
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
@@ -548,7 +534,7 @@ export default function OrganisationDetailPage() {
               </div>
             ) : (
               <div>
-                <h3 className="text-base font-bold text-foreground">
+                <h3 className="text-sm font-semibold text-foreground">
                   Advance outreach cadence for {org.name}
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
@@ -567,9 +553,8 @@ export default function OrganisationDetailPage() {
                 size="sm"
                 onClick={() => openLog('CALL', nextPendingFollowup.contactId)}
                 icon={<Phone className="size-3.5" />}
-                className="font-bold shadow-md shadow-primary/20"
               >
-                Execute Follow-up Call
+                Execute Call
               </Button>
             ) : primaryContact ? (
               <Button
@@ -577,7 +562,6 @@ export default function OrganisationDetailPage() {
                 size="sm"
                 onClick={() => openLog('CALL', primaryContact.id)}
                 icon={<Phone className="size-3.5" />}
-                className="font-bold shadow-md shadow-primary/20"
               >
                 Call {primaryContact.name.split(' ')[0]}
               </Button>
@@ -586,10 +570,9 @@ export default function OrganisationDetailPage() {
                 variant="primary"
                 size="sm"
                 onClick={() => setCreateContactOpen(true)}
-                icon={<Plus className="size-4" />}
-                className="font-bold shadow-md shadow-primary/20"
+                icon={<Plus className="size-3.5" />}
               >
-                Add First Contact
+                Add Contact
               </Button>
             )}
           </div>
@@ -599,27 +582,27 @@ export default function OrganisationDetailPage() {
       {/* AI Intelligence Integration */}
       <AiLeadIntelligenceCard orgId={org.id} />
 
-      {/* Modern Dossier Navigation Tabs */}
-      <div className="flex border-b border-border/80 gap-6 text-sm font-semibold overflow-x-auto scrollbar-slim flex-nowrap">
+      {/* Dossier Navigation Tabs */}
+      <div className="flex border-b border-border gap-6 text-sm font-semibold overflow-x-auto scrollbar-slim flex-nowrap">
         <button
           type="button"
           onClick={() => setActiveTab('overview')}
           className={cn(
-            'pb-3.5 -mb-px transition-colors border-b-2 text-xs uppercase tracking-wider flex items-center gap-1.5 shrink-0',
+            'pb-3 -mb-px transition-colors border-b-2 text-xs uppercase tracking-wider flex items-center gap-1.5 shrink-0 cursor-pointer',
             activeTab === 'overview'
               ? 'border-primary text-primary font-bold'
               : 'border-transparent text-muted-foreground hover:text-foreground'
           )}
         >
           <Building2 className="size-3.5" />
-          <span>Overview & Intel</span>
+          <span>Overview</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('contacts')}
           className={cn(
-            'pb-3.5 -mb-px transition-colors border-b-2 text-xs uppercase tracking-wider flex items-center gap-1.5 shrink-0',
+            'pb-3 -mb-px transition-colors border-b-2 text-xs uppercase tracking-wider flex items-center gap-1.5 shrink-0 cursor-pointer',
             activeTab === 'contacts'
               ? 'border-primary text-primary font-bold'
               : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -627,7 +610,7 @@ export default function OrganisationDetailPage() {
         >
           <User className="size-3.5" />
           <span>Contacts</span>
-          <span className="font-mono text-[10px] px-1.5 py-0.2 rounded-full bg-surface-elevated text-foreground">
+          <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-surface-muted text-muted-foreground border border-border">
             {contacts.length}
           </span>
         </button>
@@ -636,7 +619,7 @@ export default function OrganisationDetailPage() {
           type="button"
           onClick={() => setActiveTab('timeline')}
           className={cn(
-            'pb-3.5 -mb-px transition-colors border-b-2 text-xs uppercase tracking-wider flex items-center gap-1.5 shrink-0',
+            'pb-3 -mb-px transition-colors border-b-2 text-xs uppercase tracking-wider flex items-center gap-1.5 shrink-0 cursor-pointer',
             activeTab === 'timeline'
               ? 'border-primary text-primary font-bold'
               : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -644,7 +627,7 @@ export default function OrganisationDetailPage() {
         >
           <Clock className="size-3.5" />
           <span>Activity Timeline</span>
-          <span className="font-mono text-[10px] px-1.5 py-0.2 rounded-full bg-surface-elevated text-foreground">
+          <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-surface-muted text-muted-foreground border border-border">
             {activities.length}
           </span>
         </button>
@@ -653,7 +636,7 @@ export default function OrganisationDetailPage() {
           type="button"
           onClick={() => setActiveTab('followups')}
           className={cn(
-            'pb-3.5 -mb-px transition-colors border-b-2 text-xs uppercase tracking-wider flex items-center gap-1.5 shrink-0',
+            'pb-3 -mb-px transition-colors border-b-2 text-xs uppercase tracking-wider flex items-center gap-1.5 shrink-0 cursor-pointer',
             activeTab === 'followups'
               ? 'border-primary text-primary font-bold'
               : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -661,7 +644,7 @@ export default function OrganisationDetailPage() {
         >
           <Calendar className="size-3.5" />
           <span>Follow-ups</span>
-          <span className="font-mono text-[10px] px-1.5 py-0.2 rounded-full bg-surface-elevated text-foreground">
+          <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-surface-muted text-muted-foreground border border-border">
             {followups.length}
           </span>
         </button>
@@ -670,7 +653,7 @@ export default function OrganisationDetailPage() {
           type="button"
           onClick={() => setActiveTab('notes')}
           className={cn(
-            'pb-3.5 -mb-px transition-colors border-b-2 text-xs uppercase tracking-wider flex items-center gap-1.5 shrink-0',
+            'pb-3 -mb-px transition-colors border-b-2 text-xs uppercase tracking-wider flex items-center gap-1.5 shrink-0 cursor-pointer',
             activeTab === 'notes'
               ? 'border-primary text-primary font-bold'
               : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -684,45 +667,45 @@ export default function OrganisationDetailPage() {
           type="button"
           onClick={() => setActiveTab('attachments')}
           className={cn(
-            'pb-3.5 -mb-px transition-colors border-b-2 text-xs uppercase tracking-wider flex items-center gap-1.5 shrink-0',
+            'pb-3 -mb-px transition-colors border-b-2 text-xs uppercase tracking-wider flex items-center gap-1.5 shrink-0 cursor-pointer',
             activeTab === 'attachments'
               ? 'border-primary text-primary font-bold'
               : 'border-transparent text-muted-foreground hover:text-foreground'
           )}
         >
           <Paperclip className="size-3.5" />
-          <span>Documents & Files</span>
+          <span>Documents</span>
         </button>
       </div>
 
       {/* Tab 1: Overview */}
       {activeTab === 'overview' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="md:col-span-2 border-border/80 bg-surface/70 shadow-xs">
-            <CardHeader className="p-5 border-b border-border/60">
-              <CardTitle className="text-sm font-bold text-foreground">Organization Blueprint</CardTitle>
+          <Card className="md:col-span-2">
+            <CardHeader className="p-4 border-b border-border">
+              <CardTitle className="text-sm font-semibold text-foreground">Organization Blueprint</CardTitle>
             </CardHeader>
-            <CardContent className="p-5 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                <div className="rounded-xl border border-border/60 bg-surface-elevated/40 p-3.5 space-y-1">
+            <CardContent className="p-4 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="rounded-md border border-border bg-surface-muted/40 p-3 space-y-1">
                   <span className="text-[11px] font-mono text-muted-foreground uppercase">General Email</span>
                   <p className="font-semibold text-foreground truncate">{org.generalEmail || '—'}</p>
                 </div>
-                <div className="rounded-xl border border-border/60 bg-surface-elevated/40 p-3.5 space-y-1">
+                <div className="rounded-md border border-border bg-surface-muted/40 p-3 space-y-1">
                   <span className="text-[11px] font-mono text-muted-foreground uppercase">General Phone</span>
                   <p className="font-semibold text-foreground">{org.generalPhone || '—'}</p>
                 </div>
-                <div className="rounded-xl border border-border/60 bg-surface-elevated/40 p-3.5 space-y-1">
+                <div className="rounded-md border border-border bg-surface-muted/40 p-3 space-y-1">
                   <span className="text-[11px] font-mono text-muted-foreground uppercase">Target Domain</span>
                   <p className="font-semibold text-primary">{org.domain || '—'}</p>
                 </div>
-                <div className="rounded-xl border border-border/60 bg-surface-elevated/40 p-3.5 space-y-1">
+                <div className="rounded-md border border-border bg-surface-muted/40 p-3 space-y-1">
                   <span className="text-[11px] font-mono text-muted-foreground uppercase">Entity Category</span>
-                  <p className="font-semibold text-foreground">{org.category || 'General Health'}</p>
+                  <p className="font-semibold text-foreground">{org.category || 'Clinical Partner'}</p>
                 </div>
               </div>
 
-              <div className="rounded-xl border border-border/60 bg-surface-elevated/40 p-4 space-y-1.5">
+              <div className="rounded-md border border-border bg-surface-muted/40 p-3.5 space-y-1">
                 <span className="text-[11px] font-mono text-muted-foreground uppercase">Internal Strategic Notes</span>
                 <p className="text-xs text-foreground/90 whitespace-pre-wrap leading-relaxed">
                   {org.notes || 'No internal notes captured for this organisation yet.'}
@@ -733,25 +716,25 @@ export default function OrganisationDetailPage() {
 
           {/* Quick Metrics Column */}
           <div className="space-y-4">
-            <div className="glass-card rounded-2xl border border-border/80 bg-surface/70 p-5 space-y-3">
-              <span className="font-mono text-[11px] font-bold text-muted-foreground uppercase">Engagement Velocity</span>
-              <div className="space-y-2.5">
+            <Card className="p-4 space-y-3">
+              <span className="font-mono text-[11px] font-semibold text-muted-foreground uppercase">Engagement Velocity</span>
+              <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">Total Activities</span>
-                  <span className="font-mono font-bold text-foreground">{org.activityCount}</span>
+                  <span className="font-mono font-bold tabular text-foreground">{org.activityCount}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">Mapped Contacts</span>
-                  <span className="font-mono font-bold text-foreground">{contacts.length}</span>
+                  <span className="font-mono font-bold tabular text-foreground">{contacts.length}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">Pending Follow-ups</span>
-                  <span className="font-mono font-bold text-amber-500">
+                  <span className="font-mono font-bold tabular text-amber-600 dark:text-amber-400">
                     {followups.filter((f: any) => f.status === 'PENDING').length}
                   </span>
                 </div>
               </div>
-            </div>
+            </Card>
           </div>
         </div>
       )}
@@ -760,7 +743,7 @@ export default function OrganisationDetailPage() {
       {activeTab === 'contacts' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-bold text-sm text-foreground">Stakeholders & Decision Makers</h3>
+            <h3 className="font-semibold text-sm text-foreground">Stakeholders & Decision Makers</h3>
             <Button
               variant="outline"
               size="xs"
@@ -772,22 +755,22 @@ export default function OrganisationDetailPage() {
           </div>
 
           {contacts.length === 0 ? (
-            <Card className="border-border p-12 text-center text-xs text-muted-foreground">
+            <Card className="p-12 text-center text-xs text-muted-foreground">
               No contacts recorded for this entity. Click &ldquo;Add Contact Person&rdquo; to attach stakeholders.
             </Card>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {contacts.map((contact: any) => (
                 <div
                   key={contact.id}
-                  className="glass-card rounded-2xl border border-border/80 bg-surface/70 p-5 shadow-xs hover:border-primary/40 transition-all space-y-3"
+                  className="rounded-lg border border-border bg-surface p-4 hover:border-border-strong transition-[border-color] space-y-3"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
+                    <div className="space-y-0.5">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm text-foreground">{contact.name}</span>
+                        <span className="font-semibold text-sm text-foreground">{contact.name}</span>
                         {contact.isDecisionMaker && (
-                          <span className="font-mono text-[10px] font-bold px-2 py-0.2 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                          <span className="font-mono text-[10px] font-semibold px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                             Decision Maker
                           </span>
                         )}
@@ -798,7 +781,7 @@ export default function OrganisationDetailPage() {
                     </div>
                   </div>
 
-                  <div className="space-y-1 text-xs text-muted-foreground pt-2 border-t border-border/60">
+                  <div className="space-y-1 text-xs text-muted-foreground pt-2 border-t border-border">
                     {contact.email && (
                       <div className="flex items-center gap-2 truncate">
                         <Mail className="size-3.5 text-muted-foreground" />
@@ -817,12 +800,12 @@ export default function OrganisationDetailPage() {
                     )}
                     {contact.linkedinUrl && (
                       <div className="flex items-center gap-2 truncate">
-                        <Linkedin className="size-3.5 text-sky-400" />
+                        <Linkedin className="size-3.5 text-muted-foreground" />
                         <a
                           href={contact.linkedinUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-sky-400 hover:underline"
+                          className="text-primary hover:underline"
                         >
                           LinkedIn Profile
                         </a>
@@ -860,11 +843,10 @@ export default function OrganisationDetailPage() {
         <div className="space-y-4">
           {/* Timeline Filter Bar */}
           {activities.length > 0 && (
-            <div className="glass-panel rounded-xl border border-border/80 bg-surface/70 backdrop-blur-xl p-3 space-y-3">
-              {/* Type Filter Chips */}
+            <div className="rounded-lg border border-border bg-surface p-3 space-y-2.5">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[11px] font-mono font-bold text-muted-foreground uppercase tracking-wider mr-1 flex items-center gap-1.5">
-                  <Filter className="size-3.5 text-primary" /> Filter:
+                <span className="text-[11px] font-mono font-semibold text-muted-foreground uppercase tracking-wider mr-1 flex items-center gap-1.5">
+                  <Filter className="size-3.5 text-muted-foreground" /> Filter:
                 </span>
                 {['CALL', 'EMAIL', 'LINKEDIN', 'MEETING', 'NOTE', 'FOLLOW_UP'].map((type) => {
                   const active = timelineTypeFilter.includes(type)
@@ -878,10 +860,10 @@ export default function OrganisationDetailPage() {
                         )
                       }}
                       className={cn(
-                        'rounded-lg px-2.5 py-1 text-[11px] font-semibold border transition-all duration-150',
+                        'rounded px-2 py-0.5 text-[11px] font-medium border transition-colors cursor-pointer',
                         active
-                          ? 'bg-primary/15 text-primary border-primary/40 shadow-xs'
-                          : 'bg-surface-elevated/60 text-muted-foreground border-border/60 hover:border-border hover:text-foreground',
+                          ? 'bg-primary/10 text-primary border-primary/30'
+                          : 'bg-surface-muted text-muted-foreground border-border hover:text-foreground',
                       )}
                     >
                       {type.replace('_', ' ')}
@@ -897,15 +879,14 @@ export default function OrganisationDetailPage() {
                       setTimelineSearch('')
                       setTimelineDateRange('all')
                     }}
-                    className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors ml-1"
+                    className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors ml-1 cursor-pointer"
                   >
                     Clear All
                   </button>
                 )}
               </div>
 
-              <div className="flex flex-wrap items-center gap-3">
-                {/* Search */}
+              <div className="flex flex-wrap items-center gap-2.5">
                 <div className="relative flex-1 min-w-[200px]">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
                   <input
@@ -913,7 +894,7 @@ export default function OrganisationDetailPage() {
                     placeholder="Search activity notes..."
                     value={timelineSearch}
                     onChange={(e) => setTimelineSearch(e.target.value)}
-                    className="w-full rounded-lg border border-border bg-surface-elevated/60 pl-9 pr-8 py-1.5 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition-all"
+                    className="w-full rounded border border-border bg-surface-muted/60 pl-8 pr-7 py-1 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-border-strong"
                   />
                   {timelineSearch && (
                     <button
@@ -921,16 +902,15 @@ export default function OrganisationDetailPage() {
                       onClick={() => setTimelineSearch('')}
                       className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-muted-foreground hover:text-foreground rounded"
                     >
-                      <X className="size-3.5" />
+                      <X className="size-3" />
                     </button>
                   )}
                 </div>
 
-                {/* Date Range */}
                 <select
                   value={timelineDateRange}
                   onChange={(e) => setTimelineDateRange(e.target.value as typeof timelineDateRange)}
-                  className="rounded-lg border border-border bg-surface-elevated/60 px-3 py-1.5 text-xs text-foreground font-medium focus:border-primary focus:outline-none transition-all"
+                  className="rounded border border-border bg-surface-muted/60 px-2.5 py-1 text-xs text-foreground font-medium outline-none focus:border-border-strong cursor-pointer"
                 >
                   <option value="all">All Time</option>
                   <option value="today">Today</option>
@@ -944,9 +924,7 @@ export default function OrganisationDetailPage() {
           {(() => {
             const now = new Date()
             const filteredActivities = activities.filter((act: any) => {
-              // Type filter
               if (timelineTypeFilter.length > 0 && !timelineTypeFilter.includes(act.type)) return false
-              // Search filter
               if (timelineSearch.trim()) {
                 const q = timelineSearch.trim().toLowerCase()
                 const notesMatch = act.notes?.toLowerCase().includes(q)
@@ -954,7 +932,6 @@ export default function OrganisationDetailPage() {
                 const contactMatch = act.contact?.name?.toLowerCase().includes(q)
                 if (!notesMatch && !nameMatch && !contactMatch) return false
               }
-              // Date range filter
               if (timelineDateRange !== 'all' && act.activityDate) {
                 const actDate = new Date(act.activityDate)
                 if (timelineDateRange === 'today') {
@@ -974,11 +951,11 @@ export default function OrganisationDetailPage() {
 
             if (activities.length === 0) {
               return (
-                <Card className="border-border p-12 text-center space-y-2">
-                  <Phone className="size-8 mx-auto text-muted-foreground/50" />
-                  <p className="font-bold text-sm text-foreground">No outreach activity recorded yet</p>
+                <Card className="p-12 text-center space-y-2">
+                  <Phone className="size-6 mx-auto text-muted-foreground" />
+                  <p className="font-semibold text-sm text-foreground">No outreach activity recorded yet</p>
                   <p className="text-xs text-muted-foreground">
-                    Use the buttons above (+ Call, + Email, + LinkedIn) to log your first touchpoint.
+                    Use the touchpoint actions above to log your first call or email.
                   </p>
                 </Card>
               )
@@ -987,8 +964,8 @@ export default function OrganisationDetailPage() {
             if (filteredActivities.length === 0 && isFiltered) {
               return (
                 <div className="p-12 text-center space-y-3">
-                  <Filter className="size-8 mx-auto text-muted-foreground/40" />
-                  <p className="font-bold text-sm text-foreground">No activities match your filters</p>
+                  <Filter className="size-6 mx-auto text-muted-foreground" />
+                  <p className="font-semibold text-sm text-foreground">No activities match your filters</p>
                   <p className="text-xs text-muted-foreground">
                     Try adjusting the type, search, or date range filters above.
                   </p>
@@ -1014,14 +991,14 @@ export default function OrganisationDetailPage() {
                     Showing {filteredActivities.length} of {activities.length} activities
                   </div>
                 )}
-                <div className="relative pl-6 space-y-4 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-border/60">
+                <div className="relative pl-5 space-y-3 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-px before:bg-border">
                   {filteredActivities.map((act: any) => (
                     <div key={act.id} className="relative group">
-                      <div className="absolute -left-6 top-2 flex size-5 items-center justify-center rounded-full bg-surface border-2 border-primary text-[10px] text-primary">
+                      <div className="absolute -left-5 top-2 flex size-4 items-center justify-center rounded-full bg-surface border border-primary">
                         <div className="size-1.5 rounded-full bg-primary" />
                       </div>
 
-                      <div className="glass-card rounded-xl border border-border/80 bg-surface/70 p-4 space-y-2 hover:border-border transition-all">
+                      <div className="rounded-lg border border-border bg-surface p-3.5 space-y-2 hover:border-border-strong transition-[border-color]">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
                             <Avatar
@@ -1029,10 +1006,10 @@ export default function OrganisationDetailPage() {
                               color={act.performedBy.avatarColor}
                               size="xs"
                             />
-                            <span className="text-xs font-bold text-foreground">
+                            <span className="text-xs font-semibold text-foreground">
                               {act.performedBy.name}
                             </span>
-                            <span className="font-mono text-[10px] font-bold uppercase text-primary tracking-wider">
+                            <span className="font-mono text-[10px] font-semibold uppercase text-primary">
                               • {act.type}
                             </span>
                           </div>
@@ -1042,8 +1019,8 @@ export default function OrganisationDetailPage() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <Badge tone="blue" size="sm">
-                            Outcome: {act.outcome}
+                          <Badge tone="slate" size="sm">
+                            {act.outcome}
                           </Badge>
                           {act.contact && (
                             <span className="text-xs text-muted-foreground font-medium">
@@ -1053,13 +1030,13 @@ export default function OrganisationDetailPage() {
                         </div>
 
                         {act.notes && (
-                          <p className="text-xs text-foreground/90 whitespace-pre-wrap bg-surface-elevated/50 p-3 rounded-lg border border-border/50">
+                          <p className="text-xs text-foreground/90 whitespace-pre-wrap bg-surface-muted/40 p-2.5 rounded border border-border">
                             {act.notes}
                           </p>
                         )}
 
                         {act.nextFollowupDate && (
-                          <div className="text-[11px] text-amber-500 font-medium flex items-center gap-1.5 pt-1">
+                          <div className="text-[11px] text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1.5 pt-0.5">
                             <Clock className="size-3" />
                             Follow-up scheduled for {formatDate(act.nextFollowupDate)}
                           </div>
@@ -1076,21 +1053,21 @@ export default function OrganisationDetailPage() {
 
       {/* Tab 4: Follow-ups */}
       {activeTab === 'followups' && (
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {followups.length === 0 ? (
-            <Card className="border-border p-12 text-center text-xs text-muted-foreground">
+            <Card className="p-12 text-center text-xs text-muted-foreground">
               No pending follow-ups scheduled for this organisation.
             </Card>
           ) : (
             followups.map((f: any) => (
               <div
                 key={f.id}
-                className="glass-card rounded-xl border border-border/80 bg-surface/70 p-4 flex items-center justify-between gap-4 shadow-xs"
+                className="rounded-lg border border-border bg-surface p-3.5 flex items-center justify-between gap-4"
               >
                 <div>
                   <div className="flex items-center gap-2">
-                    <Clock className="size-4 text-amber-500" />
-                    <span className="font-mono text-xs font-bold text-foreground">
+                    <Clock className="size-3.5 text-amber-600 dark:text-amber-400" />
+                    <span className="font-mono text-xs font-semibold tabular text-foreground">
                       Due: {formatDate(f.dueDate)}
                     </span>
                     <Badge tone={f.status === 'PENDING' ? 'amber' : 'emerald'} size="sm">
@@ -1117,14 +1094,14 @@ export default function OrganisationDetailPage() {
 
       {/* Tab 5: Team Notes */}
       {activeTab === 'notes' && (
-        <div className="glass-card rounded-2xl border border-border/80 bg-surface/70 p-6 shadow-xs">
+        <div className="rounded-lg border border-border bg-surface p-5">
           <CommentsFeed organisationId={org.id} />
         </div>
       )}
 
       {/* Tab 6: Documents & Attachments */}
       {activeTab === 'attachments' && (
-        <div className="glass-card rounded-2xl border border-border/80 bg-surface/70 p-6 shadow-xs">
+        <div className="rounded-lg border border-border bg-surface p-5">
           <OrganisationAttachments organisationId={org.id} canEdit={isLeader || isAssignedToMe} />
         </div>
       )}

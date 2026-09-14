@@ -15,22 +15,21 @@ export function Card({
   ...props
 }: CardProps) {
   const variantStyles = {
-    default: 'border border-border/80 bg-card text-card-foreground shadow-xs rim-highlight',
-    elevated: 'border border-border/90 bg-surface-raised text-card-foreground shadow-md rim-highlight',
-    subtle: 'border border-border/50 bg-surface-muted/50 text-card-foreground shadow-none',
+    default: 'border border-border bg-card text-card-foreground shadow-xs',
+    elevated: 'border border-border bg-surface-raised text-card-foreground shadow-sm',
+    subtle: 'border border-border/60 bg-surface-muted/60 text-card-foreground shadow-none',
     ghost: 'border-0 bg-transparent shadow-none',
-    glass: 'border border-border/70 bg-surface/80 backdrop-blur-xl text-card-foreground shadow-xs rim-highlight',
-    glow: 'border border-primary/30 bg-primary-soft/15 text-card-foreground shadow-sm rim-highlight',
+    glass: 'border border-border bg-card text-card-foreground shadow-xs',
+    glow: 'border border-primary-border/60 bg-primary-soft/10 text-card-foreground shadow-xs',
   }
 
   return (
     <div
       className={cn(
-        'rounded-xl transition-all duration-200 ease-out',
+        'rounded-lg transition-[border-color,background-color,box-shadow,transform] duration-140 ease-out',
         variantStyles[variant],
-        sheen && 'surface-sheen',
         interactive &&
-          'cursor-pointer hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0',
+          'cursor-pointer hover:border-border-strong hover:shadow-sm active:translate-y-0',
         className,
       )}
       {...props}

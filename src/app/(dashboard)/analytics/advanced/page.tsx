@@ -4,21 +4,12 @@ import * as React from 'react'
 import {
   TrendingUp,
   Sparkles,
-  BarChart3,
-  Filter,
-  Users,
   Target,
-  ArrowRight,
-  ArrowUpRight,
   RefreshCw,
   Phone,
   Mail,
   Linkedin,
   Calendar,
-  AlertTriangle,
-  Flame,
-  Snowflake,
-  Award,
 } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -76,18 +67,27 @@ export default function AdvancedAnalyticsPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 p-4 sm:p-6 lg:p-8">
-      {/* Header */}
+      {/* Precision Command Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <TrendingUp className="size-6 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Partnership Funnel &amp; AI Intelligence
-            </h1>
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 items-center justify-center rounded-md bg-surface-muted text-foreground border border-border">
+              <TrendingUp className="size-4.5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2.5">
+                <h1 className="font-sans font-bold text-xl sm:text-2xl tracking-tight text-foreground">
+                  Partnership Funnel & AI Intelligence
+                </h1>
+                <Badge tone="indigo" size="sm">
+                  Executive Modeling
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Stage conversion rates, channel response velocity, and loss analysis.
+              </p>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Deterministic stage conversion funnels, channel response rates, rejection analysis, and AI insights.
-          </p>
         </div>
 
         <Button
@@ -100,14 +100,14 @@ export default function AdvancedAnalyticsPage() {
         </Button>
       </div>
 
-      {/* Owner Executive Insights Banner */}
+      {/* Executive Insights Banner */}
       {insightsData && (
-        <Card className="border-primary/30 bg-primary-soft/15 shadow-xs">
-          <CardHeader className="pb-3 border-b border-primary/20 bg-surface/50">
+        <Card>
+          <CardHeader className="pb-3 border-b border-border">
             <div className="flex items-center gap-2">
               <Sparkles className="size-4 text-primary" />
-              <CardTitle className="text-sm font-bold text-foreground">
-                AI Executive Outreach Insights
+              <CardTitle className="text-sm font-semibold text-foreground">
+                Executive Outreach Insights
               </CardTitle>
             </div>
           </CardHeader>
@@ -116,10 +116,10 @@ export default function AdvancedAnalyticsPage() {
               {insightsData.insights?.map((ins: string, idx: number) => (
                 <div
                   key={idx}
-                  className="rounded-xl bg-surface p-3.5 border border-border text-xs text-foreground/90 leading-relaxed space-y-1 shadow-xs"
+                  className="rounded-lg bg-surface-muted/40 p-3.5 border border-border text-xs text-foreground/90 leading-relaxed space-y-1"
                 >
-                  <div className="font-bold text-primary flex items-center gap-1">
-                    <Target className="size-3 text-primary" /> Key Strategic Focus #{idx + 1}
+                  <div className="font-semibold text-primary flex items-center gap-1">
+                    <Target className="size-3" /> Focus Area #{idx + 1}
                   </div>
                   <p>{ins}</p>
                 </div>
@@ -128,8 +128,8 @@ export default function AdvancedAnalyticsPage() {
 
             {/* What Needs Attention Today Bar */}
             {insightsData.whatNeedsAttentionToday && (
-              <div className="pt-2 border-t border-primary/20 flex flex-wrap items-center gap-2.5 text-xs">
-                <span className="font-bold text-foreground mr-1">What Needs Attention Today:</span>
+              <div className="pt-2 border-t border-border flex flex-wrap items-center gap-2 text-xs">
+                <span className="font-semibold text-foreground mr-1">Immediate Focus:</span>
                 {insightsData.whatNeedsAttentionToday.map((w: any, i: number) => (
                   <Badge key={i} tone={w.tone} size="md">
                     {w.label}
@@ -143,39 +143,37 @@ export default function AdvancedAnalyticsPage() {
 
       {/* Outreach Conversion Funnel */}
       {data?.funnel && (
-        <Card className="border-border bg-surface shadow-xs">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base font-bold">End-to-End Partnership Conversion Funnel</CardTitle>
-                <CardDescription className="text-xs">
-                  Progression rates from target identification to active signed partnership.
-                </CardDescription>
-              </div>
-              <Badge tone="emerald" size="sm">
-                Overall Conversion: {data.overallConversionRate}%
-              </Badge>
+        <Card>
+          <CardHeader className="pb-3 border-b border-border flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-sm font-semibold">End-to-End Partnership Conversion Funnel</CardTitle>
+              <CardDescription className="text-xs">
+                Stage progression from identification to active agreement.
+              </CardDescription>
             </div>
+            <Badge tone="emerald" size="sm">
+              Overall: {data.overallConversionRate}%
+            </Badge>
           </CardHeader>
-          <CardContent className="pt-0">
+          <CardContent className="pt-4">
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               {data.funnel.map((stage, idx) => (
                 <div
                   key={stage.stage}
-                  className="rounded-xl border border-border bg-surface-muted/30 p-4 space-y-2 relative"
+                  className="rounded-lg border border-border bg-surface-muted/30 p-3.5 space-y-1.5"
                 >
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  <div className="text-[10px] font-mono font-semibold uppercase tracking-wider text-muted-foreground">
                     Step {idx + 1}
                   </div>
-                  <div className="text-xs font-bold text-foreground line-clamp-1">
+                  <div className="text-xs font-semibold text-foreground line-clamp-1">
                     {stage.stage}
                   </div>
-                  <div className="text-2xl font-black text-primary">
+                  <div className="font-mono text-2xl font-bold tabular tracking-tight text-foreground">
                     {stage.count}
                   </div>
-                  <div className="flex items-center gap-1 text-[11px] text-muted-foreground pt-1 border-t border-border/60">
-                    <span className="font-semibold text-foreground">{stage.conversionFromPrev}%</span>
-                    <span>from prev step</span>
+                  <div className="flex items-center gap-1 text-[11px] text-muted-foreground pt-1 border-t border-border">
+                    <span className="font-mono font-semibold tabular text-foreground">{stage.conversionFromPrev}%</span>
+                    <span>from prev</span>
                   </div>
                 </div>
               ))}
@@ -184,46 +182,46 @@ export default function AdvancedAnalyticsPage() {
         </Card>
       )}
 
-      {/* Channel Performance & Rejections Grid */}
+      {/* Channel Performance & Loss Grid */}
       {data && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Channel Response & Meeting Conversion */}
-          <Card className="border-border bg-surface shadow-xs">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-bold">Outreach Channel Efficiency</CardTitle>
+          <Card>
+            <CardHeader className="pb-3 border-b border-border">
+              <CardTitle className="text-sm font-semibold">Outreach Channel Efficiency</CardTitle>
               <CardDescription className="text-xs">
-                Response and meeting conversion by channel (Calls, Emails, LinkedIn).
+                Response and meeting conversion by communication medium.
               </CardDescription>
             </CardHeader>
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left">
-                <thead className="bg-surface-muted/60 text-muted-foreground uppercase text-[10px] font-bold border-b border-border">
+                <thead className="bg-surface-muted/50 text-muted-foreground uppercase text-[10px] font-semibold border-b border-border">
                   <tr>
-                    <th className="p-3 pl-4">Channel</th>
-                    <th className="p-3 text-center">Touches</th>
-                    <th className="p-3 text-center">Responses</th>
-                    <th className="p-3 text-center">Response Rate</th>
-                    <th className="p-3 text-center pr-4">Meeting Rate</th>
+                    <th className="py-2.5 px-4">Channel</th>
+                    <th className="py-2.5 px-3 text-center">Touches</th>
+                    <th className="py-2.5 px-3 text-center">Responses</th>
+                    <th className="py-2.5 px-3 text-center">Response Rate</th>
+                    <th className="py-2.5 px-4 text-right">Meeting Rate</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border/60">
+                <tbody className="divide-y divide-border/60 font-mono">
                   {data.channelPerformance.map((ch) => (
-                    <tr key={ch.channel} className="hover:bg-muted/40 transition-colors">
-                      <td className="p-3 pl-4 font-semibold text-foreground flex items-center gap-2">
-                        {ch.channel === 'Phone Calls' && <Phone className="size-3.5 text-blue-500" />}
-                        {ch.channel === 'Emails' && <Mail className="size-3.5 text-indigo-500" />}
-                        {ch.channel === 'LinkedIn' && <Linkedin className="size-3.5 text-sky-500" />}
-                        {ch.channel === 'Meetings' && <Calendar className="size-3.5 text-violet-500" />}
+                    <tr key={ch.channel} className="hover:bg-surface-hover transition-colors">
+                      <td className="py-2.5 px-4 font-sans font-medium text-foreground flex items-center gap-2">
+                        {ch.channel === 'Phone Calls' && <Phone className="size-3.5 text-muted-foreground" />}
+                        {ch.channel === 'Emails' && <Mail className="size-3.5 text-muted-foreground" />}
+                        {ch.channel === 'LinkedIn' && <Linkedin className="size-3.5 text-muted-foreground" />}
+                        {ch.channel === 'Meetings' && <Calendar className="size-3.5 text-muted-foreground" />}
                         <span>{ch.channel}</span>
                       </td>
-                      <td className="p-3 text-center font-bold">{ch.touches}</td>
-                      <td className="p-3 text-center text-teal-600 dark:text-teal-400 font-semibold">
+                      <td className="py-2.5 px-3 text-center tabular text-foreground">{ch.touches}</td>
+                      <td className="py-2.5 px-3 text-center tabular text-emerald-600 dark:text-emerald-400 font-semibold">
                         {ch.responses}
                       </td>
-                      <td className="p-3 text-center font-bold text-foreground">
+                      <td className="py-2.5 px-3 text-center tabular font-semibold text-foreground">
                         {ch.responseRate}%
                       </td>
-                      <td className="p-3 text-center font-bold text-violet-600 dark:text-violet-400 pr-4">
+                      <td className="py-2.5 px-4 text-right tabular font-bold text-violet-600 dark:text-violet-400">
                         {ch.meetingRate}%
                       </td>
                     </tr>
@@ -234,21 +232,19 @@ export default function AdvancedAnalyticsPage() {
           </Card>
 
           {/* Rejection Analysis */}
-          <Card className="border-border bg-surface shadow-xs flex flex-col justify-between">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-sm font-bold">Rejection &amp; Loss Analysis</CardTitle>
-                  <CardDescription className="text-xs">
-                    Root causes of pipeline drop-offs with AI interpretation.
-                  </CardDescription>
-                </div>
-                <Badge tone="rose" size="sm">
-                  {data.rejectionAnalysis.totalRejections} Total Losses
-                </Badge>
+          <Card className="flex flex-col justify-between">
+            <CardHeader className="pb-3 border-b border-border flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-sm font-semibold">Disqualification & Loss Analysis</CardTitle>
+                <CardDescription className="text-xs">
+                  Root causes of pipeline drop-offs with AI takeaway.
+                </CardDescription>
               </div>
+              <Badge tone="rose" size="sm">
+                {data.rejectionAnalysis.totalRejections} Losses
+              </Badge>
             </CardHeader>
-            <CardContent className="space-y-3 pt-0">
+            <CardContent className="space-y-3 pt-4">
               <div className="space-y-2">
                 {data.rejectionAnalysis.reasonsBreakdown.length === 0 ? (
                   <div className="p-6 text-center text-xs text-muted-foreground">
@@ -257,13 +253,13 @@ export default function AdvancedAnalyticsPage() {
                 ) : (
                   data.rejectionAnalysis.reasonsBreakdown.map((r) => (
                     <div key={r.reason} className="space-y-1">
-                      <div className="flex justify-between text-xs font-semibold">
-                        <span className="text-foreground">{r.reason}</span>
-                        <span className="text-muted-foreground">{r.count} ({r.percent}%)</span>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-foreground font-medium">{r.reason}</span>
+                        <span className="font-mono text-muted-foreground tabular">{r.count} ({r.percent}%)</span>
                       </div>
-                      <div className="h-1.5 w-full rounded-full bg-border overflow-hidden">
+                      <div className="h-1 w-full rounded-full bg-border overflow-hidden">
                         <div
-                          className="h-full bg-rose-500 rounded-full"
+                          className="h-full bg-rose-500 rounded-full transition-all duration-300"
                           style={{ width: `${r.percent}%` }}
                         />
                       </div>
@@ -273,9 +269,9 @@ export default function AdvancedAnalyticsPage() {
               </div>
 
               {data.rejectionAnalysis.aiInsight && (
-                <div className="rounded-xl bg-surface-muted/50 p-3 border border-border text-xs text-foreground/90 space-y-1">
-                  <div className="font-bold text-primary flex items-center gap-1">
-                    <Sparkles className="size-3 text-primary" /> AI Strategic Rejection Takeaway:
+                <div className="rounded-md bg-surface-muted/40 p-3 border border-border text-xs text-foreground/90 space-y-1">
+                  <div className="font-semibold text-primary flex items-center gap-1">
+                    <Sparkles className="size-3 text-primary" /> Key Takeaway
                   </div>
                   <p>{data.rejectionAnalysis.aiInsight}</p>
                 </div>

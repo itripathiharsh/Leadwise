@@ -13,13 +13,10 @@ import {
   Edit2,
   Trash2,
   RefreshCw,
-  Sparkles,
   Files,
   Eye,
-  Send,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import {
   Dialog,
   DialogContent,
@@ -85,7 +82,7 @@ export default function TemplatesPage() {
     const textToCopy = t.category === 'EMAIL' && t.subject ? `Subject: ${t.subject}\n\n${t.body}` : t.body
     navigator.clipboard.writeText(textToCopy)
     setCopiedId(t.id)
-    toast.success('Template copied to clipboard!')
+    toast.success('Template copied to clipboard')
     setTimeout(() => setCopiedId(null), 2500)
   }
 
@@ -103,7 +100,7 @@ export default function TemplatesPage() {
         }),
       })
       if (res.ok) {
-        toast.success('Template duplicated!')
+        toast.success('Template duplicated')
         fetchTemplates()
       } else {
         toast.error('Failed to duplicate template.')
@@ -156,7 +153,7 @@ export default function TemplatesPage() {
       const data = await res.json().catch(() => null)
 
       if (res.ok) {
-        toast.success(editingId ? 'Template updated!' : 'Template created!')
+        toast.success(editingId ? 'Template updated' : 'Template created')
         setModalOpen(false)
         fetchTemplates()
       } else {
@@ -175,7 +172,7 @@ export default function TemplatesPage() {
       const res = await fetch(`/api/templates/${id}`, { method: 'DELETE' })
       const data = await res.json().catch(() => null)
       if (res.ok) {
-        toast.success('Template removed.')
+        toast.success('Template deleted')
         fetchTemplates()
       } else {
         toast.error(data?.error || 'Failed to delete template.')
@@ -192,48 +189,47 @@ export default function TemplatesPage() {
   const getCategoryIcon = (cat: string) => {
     switch (cat) {
       case 'EMAIL':
-        return <Mail className="size-4 text-indigo-400" />
+        return <Mail className="size-3.5 text-muted-foreground" />
       case 'LINKEDIN':
-        return <Linkedin className="size-4 text-sky-400" />
+        return <Linkedin className="size-3.5 text-muted-foreground" />
       case 'CALL_SCRIPT':
-        return <Phone className="size-4 text-blue-400" />
+        return <Phone className="size-3.5 text-muted-foreground" />
       default:
-        return <MessageSquare className="size-4 text-emerald-400" />
+        return <MessageSquare className="size-3.5 text-muted-foreground" />
     }
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 p-4 sm:p-6 lg:p-8">
-      {/* Executive Command Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/80 pb-5">
+    <div className="max-w-6xl mx-auto space-y-5 p-4 sm:p-6 lg:p-8">
+      {/* Precision Command Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-5">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary shadow-xs">
-              <FileText className="size-5" />
+            <div className="flex size-9 items-center justify-center rounded-md bg-surface-muted text-foreground border border-border">
+              <FileText className="size-4.5" />
             </div>
             <div>
               <div className="flex items-center gap-2.5">
-                <h1 className="font-display font-extrabold text-2xl tracking-tight text-foreground">
+                <h1 className="font-sans font-bold text-xl sm:text-2xl tracking-tight text-foreground">
                   Outreach Templates & Scripts
                 </h1>
-                <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-surface-elevated text-primary border border-primary/20 font-bold">
+                <span className="font-mono text-xs px-2 py-0.5 rounded bg-surface-muted text-muted-foreground border border-border">
                   {templates.length} Active Templates
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Standardized high-conversion copy for Cold Outreach, Cadence Follow-ups, Call Scripts, and InMails.
+                Standardized high-conversion copy for cold outreach, follow-ups, and call scripts.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={fetchTemplates}
             icon={<RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />}
-            className="border-border hover:bg-surface-elevated"
           >
             Refresh
           </Button>
@@ -242,16 +238,15 @@ export default function TemplatesPage() {
             variant="primary"
             size="sm"
             onClick={handleOpenCreate}
-            icon={<Plus className="size-4" />}
-            className="shadow-md shadow-primary/20 font-semibold"
+            icon={<Plus className="size-3.5" />}
           >
-            + Add Template
+            Add Template
           </Button>
         </div>
       </div>
 
       {/* Category Tabs */}
-      <div className="glass-panel rounded-2xl border border-border/80 bg-surface/70 backdrop-blur-xl p-2.5 shadow-sm flex flex-wrap gap-2">
+      <div className="rounded-lg border border-border bg-surface p-2 flex flex-wrap gap-1">
         {[
           { key: '', label: 'All Channels' },
           { key: 'EMAIL', label: 'Emails' },
@@ -264,10 +259,10 @@ export default function TemplatesPage() {
             type="button"
             onClick={() => setCategoryFilter(tab.key)}
             className={cn(
-              'px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 border',
+              'px-3 py-1.5 rounded text-xs font-semibold transition-colors cursor-pointer',
               categoryFilter === tab.key
-                ? 'bg-primary text-primary-foreground border-primary shadow-xs'
-                : 'bg-surface-elevated/60 text-muted-foreground border-border/70 hover:bg-surface-elevated hover:text-foreground',
+                ? 'bg-surface-muted text-foreground border border-border shadow-xs'
+                : 'text-muted-foreground hover:text-foreground',
             )}
           >
             {tab.label}
@@ -276,56 +271,56 @@ export default function TemplatesPage() {
       </div>
 
       {/* Templates Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
         {loading && templates.length === 0 ? (
           <div className="col-span-2 p-16 text-center space-y-3">
-            <RefreshCw className="size-6 mx-auto text-primary animate-spin" />
+            <RefreshCw className="size-5 mx-auto text-primary animate-spin" />
             <div className="font-semibold text-sm text-foreground">Syncing Template Library...</div>
           </div>
         ) : templates.length === 0 ? (
-          <div className="col-span-2 p-16 text-center space-y-4 rounded-2xl border border-border/80 bg-surface/60">
-            <FileText className="size-10 mx-auto text-muted-foreground/50" />
+          <div className="col-span-2 p-16 text-center space-y-4 rounded-lg border border-border bg-surface">
+            <FileText className="size-8 mx-auto text-muted-foreground" />
             <div className="space-y-1">
-              <p className="font-display font-bold text-base text-foreground">No templates found</p>
+              <p className="font-semibold text-sm text-foreground">No templates found</p>
               <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
                 Add outreach copy or pitch scripts to standardize communication across your team.
               </p>
             </div>
-            <Button variant="primary" size="sm" onClick={handleOpenCreate} icon={<Plus className="size-4" />}>
-              + Add First Template
+            <Button variant="primary" size="sm" onClick={handleOpenCreate} icon={<Plus className="size-3.5" />}>
+              Add First Template
             </Button>
           </div>
         ) : (
           templates.map((t) => (
             <div
               key={t.id}
-              className="glass-card rounded-2xl border border-border/80 bg-surface/75 backdrop-blur-xl p-5 shadow-sm hover:border-primary/40 transition-all duration-200 flex flex-col justify-between space-y-4 rim-highlight"
+              className="rounded-lg border border-border bg-surface p-4 hover:border-border-strong transition-[border-color] flex flex-col justify-between space-y-3"
             >
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-surface-elevated border border-border/80 shadow-xs">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-surface-muted border border-border text-foreground">
                       {getCategoryIcon(t.category)}
                     </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-foreground">{t.title}</h3>
+                    <div className="min-w-0">
+                      <h3 className="text-xs font-semibold text-foreground truncate">{t.title}</h3>
                       <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="font-mono text-[10px] uppercase font-bold text-primary px-2 py-0.2 rounded bg-primary/10 border border-primary/20">
+                        <span className="font-mono text-[9px] uppercase font-semibold text-primary px-1.5 py-0.2 rounded bg-primary/10 border border-primary/20">
                           {t.category.replace('_', ' ')}
                         </span>
-                        <span className="text-[10px] text-muted-foreground">
+                        <span className="text-[10px] text-muted-foreground truncate">
                           · {t.subcategory || 'General Outreach'}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 shrink-0">
                     <button
                       type="button"
                       onClick={() => setPreviewTemplate(t)}
                       title="Preview Template"
-                      className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface-elevated transition-colors"
+                      className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors"
                     >
                       <Eye className="size-3.5" />
                     </button>
@@ -333,7 +328,7 @@ export default function TemplatesPage() {
                       type="button"
                       onClick={() => handleDuplicate(t)}
                       title="Duplicate Template"
-                      className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface-elevated transition-colors"
+                      className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors"
                     >
                       <Files className="size-3.5" />
                     </button>
@@ -341,7 +336,7 @@ export default function TemplatesPage() {
                       type="button"
                       onClick={() => handleOpenEdit(t)}
                       title="Edit Template"
-                      className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface-elevated transition-colors"
+                      className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors"
                     >
                       <Edit2 className="size-3.5" />
                     </button>
@@ -349,7 +344,7 @@ export default function TemplatesPage() {
                       type="button"
                       onClick={() => handleDelete(t.id)}
                       title="Delete Template"
-                      className="p-1.5 rounded-lg text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                      className="p-1 rounded text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
                     >
                       <Trash2 className="size-3.5" />
                     </button>
@@ -357,33 +352,29 @@ export default function TemplatesPage() {
                 </div>
 
                 {t.subject && (
-                  <div className="text-xs font-semibold text-foreground/90 rounded-lg bg-surface-elevated/40 p-2 border border-border/50">
-                    <span className="text-muted-foreground font-mono text-[11px]">Subject: </span>
-                    <span>{t.subject}</span>
+                  <div className="text-xs text-foreground/90 rounded bg-surface-muted/40 p-2 border border-border">
+                    <span className="text-muted-foreground font-mono text-[10.5px]">Subject: </span>
+                    <span className="font-medium">{t.subject}</span>
                   </div>
                 )}
 
-                <pre className="font-sans text-xs text-foreground/80 whitespace-pre-wrap bg-surface-elevated/60 p-3.5 rounded-xl border border-border/50 max-h-40 overflow-y-auto leading-relaxed">
+                <pre className="font-sans text-xs text-foreground/80 whitespace-pre-wrap bg-surface-muted/50 p-3 rounded border border-border max-h-36 overflow-y-auto leading-relaxed">
                   {t.body}
                 </pre>
               </div>
 
-              <div className="flex items-center justify-between pt-3 border-t border-border/60">
-                <span className="font-mono text-[11px] text-muted-foreground">
+              <div className="flex items-center justify-between pt-2.5 border-t border-border">
+                <span className="font-mono text-[10.5px] text-muted-foreground">
                   By {t.createdBy?.name || 'Leadwise Team'}
                 </span>
 
                 <Button
-                  variant={copiedId === t.id ? 'secondary' : 'primary'}
+                  variant="outline"
                   size="xs"
                   onClick={() => handleCopy(t)}
-                  className={cn(
-                    'transition-all duration-200 font-bold shadow-xs',
-                    copiedId === t.id && 'bg-emerald-600 hover:bg-emerald-600 text-white border-emerald-600 shadow-sm scale-105',
-                  )}
-                  icon={copiedId === t.id ? <Check className="size-3 text-white stroke-[3]" /> : <Copy className="size-3" />}
+                  icon={copiedId === t.id ? <Check className="size-3 text-emerald-600 dark:text-emerald-400" /> : <Copy className="size-3" />}
                 >
-                  {copiedId === t.id ? 'Copied ✓' : 'Copy Template'}
+                  {copiedId === t.id ? 'Copied' : 'Copy'}
                 </Button>
               </div>
             </div>
@@ -401,14 +392,14 @@ export default function TemplatesPage() {
                 Live preview with placeholders visible.
               </DialogDescription>
             </DialogHeader>
-            <DialogBody className="space-y-4">
+            <DialogBody className="space-y-3">
               {previewTemplate.subject && (
-                <div className="rounded-xl border border-border bg-surface-elevated/50 p-3 text-xs">
-                  <span className="font-mono font-bold text-muted-foreground">Subject: </span>
-                  <span className="font-semibold text-foreground">{previewTemplate.subject}</span>
+                <div className="rounded border border-border bg-surface-muted/40 p-2.5 text-xs">
+                  <span className="font-mono font-semibold text-muted-foreground">Subject: </span>
+                  <span className="font-medium text-foreground">{previewTemplate.subject}</span>
                 </div>
               )}
-              <div className="rounded-xl border border-border bg-surface-elevated/40 p-4 text-xs font-mono leading-relaxed whitespace-pre-wrap text-foreground">
+              <div className="rounded border border-border bg-surface-muted/30 p-3.5 text-xs font-mono leading-relaxed whitespace-pre-wrap text-foreground">
                 {previewTemplate.body}
               </div>
             </DialogBody>
@@ -439,15 +430,15 @@ export default function TemplatesPage() {
           </DialogHeader>
 
           <form onSubmit={handleSave} className="flex flex-col flex-1 overflow-hidden">
-            <DialogBody className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <DialogBody className="space-y-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Field label="Template Title" required>
                   <Input
                     placeholder="e.g. Initial Clinical Partnership Intro"
                     required
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="h-10"
+                    className="h-9"
                   />
                 </Field>
 
@@ -455,7 +446,7 @@ export default function TemplatesPage() {
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="h-10 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-xs transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className="h-9 w-full rounded border border-border bg-surface px-3 py-1 text-xs text-foreground focus:border-border-strong focus:outline-none cursor-pointer"
                   >
                     <option value="EMAIL">Email</option>
                     <option value="LINKEDIN">LinkedIn (InMail / Connection)</option>
@@ -471,23 +462,23 @@ export default function TemplatesPage() {
                     placeholder="e.g. Partnership exploration: Leadwise & {{organisation_name}}"
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
-                    className="h-10"
+                    className="h-9"
                   />
                 </Field>
               )}
 
               {/* Placeholders Toolbar */}
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider font-mono">
-                  Click to Insert Variables:
+              <div className="space-y-1">
+                <label className="text-[10.5px] font-semibold text-muted-foreground uppercase tracking-wider font-mono">
+                  Insert Variables:
                 </label>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1">
                   {PLACEHOLDERS.map((ph) => (
                     <button
                       key={ph}
                       type="button"
                       onClick={() => insertPlaceholder(ph)}
-                      className="rounded-lg bg-surface-elevated px-2.5 py-1 text-[11px] font-mono text-primary hover:bg-primary/10 border border-border transition-colors font-semibold"
+                      className="rounded bg-surface-muted px-2 py-0.5 text-[11px] font-mono text-foreground hover:bg-surface-hover border border-border transition-colors cursor-pointer"
                     >
                       + {ph}
                     </button>
@@ -502,7 +493,7 @@ export default function TemplatesPage() {
                   placeholder="Hi {{contact_name}}, I'm reaching out from Leadwise regarding..."
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
-                  className="w-full rounded-xl border border-border bg-surface p-3.5 text-xs font-mono text-foreground shadow-xs transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 leading-relaxed resize-y min-h-[100px]"
+                  className="w-full rounded border border-border bg-surface p-3 text-xs font-mono text-foreground focus:border-border-strong focus:outline-none leading-relaxed resize-y min-h-[100px]"
                 />
               </Field>
             </DialogBody>
@@ -511,7 +502,7 @@ export default function TemplatesPage() {
               <Button variant="ghost" type="button" onClick={() => setModalOpen(false)}>
                 Cancel
               </Button>
-              <Button variant="primary" type="submit" loading={saving} className="font-bold">
+              <Button variant="primary" type="submit" loading={saving}>
                 Save Template
               </Button>
             </DialogFooter>

@@ -7,18 +7,12 @@ import {
   Copy,
   Sparkles,
   RefreshCw,
-  Clock,
   Check,
   CheckCircle2,
   AlertTriangle,
-  Building2,
-  Calendar,
   Phone,
-  Mail,
-  Linkedin,
   Edit2,
   Zap,
-  WifiOff,
   Loader2,
   ExternalLink,
 } from 'lucide-react'
@@ -34,7 +28,7 @@ import {
   DialogBody,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { buildWhatsAppLink, normalizeWhatsAppNumber, formatWhatsAppNumber } from '@/lib/whatsapp'
+import { buildWhatsAppLink, formatWhatsAppNumber } from '@/lib/whatsapp'
 import { todayKey } from '@/lib/dates'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -99,7 +93,7 @@ export default function EodReportsPage() {
   const [autoSendModalOpen, setAutoSendModalOpen] = React.useState(false)
   const [autoSending, setAutoSending] = React.useState(false)
   const [autoSendResult, setAutoSendResult] = React.useState<{ success: boolean; error?: string; sentAt?: string } | null>(null)
-  const [hasAgentToken, setHasAgentToken] = React.useState(true) // assume true to avoid flash
+  const [hasAgentToken, setHasAgentToken] = React.useState(true)
 
   React.useEffect(() => {
     setHasAgentToken(!!localStorage.getItem('whatsapp_agent_token'))
@@ -167,7 +161,7 @@ export default function EodReportsPage() {
 
       setReport(data.report)
       if (data.report?.whatsappText) setDraftWhatsAppText(data.report.whatsappText)
-      toast.success(force ? 'EOD report regenerated!' : 'EOD report generated!')
+      toast.success(force ? 'EOD report regenerated' : 'EOD report generated')
       loadReport(dateKey)
     } catch {
       toast.error('Network error generating EOD.')
@@ -179,7 +173,7 @@ export default function EodReportsPage() {
   const copyText = (text: string, label: string) => {
     navigator.clipboard.writeText(text)
     setCopiedSection(label)
-    toast.success(`${label} copied!`)
+    toast.success(`${label} copied to clipboard`)
     setTimeout(() => setCopiedSection(null), 2500)
   }
 
@@ -189,7 +183,6 @@ export default function EodReportsPage() {
 
     const waLink = buildWhatsAppLink(textToSend, report.whatsappNumber)
 
-    // Mark as handed off in DB
     fetch('/api/eod', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -198,10 +191,9 @@ export default function EodReportsPage() {
 
     window.open(waLink.url, '_blank')
     setPreviewModalOpen(false)
-    toast.info('Opened WhatsApp with pre-filled EOD message.')
+    toast.info('Opened WhatsApp with formatted EOD dispatch.')
   }
 
-  // ── Auto-Send via Local Agent ──────────────────────────────────────────────
   const handleAutoSend = async () => {
     const textToSend = draftWhatsAppText || report?.whatsappText
     const phone = report?.whatsappNumber || process.env.EOD_WHATSAPP_NUMBER
@@ -211,7 +203,6 @@ export default function EodReportsPage() {
     setAutoSendResult(null)
 
     try {
-      // Get the agent token from localStorage or prompt
       const agentToken = localStorage.getItem('whatsapp_agent_token') || ''
 
       const res = await fetch(`${AGENT_URL}/send-eod`, {
@@ -221,33 +212,32 @@ export default function EodReportsPage() {
           'Authorization': `Bearer ${agentToken}`,
         },
         body: JSON.stringify({ phone, message: textToSend }),
-        signal: AbortSignal.timeout(180000), // 3 min timeout for QR scan + send
+        signal: AbortSignal.timeout(180000),
       })
 
       const data = await res.json()
 
       if (data.success) {
         setAutoSendResult({ success: true, sentAt: data.sentAt })
-        // Mark as sent in DB
         fetch('/api/eod', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ dateKey, markSent: true }),
         }).catch(() => {})
-        toast.success('✅ EOD sent successfully via WhatsApp!')
+        toast.success('EOD sent successfully via WhatsApp automation')
         loadReport(dateKey)
       } else {
         setAutoSendResult({ success: false, error: data.error || 'Unknown error' })
         if (data.needsLogin) {
-          toast.error('WhatsApp Web requires login. Please scan QR in the agent browser window.')
+          toast.error('WhatsApp Web requires login. Scan QR in agent browser window.')
         } else {
-          toast.error(`⚠ WhatsApp automation failed: ${data.error}`)
+          toast.error(`WhatsApp automation failed: ${data.error}`)
         }
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Agent unreachable'
       setAutoSendResult({ success: false, error: msg })
-      toast.error(`⚠ WhatsApp automation failed: ${msg}`)
+      toast.error(`WhatsApp automation error: ${msg}`)
     } finally {
       setAutoSending(false)
       agent.refresh()
@@ -257,27 +247,36 @@ export default function EodReportsPage() {
   const metrics = report?.metrics
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 p-4 sm:p-6 lg:p-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-6">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <FileSpreadsheet className="size-6 text-emerald-600" />
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Daily Outreach EOD Report
-            </h1>
+    <div className="max-w-6xl mx-auto space-y-6 p-4 sm:p-6 lg:p-8">
+      {/* Precision Command Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 items-center justify-center rounded-md bg-surface-muted text-foreground border border-border">
+              <FileSpreadsheet className="size-4.5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2.5">
+                <h1 className="font-sans font-bold text-xl sm:text-2xl tracking-tight text-foreground">
+                  Daily Outreach EOD Report
+                </h1>
+                <Badge tone="emerald" size="sm">
+                  Executive Dispatch
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Aggregated outreach metrics, AI summary synthesis, and WhatsApp dispatch automation.
+              </p>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Aggregated team performance, AI executive summary, and ₹0 WhatsApp dispatch flow.
-          </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           <input
             type="date"
             value={dateKey}
             onChange={(e) => setDateKey(e.target.value)}
-            className="rounded-lg border border-border bg-surface px-3 py-1.5 text-xs text-foreground shadow-xs focus:border-primary focus:outline-none"
+            className="rounded-md border border-border bg-surface px-2.5 py-1 text-xs text-foreground focus:border-border-strong focus:outline-none cursor-pointer"
           />
 
           <Button
@@ -285,7 +284,7 @@ export default function EodReportsPage() {
             size="sm"
             onClick={() => handleGenerate(Boolean(report))}
             loading={generating}
-            icon={<Sparkles className="size-4" />}
+            icon={<Sparkles className="size-3.5" />}
           >
             {report ? 'Regenerate EOD' : 'Generate EOD'}
           </Button>
@@ -293,52 +292,53 @@ export default function EodReportsPage() {
       </div>
 
       {loading && !report ? (
-        <div className="p-12 text-center text-xs text-muted-foreground">
+        <div className="p-16 text-center text-xs text-muted-foreground">
+          <RefreshCw className="size-5 mx-auto text-primary animate-spin mb-2" />
           Loading EOD report...
         </div>
       ) : !report ? (
-        <Card className="border-border p-12 text-center space-y-3">
-          <FileSpreadsheet className="size-10 mx-auto text-muted-foreground/60" />
-          <p className="font-bold text-base">No EOD Report Generated for {dateKey}</p>
+        <Card className="p-12 text-center space-y-3">
+          <FileSpreadsheet className="size-8 mx-auto text-muted-foreground" />
+          <p className="font-semibold text-base">No EOD Report Generated for {dateKey}</p>
           <p className="text-xs text-muted-foreground max-w-md mx-auto">
-            Click &ldquo;Generate EOD&rdquo; above to aggregate today&apos;s metrics and generate an AI-powered summary.
+            Click &ldquo;Generate EOD&rdquo; above to aggregate today&apos;s team metrics and produce an executive intelligence dispatch.
           </p>
           <Button
             variant="primary"
             size="sm"
             onClick={() => handleGenerate(false)}
             loading={generating}
-            icon={<Sparkles className="size-4" />}
+            icon={<Sparkles className="size-3.5" />}
           >
             Generate Today&apos;s EOD
           </Button>
         </Card>
       ) : (
-        <div className="space-y-6">
-          {/* Action Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface p-4 shadow-xs">
+        <div className="space-y-5">
+          {/* Action Toolbar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface p-4">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-sm text-foreground">
-                Leadwise — Daily Outreach EOD
+              <span className="font-semibold text-xs text-foreground">
+                Leadwise Daily Outreach EOD
               </span>
               <Badge tone="blue" size="sm">
                 {report.dateLabel}
               </Badge>
               {report.lastSentAt && (
-                <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
-                  <CheckCircle2 className="size-3.5" /> Opened in WhatsApp
+                <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                  <CheckCircle2 className="size-3.5" /> Handed off
                 </span>
               )}
             </div>
 
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => copyText(report.whatsappText, 'Full EOD')}
                 icon={copiedSection === 'Full EOD' ? <Check className="size-3.5 text-emerald-600" /> : <Copy className="size-3.5" />}
               >
-                {copiedSection === 'Full EOD' ? 'Copied!' : 'Copy Full EOD'}
+                {copiedSection === 'Full EOD' ? 'Copied' : 'Copy Full EOD'}
               </Button>
 
               <Button
@@ -350,7 +350,7 @@ export default function EodReportsPage() {
                 }}
                 icon={<Edit2 className="size-3.5 text-muted-foreground" />}
               >
-                Preview &amp; Edit
+                Preview & Edit
               </Button>
 
               <Button
@@ -360,15 +360,13 @@ export default function EodReportsPage() {
                   setDraftWhatsAppText(report.whatsappText)
                   setPreviewModalOpen(true)
                 }}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
                 icon={<Send className="size-3.5" />}
               >
-                Send on WhatsApp
+                Send via WhatsApp
               </Button>
 
-              {/* Auto Send via Local Agent */}
               <Button
-                variant="primary"
+                variant="outline"
                 size="sm"
                 onClick={() => {
                   setDraftWhatsAppText(report.whatsappText)
@@ -376,24 +374,18 @@ export default function EodReportsPage() {
                   setAutoSendModalOpen(true)
                 }}
                 disabled={agent.status !== 'online' || agent.isSending}
-                className={cn(
-                  'text-white',
-                  agent.status === 'online'
-                    ? 'bg-violet-600 hover:bg-violet-700'
-                    : 'bg-gray-400 cursor-not-allowed'
-                )}
-                icon={<Zap className="size-3.5" />}
+                icon={<Zap className="size-3.5 text-primary" />}
               >
-                Auto Send WhatsApp
+                Auto Send
               </Button>
             </div>
 
-            {/* Agent Status Indicator */}
-            <div className="flex items-center gap-1.5 text-[11px]">
+            {/* Agent Status */}
+            <div className="flex items-center gap-1.5 text-[11px] font-mono">
               {agent.status === 'online' ? (
                 <>
-                  <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-emerald-600 font-medium">WhatsApp Automation Connected</span>
+                  <span className="size-1.5 rounded-full bg-emerald-500" />
+                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">Agent Connected</span>
                 </>
               ) : agent.status === 'checking' ? (
                 <>
@@ -402,22 +394,22 @@ export default function EodReportsPage() {
                 </>
               ) : (
                 <>
-                  <span className="size-2 rounded-full bg-gray-400" />
-                  <span className="text-muted-foreground">WhatsApp Automation Offline</span>
+                  <span className="size-1.5 rounded-full bg-slate-400" />
+                  <span className="text-muted-foreground">Agent Offline</span>
                 </>
               )}
             </div>
           </div>
 
           {/* Section Copy Bar */}
-          <div className="flex flex-wrap items-center gap-2 rounded-lg bg-surface-muted/50 border border-border p-2.5 text-xs">
-            <span className="font-semibold text-muted-foreground mr-1">Quick Section Copy:</span>
+          <div className="flex flex-wrap items-center gap-2 rounded-md bg-surface-muted/40 border border-border p-2 text-xs">
+            <span className="font-semibold text-muted-foreground mr-1">Copy Snippets:</span>
             <Button
               variant="ghost"
               size="xs"
               onClick={() => copyText(report.aiSummary || report.executiveSummary || '', 'AI Summary')}
             >
-              {copiedSection === 'AI Summary' ? '✓ Copied' : 'Copy Summary'}
+              {copiedSection === 'AI Summary' ? 'Copied' : 'Summary'}
             </Button>
             <Button
               variant="ghost"
@@ -432,7 +424,7 @@ export default function EodReportsPage() {
                 copyText(teamText, 'Team Breakdown')
               }}
             >
-              {copiedSection === 'Team Breakdown' ? '✓ Copied' : 'Copy Team Stats'}
+              {copiedSection === 'Team Breakdown' ? 'Copied' : 'Team Stats'}
             </Button>
             <Button
               variant="ghost"
@@ -444,26 +436,24 @@ export default function EodReportsPage() {
                 copyText(followupsText, 'Follow-ups')
               }}
             >
-              {copiedSection === 'Follow-ups' ? '✓ Copied' : 'Copy Follow-ups'}
+              {copiedSection === 'Follow-ups' ? 'Copied' : 'Tomorrow Cadence'}
             </Button>
           </div>
 
           {/* AI Executive Summary Card */}
           {report.aiSummary && (
-            <Card className="border-primary/30 bg-primary-soft/20 shadow-xs">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="size-4 text-primary" />
-                    <CardTitle className="text-sm text-primary">AI Executive Summary</CardTitle>
-                  </div>
-                  <Badge tone="violet" size="sm">
-                    Groq LLaMA 3.3
-                  </Badge>
+            <Card className="border-border">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="size-4 text-primary" />
+                  <CardTitle className="text-sm">Executive Summary</CardTitle>
                 </div>
+                <Badge tone="slate" size="sm">
+                  Deterministic AI
+                </Badge>
               </CardHeader>
               <CardContent>
-                <p className="text-xs text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                <p className="text-xs text-foreground/90 leading-relaxed whitespace-pre-wrap font-sans">
                   {report.aiSummary}
                 </p>
               </CardContent>
@@ -472,82 +462,101 @@ export default function EodReportsPage() {
 
           {/* KPI Tiles */}
           {metrics && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-              <div className="rounded-lg border border-border bg-surface p-3 text-center">
-                <div className="text-[11px] text-muted-foreground font-medium">Orgs Contacted</div>
-                <div className="text-lg font-bold text-foreground mt-0.5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
+              <div className="rounded-md border border-border bg-surface p-2.5 text-center">
+                <div className="text-[10.5px] text-muted-foreground font-medium uppercase tracking-wider">Orgs</div>
+                <div className="font-mono text-xl font-bold tabular text-foreground mt-0.5">
                   {metrics.organisationsContacted}
                 </div>
               </div>
 
-              <div className="rounded-lg border border-border bg-surface p-3 text-center">
-                <div className="text-[11px] text-muted-foreground font-medium">Calls</div>
-                <div className="text-lg font-bold text-blue-600 dark:text-blue-400 mt-0.5">
+              <div className="rounded-md border border-border bg-surface p-2.5 text-center">
+                <div className="text-[10.5px] text-muted-foreground font-medium uppercase tracking-wider">Calls</div>
+                <div className="font-mono text-xl font-bold tabular text-foreground mt-0.5">
                   {metrics.calls}
                 </div>
               </div>
 
-              <div className="rounded-lg border border-border bg-surface p-3 text-center">
-                <div className="text-[11px] text-muted-foreground font-medium">Emails</div>
-                <div className="text-lg font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
+              <div className="rounded-md border border-border bg-surface p-2.5 text-center">
+                <div className="text-[10.5px] text-muted-foreground font-medium uppercase tracking-wider">Emails</div>
+                <div className="font-mono text-xl font-bold tabular text-foreground mt-0.5">
                   {metrics.emails}
                 </div>
               </div>
 
-              <div className="rounded-lg border border-border bg-surface p-3 text-center">
-                <div className="text-[11px] text-muted-foreground font-medium">LinkedIn</div>
-                <div className="text-lg font-bold text-sky-600 dark:text-sky-400 mt-0.5">
+              <div className="rounded-md border border-border bg-surface p-2.5 text-center">
+                <div className="text-[10.5px] text-muted-foreground font-medium uppercase tracking-wider">LinkedIn</div>
+                <div className="font-mono text-xl font-bold tabular text-foreground mt-0.5">
                   {metrics.linkedin}
                 </div>
               </div>
 
-              <div className="rounded-lg border border-border bg-surface p-3 text-center">
-                <div className="text-[11px] text-muted-foreground font-medium">Responses</div>
-                <div className="text-lg font-bold text-teal-600 dark:text-teal-400 mt-0.5">
+              <div className="rounded-md border border-border bg-surface p-2.5 text-center">
+                <div className="text-[10.5px] text-muted-foreground font-medium uppercase tracking-wider">Responses</div>
+                <div className="font-mono text-xl font-bold tabular text-emerald-600 dark:text-emerald-400 mt-0.5">
                   {metrics.responses}
                 </div>
               </div>
 
-              <div className="rounded-lg border border-border bg-surface p-3 text-center">
-                <div className="text-[11px] text-muted-foreground font-medium">Interested</div>
-                <div className="text-lg font-bold text-amber-600 dark:text-amber-400 mt-0.5">
+              <div className="rounded-md border border-border bg-surface p-2.5 text-center">
+                <div className="text-[10.5px] text-muted-foreground font-medium uppercase tracking-wider">Interested</div>
+                <div className="font-mono text-xl font-bold tabular text-amber-600 dark:text-amber-400 mt-0.5">
                   {metrics.interested}
                 </div>
               </div>
 
-              <div className="rounded-lg border border-border bg-surface p-3 text-center">
-                <div className="text-[11px] text-muted-foreground font-medium">Meetings</div>
-                <div className="text-lg font-bold text-violet-600 dark:text-violet-400 mt-0.5">
+              <div className="rounded-md border border-border bg-surface p-2.5 text-center">
+                <div className="text-[10.5px] text-muted-foreground font-medium uppercase tracking-wider">Meetings</div>
+                <div className="font-mono text-xl font-bold tabular text-violet-600 dark:text-violet-400 mt-0.5">
                   {metrics.meetingsScheduled + metrics.meetingsCompleted}
                 </div>
               </div>
 
-              <div className="rounded-lg border border-border bg-surface p-3 text-center">
-                <div className="text-[11px] text-muted-foreground font-medium">Pending Follow-ups</div>
-                <div className="text-lg font-bold text-rose-600 dark:text-rose-400 mt-0.5">
+              <div className="rounded-md border border-border bg-surface p-2.5 text-center">
+                <div className="text-[10.5px] text-muted-foreground font-medium uppercase tracking-wider">Pending Cadence</div>
+                <div className="font-mono text-xl font-bold tabular text-rose-600 dark:text-rose-400 mt-0.5">
                   {metrics.followUpsPending}
                 </div>
               </div>
             </div>
           )}
 
-          {/* WhatsApp Text Preview */}
-          <Card className="border-border shadow-xs">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm">WhatsApp Formatted Message Preview</CardTitle>
-                <Button variant="ghost" size="xs" onClick={() => copyText(report.whatsappText, 'WhatsApp Text')}>
-                  Copy Message
-                </Button>
+          {/* WhatsApp Message Preview: Mobile Chat Bubble Simulation */}
+          <Card>
+            <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-sm">WhatsApp Dispatch Preview</CardTitle>
+                <CardDescription className="text-xs">
+                  Authentic simulation of message delivered to Owner on WhatsApp.
+                </CardDescription>
               </div>
-              <CardDescription>
-                This exact structured text will be sent to the Owner via WhatsApp Web.
-              </CardDescription>
+              <Button variant="ghost" size="xs" onClick={() => copyText(report.whatsappText, 'WhatsApp Text')}>
+                Copy Message
+              </Button>
             </CardHeader>
             <CardContent>
-              <pre className="font-mono text-xs text-foreground/90 bg-surface-muted/60 p-4 rounded-xl border border-border/80 whitespace-pre-wrap leading-relaxed max-h-[320px] overflow-y-auto">
-                {report.whatsappText}
-              </pre>
+              {/* WhatsApp Bubble Container */}
+              <div className="rounded-lg border border-border bg-[#0B141A] p-4 max-w-xl mx-auto shadow-inner">
+                {/* Header Simulation */}
+                <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-3 text-xs text-white/70">
+                  <div className="flex items-center gap-2">
+                    <div className="size-6 rounded-full bg-emerald-700 flex items-center justify-center text-[10px] text-white font-bold">
+                      LW
+                    </div>
+                    <span className="font-semibold text-white">Leadwise Bot</span>
+                  </div>
+                  <span className="text-[10px] text-white/50">Today</span>
+                </div>
+
+                {/* Chat Bubble */}
+                <div className="bg-[#005C4B] text-[#E9EDEF] rounded-lg p-3 text-xs font-mono whitespace-pre-wrap leading-relaxed shadow-sm">
+                  {report.whatsappText}
+                  <div className="text-[9px] text-right text-white/60 mt-2 flex items-center justify-end gap-1">
+                    <span>9:00 PM</span>
+                    <span className="text-sky-300 font-bold">✓✓</span>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -555,16 +564,16 @@ export default function EodReportsPage() {
 
       {/* Historical Archive Table */}
       {history.length > 0 && (
-        <Card className="border-border shadow-xs">
-          <CardHeader>
+        <Card>
+          <CardHeader className="pb-3">
             <CardTitle className="text-sm">Past EOD Reports Archive</CardTitle>
-            <CardDescription>Review previous daily outreach reports and historical metrics.</CardDescription>
+            <CardDescription className="text-xs">Review previous daily outreach reports and historical metrics.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+              <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-border text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  <tr className="border-b border-border text-[10.5px] font-semibold text-muted-foreground uppercase tracking-wider">
                     <th className="py-2.5 px-3">Date</th>
                     <th className="py-2.5 px-3 text-right">Activities</th>
                     <th className="py-2.5 px-3 text-right">Orgs</th>
@@ -576,18 +585,18 @@ export default function EodReportsPage() {
                 </thead>
                 <tbody className="divide-y divide-border/60">
                   {history.map((item) => (
-                    <tr key={item.id} className="hover:bg-muted/40 transition-colors">
+                    <tr key={item.id} className="hover:bg-surface-hover transition-colors">
                       <td className="py-2.5 px-3 font-semibold text-xs text-foreground">
                         {item.dateLabel}
                       </td>
-                      <td className="py-2.5 px-3 text-right font-mono text-xs">{item.activities}</td>
-                      <td className="py-2.5 px-3 text-right font-mono text-xs">
+                      <td className="py-2.5 px-3 text-right font-mono text-xs tabular">{item.activities}</td>
+                      <td className="py-2.5 px-3 text-right font-mono text-xs tabular">
                         {item.organisationsContacted}
                       </td>
-                      <td className="py-2.5 px-3 text-right font-mono text-xs font-semibold text-teal-600">
+                      <td className="py-2.5 px-3 text-right font-mono text-xs tabular font-semibold text-emerald-600 dark:text-emerald-400">
                         {item.responses}
                       </td>
-                      <td className="py-2.5 px-3 text-right font-mono text-xs font-bold text-amber-600">
+                      <td className="py-2.5 px-3 text-right font-mono text-xs tabular font-semibold text-amber-600 dark:text-amber-400">
                         {item.interested}
                       </td>
                       <td className="py-2.5 px-3 text-xs text-muted-foreground">
@@ -616,11 +625,11 @@ export default function EodReportsPage() {
         <DialogContent size="lg">
           <DialogHeader>
             <div className="flex items-center gap-2.5">
-              <div className="flex size-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600">
-                <Send className="size-5" />
+              <div className="flex size-8 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-600">
+                <Send className="size-4" />
               </div>
               <div>
-                <DialogTitle>Preview &amp; Send WhatsApp EOD</DialogTitle>
+                <DialogTitle>Preview & Send WhatsApp EOD</DialogTitle>
                 <DialogDescription>
                   Review or edit the message text before opening WhatsApp Web to dispatch to the Owner.
                 </DialogDescription>
@@ -633,7 +642,7 @@ export default function EodReportsPage() {
               rows={12}
               value={draftWhatsAppText}
               onChange={(e) => setDraftWhatsAppText(e.target.value)}
-              className="w-full rounded-xl border border-border bg-surface p-4 font-mono text-xs text-foreground shadow-xs focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 leading-relaxed resize-y"
+              className="w-full rounded border border-border bg-surface p-3 font-mono text-xs text-foreground focus:border-border-strong focus:outline-none leading-relaxed resize-y"
             />
           </DialogBody>
 
@@ -644,9 +653,8 @@ export default function EodReportsPage() {
             <Button
               variant="primary"
               type="button"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
               onClick={handleWhatsAppSend}
-              icon={<Send className="size-4" />}
+              icon={<Send className="size-3.5" />}
             >
               Send via WhatsApp Web
             </Button>
@@ -659,13 +667,13 @@ export default function EodReportsPage() {
         <DialogContent size="lg">
           <DialogHeader>
             <div className="flex items-center gap-2.5">
-              <div className="flex size-9 items-center justify-center rounded-xl bg-violet-500/10 text-violet-600">
-                <Zap className="size-5" />
+              <div className="flex size-8 items-center justify-center rounded-md bg-primary/10 text-primary">
+                <Zap className="size-4" />
               </div>
               <div>
                 <DialogTitle>Auto Send EOD via WhatsApp</DialogTitle>
                 <DialogDescription>
-                  The local automation agent will open WhatsApp Web, find the owner&apos;s chat, insert this EOD message, and send it automatically.
+                  The local automation agent will open WhatsApp Web, locate the owner&apos;s chat, and send this EOD report.
                 </DialogDescription>
               </div>
             </div>
@@ -673,27 +681,27 @@ export default function EodReportsPage() {
 
           <DialogBody className="space-y-4">
             {/* Target number */}
-            <div className="flex items-center gap-2.5 rounded-xl border border-border bg-surface-muted/50 p-3.5">
+            <div className="flex items-center gap-2.5 rounded border border-border bg-surface-muted/50 p-3">
               <Phone className="size-4 text-muted-foreground shrink-0" />
               <span className="text-xs font-semibold text-foreground">Send this EOD to:</span>
-              <span className="text-sm font-bold text-emerald-600">
+              <span className="text-xs font-mono font-bold text-foreground">
                 {formatWhatsAppNumber(report?.whatsappNumber)}
               </span>
             </div>
 
             {/* Message preview */}
-            <pre className="font-mono text-[10px] text-foreground/80 bg-surface-muted/60 p-3.5 rounded-xl border border-border/80 whitespace-pre-wrap leading-relaxed max-h-[200px] overflow-y-auto">
+            <pre className="font-mono text-[10px] text-foreground/80 bg-surface-muted/60 p-3 rounded border border-border whitespace-pre-wrap leading-relaxed max-h-[200px] overflow-y-auto">
               {draftWhatsAppText}
             </pre>
 
             {/* Agent token input (one-time setup) */}
             {!hasAgentToken && (
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-semibold text-muted-foreground">Agent Token (from whatsapp-agent terminal)</label>
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-muted-foreground">Agent Token</label>
                 <input
                   type="text"
                   placeholder="swa_..."
-                  className="h-10 w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs font-mono focus:border-violet-500 focus:outline-none"
+                  className="h-9 w-full rounded border border-border bg-surface px-3 py-1 text-xs font-mono focus:border-border-strong focus:outline-none"
                   onChange={(e) => {
                     if (e.target.value.startsWith('swa_')) {
                       localStorage.setItem('whatsapp_agent_token', e.target.value.trim())
@@ -701,29 +709,29 @@ export default function EodReportsPage() {
                     }
                   }}
                 />
-                <p className="text-[10px] text-muted-foreground">Paste the token shown when you started the agent. This is saved locally in your browser.</p>
+                <p className="text-[10px] text-muted-foreground">Paste the token shown when starting the agent.</p>
               </div>
             )}
 
             {/* Result feedback */}
             {autoSendResult && (
               <div className={cn(
-                'rounded-xl border p-3.5 text-xs',
+                'rounded border p-3 text-xs',
                 autoSendResult.success
-                  ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300'
-                  : 'border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300'
+                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300'
+                  : 'border-rose-500/30 bg-rose-500/10 text-rose-800 dark:text-rose-300'
               )}>
                 {autoSendResult.success ? (
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="size-4" />
-                    <span className="font-bold">EOD sent successfully!</span>
+                    <span className="font-semibold">EOD sent successfully</span>
                     <span className="text-[10px] opacity-70">at {autoSendResult.sentAt}</span>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <AlertTriangle className="size-4" />
-                      <span className="font-bold">WhatsApp automation failed</span>
+                      <span className="font-semibold">WhatsApp automation failed</span>
                     </div>
                     <p>{autoSendResult.error}</p>
                     <div className="flex items-center gap-2 pt-1">
@@ -745,8 +753,8 @@ export default function EodReportsPage() {
             {/* Sending spinner */}
             {autoSending && (
               <div className="flex items-center justify-center gap-3 py-4">
-                <Loader2 className="size-5 animate-spin text-violet-600" />
-                <span className="text-xs font-semibold text-muted-foreground">Sending via WhatsApp Web automation...</span>
+                <Loader2 className="size-4 animate-spin text-primary" />
+                <span className="text-xs font-medium text-muted-foreground">Sending via WhatsApp Web automation...</span>
               </div>
             )}
           </DialogBody>
@@ -758,12 +766,11 @@ export default function EodReportsPage() {
             <Button
               variant="primary"
               type="button"
-              className="bg-violet-600 hover:bg-violet-700 text-white"
               onClick={handleAutoSend}
               disabled={autoSending || autoSendResult?.success}
-              icon={autoSending ? <Loader2 className="size-4 animate-spin" /> : <Zap className="size-4" />}
+              icon={autoSending ? <Loader2 className="size-3.5 animate-spin" /> : <Zap className="size-3.5" />}
             >
-              {autoSending ? 'Sending...' : autoSendResult?.success ? 'Sent ✓' : 'Send'}
+              {autoSending ? 'Sending...' : autoSendResult?.success ? 'Sent' : 'Send'}
             </Button>
           </DialogFooter>
         </DialogContent>

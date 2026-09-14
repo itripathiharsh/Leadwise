@@ -270,20 +270,20 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
-      {/* Hero Profile Banner */}
-      <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-surface via-surface to-surface-muted p-6 sm:p-8 shadow-xs">
+      {/* Profile Header */}
+      <div className="rounded-lg border border-border bg-surface-panel p-6 space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-4">
             <div className="relative">
               <UserAvatar
                 name={profile.name}
                 color={profile.avatarColor}
                 size="xl"
-                className="size-20 text-2xl shadow-sm ring-4 ring-background"
+                className="size-16 text-xl shadow-xs ring-2 ring-border"
               />
               <span
                 className={cn(
-                  'absolute bottom-0 right-0 size-4 rounded-full border-2 border-background',
+                  'absolute bottom-0 right-0 size-3.5 rounded-full border-2 border-surface-panel',
                   profile.isActive ? 'bg-emerald-500' : 'bg-slate-400',
                 )}
                 title={profile.isActive ? 'Active Account' : 'Inactive'}
@@ -292,15 +292,15 @@ export default function ProfilePage() {
 
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-2.5">
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                <h1 className="text-xl font-bold tracking-tight text-foreground">
                   {profile.name}
                 </h1>
-                <Badge tone={roleTone} size="md" dot>
+                <Badge tone={roleTone} size="sm">
                   {roleLabel}
                 </Badge>
               </div>
 
-              <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground pt-1">
+              <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground pt-0.5 font-mono">
                 <div className="flex items-center gap-1.5">
                   <Mail className="size-3.5 text-primary" />
                   <span>{profile.email}</span>
@@ -311,8 +311,8 @@ export default function ProfilePage() {
                     <span>{profile.phone}</span>
                   </div>
                 )}
-                <div className="flex items-center gap-1.5">
-                  <Calendar className="size-3.5 text-muted-foreground" />
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Calendar className="size-3.5" />
                   <span>Joined {joinedDate}</span>
                 </div>
               </div>
@@ -325,6 +325,7 @@ export default function ProfilePage() {
               size="sm"
               onClick={() => setActiveTab('edit')}
               icon={<User className="size-3.5" />}
+              className="text-xs"
             >
               Edit Details
             </Button>
@@ -333,6 +334,7 @@ export default function ProfilePage() {
               size="sm"
               onClick={() => setActiveTab('security')}
               icon={<KeyRound className="size-3.5" />}
+              className="text-xs"
             >
               Password
             </Button>
@@ -340,15 +342,15 @@ export default function ProfilePage() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-2 border-t border-border/80 mt-6 pt-4">
+        <div className="flex items-center gap-1.5 border-t border-border pt-4">
           <button
             type="button"
             onClick={() => setActiveTab('overview')}
             className={cn(
-              'px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors',
+              'px-3 py-1.5 text-xs font-medium rounded transition-colors',
               activeTab === 'overview'
-                ? 'bg-primary text-primary-foreground shadow-xs'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/70',
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:text-foreground hover:bg-surface-elevated',
             )}
           >
             {isOwner ? 'Team Work & Performance' : 'My Work & Performance'}
@@ -357,10 +359,10 @@ export default function ProfilePage() {
             type="button"
             onClick={() => setActiveTab('edit')}
             className={cn(
-              'px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors',
+              'px-3 py-1.5 text-xs font-medium rounded transition-colors',
               activeTab === 'edit'
-                ? 'bg-primary text-primary-foreground shadow-xs'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/70',
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:text-foreground hover:bg-surface-elevated',
             )}
           >
             Edit Profile
@@ -369,10 +371,10 @@ export default function ProfilePage() {
             type="button"
             onClick={() => setActiveTab('security')}
             className={cn(
-              'px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors',
+              'px-3 py-1.5 text-xs font-medium rounded transition-colors',
               activeTab === 'security'
-                ? 'bg-primary text-primary-foreground shadow-xs'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/70',
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:text-foreground hover:bg-surface-elevated',
             )}
           >
             Security
@@ -381,10 +383,10 @@ export default function ProfilePage() {
             type="button"
             onClick={() => setActiveTab('role')}
             className={cn(
-              'px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors',
+              'px-3 py-1.5 text-xs font-medium rounded transition-colors',
               activeTab === 'role'
-                ? 'bg-primary text-primary-foreground shadow-xs'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/70',
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:text-foreground hover:bg-surface-elevated',
             )}
           >
             Role & Permissions
@@ -394,87 +396,87 @@ export default function ProfilePage() {
 
       {/* TAB 1: OVERVIEW */}
       {activeTab === 'overview' && (
-        <div className="space-y-8">
+        <div className="space-y-6">
           {/* Key Stat Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <Link href="/organisations" className="group">
-              <Card className="h-full border-border bg-surface transition-all duration-150 hover:border-primary/50 hover:shadow-xs p-4">
+              <Card className="h-full border-border bg-surface-panel p-4 hover:border-primary/40 transition-colors">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-muted-foreground">
                     {isOwner ? 'Total Organisations' : 'Assigned Organisations'}
                   </span>
-                  <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                  <div className="p-1.5 rounded bg-primary/10 text-primary">
                     <Building2 className="size-4" />
                   </div>
                 </div>
-                <div className="mt-3 text-2xl font-bold text-foreground">
+                <div className="mt-2 text-2xl font-semibold text-foreground tabular-nums">
                   {profile.counts.assignedOrganisations}
                 </div>
-                <div className="mt-1 flex items-center text-[11px] text-muted-foreground">
+                <div className="mt-1 text-[11px] text-muted-foreground">
                   {isOwner ? 'Active workspace accounts' : 'Active outreach accounts'}
                 </div>
               </Card>
             </Link>
 
             <Link href="/contacts" className="group">
-              <Card className="h-full border-border bg-surface transition-all duration-150 hover:border-primary/50 hover:shadow-xs p-4">
+              <Card className="h-full border-border bg-surface-panel p-4 hover:border-primary/40 transition-colors">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-muted-foreground">
                     {isOwner ? 'Total Contacts' : 'Assigned Contacts'}
                   </span>
-                  <div className="p-2 rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400 group-hover:bg-teal-500 group-hover:text-white transition-colors">
+                  <div className="p-1.5 rounded bg-teal-500/10 text-teal-400">
                     <Users className="size-4" />
                   </div>
                 </div>
-                <div className="mt-3 text-2xl font-bold text-foreground">
+                <div className="mt-2 text-2xl font-semibold text-foreground tabular-nums">
                   {profile.counts.assignedContacts}
                 </div>
-                <div className="mt-1 flex items-center text-[11px] text-muted-foreground">
+                <div className="mt-1 text-[11px] text-muted-foreground">
                   Decision makers & leads
                 </div>
               </Card>
             </Link>
 
             <Link href="/activities" className="group">
-              <Card className="h-full border-border bg-surface transition-all duration-150 hover:border-primary/50 hover:shadow-xs p-4">
+              <Card className="h-full border-border bg-surface-panel p-4 hover:border-primary/40 transition-colors">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-muted-foreground">
                     {isOwner ? 'Total Team Activities' : 'Total Activities Logged'}
                   </span>
-                  <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+                  <div className="p-1.5 rounded bg-indigo-500/10 text-indigo-400">
                     <Activity className="size-4" />
                   </div>
                 </div>
-                <div className="mt-3 text-2xl font-bold text-foreground">
+                <div className="mt-2 text-2xl font-semibold text-foreground tabular-nums">
                   {profile.counts.totalActivities}
                 </div>
-                <div className="mt-1 flex items-center text-[11px] text-muted-foreground">
+                <div className="mt-1 text-[11px] text-muted-foreground">
                   {isOwner ? 'Calls, emails, meetings across team' : 'Calls, emails, meetings, notes'}
                 </div>
               </Card>
             </Link>
 
             <Link href="/followups" className="group">
-              <Card className="h-full border-border bg-surface transition-all duration-150 hover:border-primary/50 hover:shadow-xs p-4">
+              <Card className="h-full border-border bg-surface-panel p-4 hover:border-primary/40 transition-colors">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-muted-foreground">
                     {isOwner ? 'Team Pending Follow-ups' : 'Pending Follow-ups'}
                   </span>
-                  <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:bg-amber-500 group-hover:text-white transition-colors">
+                  <div className="p-1.5 rounded bg-amber-500/10 text-amber-400">
                     <CalendarClock className="size-4" />
                   </div>
                 </div>
-                <div className="mt-3 text-2xl font-bold text-foreground">
+                <div className="mt-2 text-2xl font-semibold text-foreground tabular-nums">
                   {profile.counts.pendingFollowUps}
                 </div>
-                <div className="mt-1 flex items-center text-[11px]">
+                <div className="mt-1 text-[11px]">
                   {profile.counts.overdueFollowUps > 0 ? (
-                    <span className="text-destructive font-medium">
-                      ⚠️ {profile.counts.overdueFollowUps} overdue {isOwner ? 'across team' : ''}
+                    <span className="text-rose-400 font-medium tabular-nums">
+                      {profile.counts.overdueFollowUps} overdue {isOwner ? 'across team' : ''}
                     </span>
                   ) : (
-                    <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                      ✓ No overdue tasks
+                    <span className="text-emerald-400 font-medium">
+                      All tasks on schedule
                     </span>
                   )}
                 </div>

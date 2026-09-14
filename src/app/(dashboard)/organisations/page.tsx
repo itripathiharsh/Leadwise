@@ -174,67 +174,65 @@ export default function OrganisationsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 p-4 sm:p-6 lg:p-8">
-      {/* Executive Command Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/80 pb-5">
+    <div className="max-w-7xl mx-auto space-y-5 p-4 sm:p-6 lg:p-8">
+      {/* Precision Command Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-5">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary shadow-xs">
-              <Building2 className="size-5" />
+            <div className="flex size-9 items-center justify-center rounded-md bg-surface-muted text-foreground border border-border">
+              <Building2 className="size-4.5" />
             </div>
             <div>
               <div className="flex items-center gap-2.5">
-                <h1 className="font-display font-extrabold text-2xl tracking-tight text-foreground">
+                <h1 className="font-sans font-bold text-xl sm:text-2xl tracking-tight text-foreground">
                   Organizations
                 </h1>
-                <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-surface-elevated text-primary border border-primary/20 font-bold">
-                  {total} Active Entities
+                <span className="font-mono text-xs px-2 py-0.5 rounded bg-surface-muted text-muted-foreground border border-border">
+                  {total} Entities
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Manage your partnership pipeline, domain intelligence, verified decision makers, and outreach stages.
+                Partnership accounts, clinical stakeholders, verified decision makers, and outreach stages.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={fetchOrganisations}
             icon={<RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />}
-            className="hover:bg-surface-elevated border-border"
           >
-            Refresh Data
+            Refresh
           </Button>
           <Button
             variant="primary"
             size="sm"
             onClick={() => setCreateModalOpen(true)}
-            icon={<Plus className="size-4" />}
-            className="shadow-md shadow-primary/20"
+            icon={<Plus className="size-3.5" />}
           >
-            + Add Organization
+            Add Organization
           </Button>
         </div>
       </div>
 
-      {/* Filter Control Bar */}
-      <div className="glass-panel rounded-2xl border border-border/80 bg-surface/70 backdrop-blur-xl p-3.5 shadow-sm space-y-3">
-        <div className="flex flex-wrap items-center gap-3">
+      {/* Filter Control Bar (Solid Precision Surface) */}
+      <div className="rounded-lg border border-border bg-surface p-3 space-y-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           {/* Search */}
-          <div className="relative flex-1 min-w-[260px]">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <div className="relative flex-1 min-w-[240px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search by organization name, domain, location, category..."
+              placeholder="Search organizations by name, domain, location, category..."
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value)
                 setPage(1)
               }}
-              className="w-full rounded-xl border border-border bg-surface-elevated/60 pl-10 pr-9 py-2 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary focus:bg-surface transition-all"
+              className="w-full rounded-md border border-border bg-surface-muted/60 pl-9 pr-8 py-1.5 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-border-strong focus:bg-surface transition-[border-color,background-color]"
             />
             {search && (
               <button
@@ -243,7 +241,7 @@ export default function OrganisationsPage() {
                   setSearch('')
                   setPage(1)
                 }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground rounded-lg transition-colors"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-muted-foreground hover:text-foreground rounded transition-colors"
                 title="Clear search"
               >
                 <X className="size-3.5" />
@@ -252,62 +250,56 @@ export default function OrganisationsPage() {
           </div>
 
           {/* Status Filter */}
-          <div className="flex items-center gap-1.5">
-            <select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value)
-                setPage(1)
-              }}
-              className="rounded-xl border border-border bg-surface-elevated/70 px-3 py-2 text-xs text-foreground font-medium shadow-xs focus:border-primary focus:outline-none transition-all"
-            >
-              <option value="">All Partnership Stages</option>
-              <option value="ASSIGNED">Assigned</option>
-              <option value="CONTACTED">Contacted</option>
-              <option value="RESPONDED">Responded</option>
-              <option value="MEETING">Meeting Scheduled</option>
-              <option value="INTERESTED">Warm / Interested</option>
-              <option value="PARTNERSHIP">Partnership Signed</option>
-              <option value="REJECTED">Disqualified / Cold</option>
-            </select>
-          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value)
+              setPage(1)
+            }}
+            className="rounded-md border border-border bg-surface-muted/60 px-2.5 py-1.5 text-xs text-foreground font-medium outline-none focus:border-border-strong cursor-pointer"
+          >
+            <option value="">All Stages</option>
+            <option value="ASSIGNED">Assigned</option>
+            <option value="CONTACTED">Contacted</option>
+            <option value="RESPONDED">Responded</option>
+            <option value="MEETING">Meeting Scheduled</option>
+            <option value="INTERESTED">Warm / Interested</option>
+            <option value="PARTNERSHIP">Partnership Signed</option>
+            <option value="REJECTED">Disqualified / Cold</option>
+          </select>
 
           {/* Priority Filter */}
-          <div className="flex items-center gap-1.5">
-            <select
-              value={priorityFilter}
-              onChange={(e) => {
-                setPriorityFilter(e.target.value)
-                setPage(1)
-              }}
-              className="rounded-xl border border-border bg-surface-elevated/70 px-3 py-2 text-xs text-foreground font-medium shadow-xs focus:border-primary focus:outline-none transition-all"
-            >
-              <option value="">All Priorities</option>
-              <option value="HIGH">High Priority (Urgent)</option>
-              <option value="MEDIUM">Medium Priority</option>
-              <option value="LOW">Low Priority</option>
-            </select>
-          </div>
+          <select
+            value={priorityFilter}
+            onChange={(e) => {
+              setPriorityFilter(e.target.value)
+              setPage(1)
+            }}
+            className="rounded-md border border-border bg-surface-muted/60 px-2.5 py-1.5 text-xs text-foreground font-medium outline-none focus:border-border-strong cursor-pointer"
+          >
+            <option value="">All Priorities</option>
+            <option value="HIGH">High Priority</option>
+            <option value="MEDIUM">Medium Priority</option>
+            <option value="LOW">Low Priority</option>
+          </select>
 
           {/* Owner Filter (Leaders Only) */}
           {isLeader && (
-            <div className="flex items-center gap-1.5">
-              <select
-                value={assigneeFilter}
-                onChange={(e) => {
-                  setAssigneeFilter(e.target.value)
-                  setPage(1)
-                }}
-                className="rounded-xl border border-border bg-surface-elevated/70 px-3 py-2 text-xs text-foreground font-medium shadow-xs focus:border-primary focus:outline-none transition-all"
-              >
-                <option value="">All Owners</option>
-                {usersList.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <select
+              value={assigneeFilter}
+              onChange={(e) => {
+                setAssigneeFilter(e.target.value)
+                setPage(1)
+              }}
+              className="rounded-md border border-border bg-surface-muted/60 px-2.5 py-1.5 text-xs text-foreground font-medium outline-none focus:border-border-strong cursor-pointer"
+            >
+              <option value="">All Owners</option>
+              {usersList.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
           )}
 
           {(search || statusFilter || priorityFilter || (isLeader && assigneeFilter)) && (
@@ -323,13 +315,13 @@ export default function OrganisationsPage() {
               }}
               className="text-xs text-muted-foreground hover:text-foreground"
             >
-              Clear Filters
+              Clear
             </Button>
           )}
         </div>
       </div>
 
-      {/* Advanced Bulk Actions Bar (Leaders & Reps) */}
+      {/* Advanced Bulk Actions Bar */}
       {selectedIds.length > 0 && (
         <BulkActionsBar
           selectedIds={selectedIds}
@@ -358,21 +350,21 @@ export default function OrganisationsPage() {
       )}
 
       {/* Organizations Intelligence Table */}
-      <div className="glass-card rounded-2xl border border-border/90 bg-surface/80 shadow-md overflow-hidden rim-highlight">
+      <div className="rounded-lg border border-border bg-surface overflow-hidden">
         {loading && organisations.length === 0 ? (
           <div className="p-16 text-center space-y-3">
-            <RefreshCw className="size-6 mx-auto text-primary animate-spin" />
+            <RefreshCw className="size-5 mx-auto text-primary animate-spin" />
             <div className="font-semibold text-sm text-foreground">Syncing Organizations...</div>
             <p className="text-xs text-muted-foreground">Fetching live pipeline records and contact mappings.</p>
           </div>
         ) : organisations.length === 0 ? (
           (search.trim() || statusFilter || priorityFilter || (isLeader && assigneeFilter)) ? (
             <div className="p-16 text-center space-y-4">
-              <div className="flex size-14 mx-auto items-center justify-center rounded-2xl bg-surface-elevated border border-border/80 text-muted-foreground">
-                <Filter className="size-7 text-primary/70" />
+              <div className="flex size-12 mx-auto items-center justify-center rounded-lg bg-surface-muted border border-border text-muted-foreground">
+                <Filter className="size-5 text-muted-foreground" />
               </div>
               <div className="space-y-1">
-                <p className="font-display font-bold text-base text-foreground">No organizations match your filters</p>
+                <p className="font-semibold text-sm text-foreground">No organizations match your filters</p>
                 <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
                   No records matched the current search criteria. Try clearing search keywords or resetting filters.
                 </p>
@@ -394,29 +386,29 @@ export default function OrganisationsPage() {
             </div>
           ) : (
             <div className="p-16 text-center space-y-4">
-              <div className="flex size-14 mx-auto items-center justify-center rounded-2xl bg-surface-elevated border border-border/80 text-muted-foreground">
-                <Building2 className="size-7" />
+              <div className="flex size-12 mx-auto items-center justify-center rounded-lg bg-surface-muted border border-border text-muted-foreground">
+                <Building2 className="size-5" />
               </div>
               <div className="space-y-1">
-                <p className="font-display font-bold text-base text-foreground">No organizations yet</p>
+                <p className="font-semibold text-sm text-foreground">No organizations yet</p>
                 <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                  Your partnership pipeline starts here. Add your first clinical target, corporate enterprise, or health entity to begin tracking outreach.
+                  Your partnership pipeline starts here. Add your first clinical target, enterprise account, or partner entity to begin tracking outreach.
                 </p>
               </div>
               <Button
                 variant="primary"
                 size="sm"
                 onClick={() => setCreateModalOpen(true)}
-                icon={<Plus className="size-4" />}
+                icon={<Plus className="size-3.5" />}
               >
-                + Add Organization
+                Add Organization
               </Button>
             </div>
           )
         ) : (
           <>
             {/* Mobile Card Feed (< md) */}
-            <div className="md:hidden divide-y divide-border/60">
+            <div className="md:hidden divide-y divide-border">
               {organisations.map((org) => {
                 const isSelected = selectedIds.includes(org.id)
                 return (
@@ -424,7 +416,7 @@ export default function OrganisationsPage() {
                     key={`mobile-${org.id}`}
                     className={cn(
                       'p-4 space-y-3 transition-colors',
-                      isSelected ? 'bg-primary/5' : 'hover:bg-surface-elevated/40',
+                      isSelected ? 'bg-primary/5' : 'hover:bg-surface-hover',
                     )}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -440,7 +432,7 @@ export default function OrganisationsPage() {
                           )}
                           <Link
                             href={`/organisations/${org.id}`}
-                            className="font-bold text-sm text-foreground hover:text-primary transition-colors truncate block"
+                            className="font-semibold text-sm text-foreground hover:text-primary transition-colors truncate block"
                           >
                             {org.name}
                           </Link>
@@ -470,13 +462,13 @@ export default function OrganisationsPage() {
                         >
                           {org.priority}
                         </Badge>
-                        <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-surface-elevated text-muted-foreground border border-border">
+                        <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-surface-muted text-muted-foreground border border-border">
                           {org.status}
                         </span>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-xs pt-2 border-t border-border/40 text-muted-foreground">
+                    <div className="flex items-center justify-between text-xs pt-2 border-t border-border text-muted-foreground">
                       <div className="flex items-center gap-1.5">
                         {org.assignedTo ? (
                           <>
@@ -490,7 +482,7 @@ export default function OrganisationsPage() {
                         )}
                       </div>
                       {org.nextFollowupAt && (
-                        <span className="text-[11px] font-mono text-amber-500 font-semibold flex items-center gap-1">
+                        <span className="text-[11px] font-mono text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
                           <Calendar className="size-3" />
                           {formatDate(org.nextFollowupAt)}
                         </span>
@@ -505,7 +497,7 @@ export default function OrganisationsPage() {
                           setActiveOrgForLog({ id: org.id, name: org.name })
                           setLogModalOpen(true)
                         }}
-                        className="text-xs text-primary font-semibold hover:bg-primary/10"
+                        className="text-xs text-primary font-semibold"
                       >
                         + Touchpoint
                       </Button>
@@ -513,7 +505,7 @@ export default function OrganisationsPage() {
                         <Button
                           variant="outline"
                           size="xs"
-                          className="text-xs border-border/80"
+                          className="text-xs"
                         >
                           Dossier
                         </Button>
@@ -526,232 +518,231 @@ export default function OrganisationsPage() {
 
             {/* Desktop Table (>= md) */}
             <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-left text-sm border-collapse">
-              <thead>
-                <tr className="border-b border-border/80 text-[11px] font-mono uppercase tracking-wider text-muted-foreground bg-surface-elevated/40">
-                  {isLeader && (
-                    <th className="py-3.5 px-4 w-10">
-                      <input
-                        type="checkbox"
-                        checked={
-                          selectedIds.length > 0 && selectedIds.length === organisations.length
-                        }
-                        onChange={(e) => handleSelectAll(e.target.checked)}
-                        className="size-3.5 rounded border-border text-primary bg-surface"
-                      />
-                    </th>
-                  )}
-                  <th className="py-3.5 px-4">Organization & Contacts</th>
-                  <th className="py-3.5 px-4">Domain & Category</th>
-                  <th className="py-3.5 px-4">Stage</th>
-                  <th className="py-3.5 px-4">Priority</th>
-                  <th className="py-3.5 px-4">Assigned Owner</th>
-                  <th className="py-3.5 px-4">Last Activity</th>
-                  <th className="py-3.5 px-4">Next Action</th>
-                  <th className="py-3.5 px-4 text-right">Quick Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {organisations.map((org) => {
-                  const isSelected = selectedIds.includes(org.id)
-                  return (
-                    <tr
-                      key={org.id}
-                      className={cn(
-                        'group hover:bg-surface-elevated/60 transition-colors duration-150',
-                        isSelected && 'bg-primary/5',
-                      )}
-                    >
-                      {isLeader && (
-                        <td className="py-3.5 px-4">
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => handleToggleSelect(org.id)}
-                            className="size-3.5 rounded border-border text-primary bg-surface"
-                          />
-                        </td>
-                      )}
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-border text-[11px] font-semibold text-muted-foreground bg-surface-muted/50">
+                    {isLeader && (
+                      <th className="py-3 px-3.5 w-10">
+                        <input
+                          type="checkbox"
+                          checked={
+                            selectedIds.length > 0 && selectedIds.length === organisations.length
+                          }
+                          onChange={(e) => handleSelectAll(e.target.checked)}
+                          className="size-3.5 rounded border-border text-primary bg-surface"
+                        />
+                      </th>
+                    )}
+                    <th className="py-3 px-3.5 font-semibold">Organization & Contacts</th>
+                    <th className="py-3 px-3.5 font-semibold">Domain & Category</th>
+                    <th className="py-3 px-3.5 font-semibold">Stage</th>
+                    <th className="py-3 px-3.5 font-semibold">Priority</th>
+                    <th className="py-3 px-3.5 font-semibold">Assigned Owner</th>
+                    <th className="py-3 px-3.5 font-semibold">Last Activity</th>
+                    <th className="py-3 px-3.5 font-semibold">Next Action</th>
+                    <th className="py-3 px-3.5 text-right font-semibold">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {organisations.map((org) => {
+                    const isSelected = selectedIds.includes(org.id)
+                    return (
+                      <tr
+                        key={org.id}
+                        className={cn(
+                          'group hover:bg-surface-hover transition-[background-color] duration-100',
+                          isSelected && 'bg-primary/5',
+                        )}
+                      >
+                        {isLeader && (
+                          <td className="py-3 px-3.5">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => handleToggleSelect(org.id)}
+                              className="size-3.5 rounded border-border text-primary bg-surface"
+                            />
+                          </td>
+                        )}
 
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-3">
-                          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary font-bold text-xs font-mono">
-                            {org.name.slice(0, 2).toUpperCase()}
-                          </div>
-                          <div className="min-w-0">
-                            <Link
-                              href={`/organisations/${org.id}`}
-                              className="font-bold text-xs text-foreground hover:text-primary transition-colors flex items-center gap-1.5"
-                            >
-                              <span className="truncate">{org.name}</span>
-                              <ChevronRight className="size-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </Link>
-                            <div className="text-[11px] text-muted-foreground flex items-center gap-2 mt-0.5">
-                              <span className="flex items-center gap-1">
-                                <Users className="size-3" />
-                                {org._count.contacts} {org._count.contacts === 1 ? 'contact' : 'contacts'}
-                              </span>
-                              <span>·</span>
-                              <span>{org.activityCount} touchpoints</span>
+                        <td className="py-3 px-3.5">
+                          <div className="flex items-center gap-2.5">
+                            <div className="flex size-7.5 shrink-0 items-center justify-center rounded-md bg-surface-muted border border-border text-foreground font-semibold text-[11px] font-mono">
+                              {org.name.slice(0, 2).toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <Link
+                                href={`/organisations/${org.id}`}
+                                className="font-semibold text-xs text-foreground hover:text-primary transition-colors flex items-center gap-1"
+                              >
+                                <span className="truncate">{org.name}</span>
+                                <ChevronRight className="size-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </Link>
+                              <div className="text-[11px] text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                                <span className="flex items-center gap-1">
+                                  <Users className="size-3" />
+                                  {org._count.contacts} {org._count.contacts === 1 ? 'contact' : 'contacts'}
+                                </span>
+                                <span>·</span>
+                                <span>{org.activityCount} touchpoints</span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      <td className="py-3.5 px-4 text-xs">
-                        <div className="font-medium text-foreground/90">{org.category || 'General Health'}</div>
-                        {org.domain ? (
-                          <div className="font-mono text-[10px] text-muted-foreground tracking-tight">
-                            {org.domain}
-                          </div>
-                        ) : org.location ? (
-                          <div className="text-[10px] text-muted-foreground">
-                            {org.location}
-                          </div>
-                        ) : null}
-                      </td>
+                        <td className="py-3 px-3.5 text-xs">
+                          <div className="font-medium text-foreground/90">{org.category || 'Clinical Partner'}</div>
+                          {org.domain ? (
+                            <div className="font-mono text-[10px] text-muted-foreground tracking-tight">
+                              {org.domain}
+                            </div>
+                          ) : org.location ? (
+                            <div className="text-[10px] text-muted-foreground">
+                              {org.location}
+                            </div>
+                          ) : null}
+                        </td>
 
-                      <td className="py-3.5 px-4">
-                        <Badge
-                          tone={
-                            org.status === 'PARTNERSHIP'
-                              ? 'emerald'
-                              : org.status === 'MEETING'
-                                ? 'violet'
-                                : org.status === 'INTERESTED'
+                        <td className="py-3 px-3.5">
+                          <Badge
+                            tone={
+                              org.status === 'PARTNERSHIP'
+                                ? 'emerald'
+                                : org.status === 'MEETING'
+                                  ? 'violet'
+                                  : org.status === 'INTERESTED'
+                                    ? 'amber'
+                                    : org.status === 'CONTACTED'
+                                      ? 'indigo'
+                                      : 'slate'
+                            }
+                            size="sm"
+                          >
+                            {org.status}
+                          </Badge>
+                        </td>
+
+                        <td className="py-3 px-3.5">
+                          <Badge
+                            tone={
+                              org.priority === 'HIGH'
+                                ? 'rose'
+                                : org.priority === 'MEDIUM'
                                   ? 'amber'
-                                  : org.status === 'CONTACTED'
-                                    ? 'indigo'
-                                    : 'slate'
-                          }
-                          size="sm"
-                          dot
-                        >
-                          {org.status}
-                        </Badge>
-                      </td>
+                                  : 'slate'
+                            }
+                            size="sm"
+                          >
+                            {org.priority}
+                          </Badge>
+                        </td>
 
-                      <td className="py-3.5 px-4">
-                        <Badge
-                          tone={
-                            org.priority === 'HIGH'
-                              ? 'rose'
-                              : org.priority === 'MEDIUM'
-                                ? 'amber'
-                                : 'slate'
-                          }
-                          size="sm"
-                        >
-                          {org.priority}
-                        </Badge>
-                      </td>
-
-                      <td className="py-3.5 px-4">
-                        {isLeader ? (
-                          <div className="flex items-center gap-1.5">
-                            {org.assignedTo && (
+                        <td className="py-3 px-3.5">
+                          {isLeader ? (
+                            <div className="flex items-center gap-1.5">
+                              {org.assignedTo && (
+                                <Avatar
+                                  name={org.assignedTo.name}
+                                  color={org.assignedTo.avatarColor}
+                                  size="xs"
+                                />
+                              )}
+                              <select
+                                value={org.assignedTo?.id || 'UNASSIGNED'}
+                                onChange={(e) => handleQuickReassign(org.id, e.target.value)}
+                                className="rounded border border-border bg-surface px-1.5 py-0.5 text-[11px] font-medium text-foreground focus:border-border-strong focus:outline-none cursor-pointer max-w-[130px] truncate"
+                                title="Reassign owner"
+                              >
+                                {currentUser && (
+                                  <option value={currentUser.id}>
+                                    Me ({currentUser.name})
+                                  </option>
+                                )}
+                                <option value="UNASSIGNED">Unassigned</option>
+                                <optgroup label="Team Members">
+                                  {usersList
+                                    .filter((u) => u.id !== currentUser?.id)
+                                    .map((u) => (
+                                      <option key={u.id} value={u.id}>
+                                        {u.name}
+                                      </option>
+                                    ))}
+                                </optgroup>
+                              </select>
+                            </div>
+                          ) : org.assignedTo ? (
+                            <div className="flex items-center gap-1.5">
                               <Avatar
                                 name={org.assignedTo.name}
                                 color={org.assignedTo.avatarColor}
                                 size="xs"
                               />
-                            )}
-                            <select
-                              value={org.assignedTo?.id || 'UNASSIGNED'}
-                              onChange={(e) => handleQuickReassign(org.id, e.target.value)}
-                              className="rounded-lg border border-border/80 bg-surface px-2 py-1 text-[11px] font-semibold text-foreground focus:border-primary focus:outline-none cursor-pointer max-w-[135px] truncate"
-                              title="Reassign to self, unassigned, or others (Leader Control)"
-                            >
-                              {currentUser && (
-                                <option value={currentUser.id}>
-                                  Me ({currentUser.name})
-                                </option>
-                              )}
-                              <option value="UNASSIGNED">Unassigned</option>
-                              <optgroup label="Team Members">
-                                {usersList
-                                  .filter((u) => u.id !== currentUser?.id)
-                                  .map((u) => (
-                                    <option key={u.id} value={u.id}>
-                                      {u.name}
-                                    </option>
-                                  ))}
-                              </optgroup>
-                            </select>
-                          </div>
-                        ) : org.assignedTo ? (
-                          <div className="flex items-center gap-2">
-                            <Avatar
-                              name={org.assignedTo.name}
-                              color={org.assignedTo.avatarColor}
-                              size="xs"
-                            />
-                            <span className="text-xs font-medium text-foreground truncate max-w-[110px]">
-                              {org.assignedTo.name}
+                              <span className="text-xs font-medium text-foreground truncate max-w-[110px]">
+                                {org.assignedTo.name}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground italic font-mono text-[11px]">
+                              Unassigned
                             </span>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground italic font-mono text-[11px]">
-                            Unassigned
-                          </span>
-                        )}
-                      </td>
+                          )}
+                        </td>
 
-                      <td className="py-3.5 px-4 text-xs text-muted-foreground whitespace-nowrap font-mono text-[11px]">
-                        {org.lastContactedAt ? formatDate(org.lastContactedAt) : 'No outreach'}
-                      </td>
+                        <td className="py-3 px-3.5 text-xs text-muted-foreground whitespace-nowrap font-mono text-[11px]">
+                          {org.lastContactedAt ? formatDate(org.lastContactedAt) : 'No outreach'}
+                        </td>
 
-                      <td className="py-3.5 px-4 text-xs whitespace-nowrap">
-                        {org.nextFollowupAt ? (
-                          <span className="font-semibold text-amber-500 font-mono text-[11px] flex items-center gap-1">
-                            <Calendar className="size-3 text-amber-500" />
-                            {formatDate(org.nextFollowupAt)}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground/60 text-[11px]">—</span>
-                        )}
-                      </td>
+                        <td className="py-3 px-3.5 text-xs whitespace-nowrap">
+                          {org.nextFollowupAt ? (
+                            <span className="font-semibold text-amber-600 dark:text-amber-400 font-mono text-[11px] flex items-center gap-1">
+                              <Calendar className="size-3" />
+                              {formatDate(org.nextFollowupAt)}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground/60 text-[11px]">—</span>
+                          )}
+                        </td>
 
-                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
-                          <Button
-                            variant="ghost"
-                            size="xs"
-                            onClick={() => {
-                              setActiveOrgForLog({ id: org.id, name: org.name })
-                              setLogModalOpen(true)
-                            }}
-                            className="text-xs text-primary hover:bg-primary/10 font-semibold"
-                          >
-                            + Touchpoint
-                          </Button>
-                          <Link href={`/organisations/${org.id}`}>
+                        <td className="py-3 px-3.5 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
                             <Button
-                              variant="outline"
+                              variant="ghost"
                               size="xs"
-                              className="text-xs border-border/80 hover:bg-surface-elevated"
+                              onClick={() => {
+                                setActiveOrgForLog({ id: org.id, name: org.name })
+                                setLogModalOpen(true)
+                              }}
+                              className="text-xs text-primary font-medium"
                             >
-                              Dossier
+                              + Touchpoint
                             </Button>
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+                            <Link href={`/organisations/${org.id}`}>
+                              <Button
+                                variant="outline"
+                                size="xs"
+                                className="text-xs"
+                              >
+                                Dossier
+                              </Button>
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           </>
         )}
 
         {/* Pagination footer */}
         {pageCount > 1 && (
-          <div className="flex items-center justify-between border-t border-border/80 px-4 py-3 text-xs text-muted-foreground bg-surface-elevated/30">
+          <div className="flex items-center justify-between border-t border-border px-4 py-2.5 text-xs text-muted-foreground bg-surface-muted/30">
             <div className="font-mono text-[11px]">
-              Showing page <span className="text-foreground font-bold">{page}</span> of {pageCount} ({total} entities)
+              Showing page <span className="text-foreground font-semibold">{page}</span> of {pageCount} ({total} entities)
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <Button
                 variant="outline"
                 size="xs"

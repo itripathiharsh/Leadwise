@@ -221,36 +221,36 @@ export function DashboardShell({
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-64 flex-col border-r border-border/80 bg-surface/90 backdrop-blur-xl shrink-0 z-20">
+      <aside className="hidden lg:flex w-60 flex-col border-r border-border bg-surface shrink-0 z-20">
         {/* Brand */}
-        <div className="flex h-16 items-center justify-between px-5 border-b border-border/80">
-          <Link href="/dashboard" prefetch={true} className="flex items-center gap-3 group">
+        <div className="flex h-14 items-center justify-between px-4 border-b border-border">
+          <Link href="/dashboard" prefetch={true} className="flex items-center gap-2.5 group">
             <Image
               src="/logo-white-text.png"
               alt="Leadwise"
-              width={160}
-              height={36}
+              width={140}
+              height={32}
               priority
-              className="h-9 w-auto max-w-[160px] object-contain drop-shadow-[0_0_15px_rgba(99,102,241,0.35)] group-hover:scale-105 transition-transform duration-200 hidden dark:block"
+              className="h-8 w-auto max-w-[140px] object-contain hidden dark:block"
             />
             <Image
               src="/logo-dark-text.png"
               alt="Leadwise"
-              width={160}
-              height={36}
+              width={140}
+              height={32}
               priority
-              className="h-9 w-auto max-w-[160px] object-contain group-hover:scale-105 transition-transform duration-200 block dark:hidden"
+              className="h-8 w-auto max-w-[140px] object-contain block dark:hidden"
             />
           </Link>
         </div>
 
         {/* Quick Action Button */}
-        <div className="p-3.5 border-b border-border/60">
+        <div className="p-3 border-b border-border/70">
           <Button
             variant="primary"
             size="sm"
             onClick={() => setLogModalOpen(true)}
-            className="w-full justify-center shadow-xs font-semibold h-9 text-xs"
+            className="w-full justify-center font-semibold h-8 text-xs"
             icon={<Plus className="size-3.5" />}
           >
             Log Activity
@@ -258,10 +258,10 @@ export function DashboardShell({
         </div>
 
         {/* Navigation Groups */}
-        <nav className="flex-1 overflow-y-auto p-3 space-y-4 scrollbar-slim">
+        <nav className="flex-1 overflow-y-auto p-2.5 space-y-3.5 scrollbar-slim">
           {navGroups.map((group) => (
-            <div key={group.title} className="space-y-1">
-              <div className="px-2.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
+            <div key={group.title} className="space-y-0.5">
+              <div className="px-2.5 py-1 text-[11px] font-semibold text-muted-foreground/80">
                 {group.title}
               </div>
               <div className="space-y-0.5">
@@ -277,15 +277,12 @@ export function DashboardShell({
                       href={item.href}
                       prefetch={true}
                       className={cn(
-                        'relative flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all duration-150',
+                        'relative flex items-center gap-2.5 px-2.5 py-1.5 text-xs font-medium transition-[background-color,color] duration-120',
                         active
-                          ? 'bg-primary/15 text-primary font-semibold border border-primary/30 shadow-[0_0_12px_-3px_rgba(99,102,241,0.25)]'
-                          : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground border border-transparent',
+                          ? 'bg-primary/10 text-primary font-semibold border-l-2 border-primary rounded-r-md rounded-l-none pl-2'
+                          : 'text-muted-foreground hover:bg-surface-hover hover:text-foreground rounded-md border-l-2 border-transparent',
                       )}
                     >
-                      {active && (
-                        <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-primary shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
-                      )}
                       <Icon className={cn('size-4 shrink-0', active ? 'text-primary' : 'text-muted-foreground')} />
                       <span>{item.label}</span>
                     </Link>
@@ -297,12 +294,12 @@ export function DashboardShell({
         </nav>
 
         {/* User Card & Logout Footer */}
-        <div className="p-3 border-t border-border/80">
-          <div className="flex items-center justify-between rounded-xl bg-surface-muted/70 p-2.5 border border-border/80">
+        <div className="p-2.5 border-t border-border">
+          <div className="flex items-center justify-between rounded-lg bg-surface-muted p-2 border border-border">
             <Link
               href="/profile"
               prefetch={true}
-              className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-80 transition-opacity"
+              className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-85 transition-opacity"
               title="View my profile"
             >
               <Avatar
@@ -321,25 +318,25 @@ export function DashboardShell({
               onClick={handleLogout}
               title="Sign out"
               aria-label="Sign out"
-              className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-destructive transition-colors shrink-0"
+              className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-surface-hover hover:text-destructive transition-colors shrink-0"
             >
               <LogOut className="size-3.5" />
             </button>
           </div>
 
           {/* Keyboard Shortcuts Help Button */}
-          <div className="px-3 pb-3">
+          <div className="pt-2 px-1">
             <button
               type="button"
               onClick={() => setShortcutsOpen(true)}
-              className="w-full flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-colors border border-transparent hover:border-border/60"
+              className="w-full flex items-center justify-between rounded-md px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors"
               title="Keyboard shortcuts (?)"
             >
-              <span className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5">
                 <Keyboard className="size-3.5" />
                 <span>Shortcuts</span>
               </span>
-              <kbd className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-semibold border border-border">?</kbd>
+              <kbd className="rounded bg-surface-muted px-1.5 py-0.2 text-[9px] font-mono text-muted-foreground border border-border">?</kbd>
             </button>
           </div>
         </div>
@@ -348,46 +345,46 @@ export function DashboardShell({
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col min-w-0">
         {/* Top Header Bar */}
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border/80 bg-surface/85 px-4 sm:px-6 backdrop-blur-xl rim-highlight">
+        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-surface px-4 sm:px-6">
           <div className="flex items-center gap-3">
             {/* Mobile Nav Toggle */}
             <button
               type="button"
               onClick={() => setMobileNavOpen(true)}
               aria-label="Open navigation menu"
-              className="inline-flex lg:hidden size-9 items-center justify-center rounded-lg border border-border bg-surface text-foreground"
+              className="inline-flex lg:hidden size-8 items-center justify-center rounded-md border border-border bg-surface text-foreground"
             >
-              <Menu className="size-5" />
+              <Menu className="size-4" />
             </button>
 
             {/* Quick Global Search Trigger */}
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
-              className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-border-strong hover:bg-muted shadow-xs w-48 sm:w-72"
+              className="flex items-center gap-2 rounded-md border border-border bg-surface px-2.5 py-1 text-xs text-muted-foreground transition-[border-color,background-color] duration-120 hover:border-border-strong hover:bg-surface-hover shadow-xs w-48 sm:w-64"
             >
               <Search className="size-3.5" />
-              <span className="truncate">Search Leadwise...</span>
-              <kbd className="ml-auto rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground border border-border">
+              <span className="truncate">Search Command (Cmd+K)...</span>
+              <kbd className="ml-auto rounded bg-surface-muted px-1.5 py-0.2 text-[10px] font-mono text-muted-foreground border border-border">
                 ⌘K
               </kbd>
             </button>
 
-            {/* Nocturne Telemetry Badge */}
-            <div className="hidden xl:flex items-center gap-2 px-3 py-1 rounded-full border border-border/80 bg-surface-muted/60 backdrop-blur-md text-[11px] font-mono text-muted-foreground">
-              <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>LEADWISE SYNC ACTIVE</span>
+            {/* Operational Sync State */}
+            <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-0.5 rounded-md border border-border bg-surface-muted text-[11px] font-mono text-muted-foreground">
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+              <span>Synced</span>
             </div>
           </div>
 
           {/* Right Header Actions: Unified Global Quick Action & Notification Center */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="primary"
                   size="sm"
-                  className="font-semibold shadow-xs flex items-center gap-1.5 px-3 py-1.5 h-8 text-xs cursor-pointer"
+                  className="font-semibold shadow-xs flex items-center gap-1.5 px-3 py-1 h-8 text-xs cursor-pointer"
                 >
                   <Plus className="size-3.5" />
                   <span>New</span>
@@ -506,17 +503,17 @@ export function DashboardShell({
         {/* Mobile Bottom Navigation Bar for rapid thumb access */}
         <nav
           aria-label="Mobile Navigation Bar"
-          className="lg:hidden fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-border/80 bg-surface/95 backdrop-blur-xl px-3 shadow-2xl"
+          className="lg:hidden fixed bottom-0 left-0 right-0 z-40 flex h-14 items-center justify-around border-t border-border bg-surface px-3 shadow-lg"
         >
           <Link
             href="/dashboard"
             prefetch={true}
             className={cn(
               'flex flex-col items-center gap-1 text-[10px] font-medium transition-colors',
-              pathname === '/dashboard' ? 'text-primary font-bold' : 'text-muted-foreground hover:text-foreground'
+              pathname === '/dashboard' ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            <LayoutDashboard className="size-4.5" />
+            <LayoutDashboard className="size-4" />
             <span>Overview</span>
           </Link>
 
@@ -525,10 +522,10 @@ export function DashboardShell({
             prefetch={true}
             className={cn(
               'flex flex-col items-center gap-1 text-[10px] font-medium transition-colors',
-              pathname.startsWith('/organisations') ? 'text-primary font-bold' : 'text-muted-foreground hover:text-foreground'
+              pathname.startsWith('/organisations') ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            <Building2 className="size-4.5" />
+            <Building2 className="size-4" />
             <span>Entities</span>
           </Link>
 
@@ -536,11 +533,11 @@ export function DashboardShell({
           <button
             type="button"
             onClick={() => setLogModalOpen(true)}
-            className="flex size-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/30 -mt-5 active:scale-95 transition-transform cursor-pointer"
+            className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-transform active:scale-95 cursor-pointer shadow-xs"
             aria-label="Log activity"
             title="Log Touchpoint"
           >
-            <Plus className="size-5" />
+            <Plus className="size-4" />
           </button>
 
           <Link
@@ -548,10 +545,10 @@ export function DashboardShell({
             prefetch={true}
             className={cn(
               'flex flex-col items-center gap-1 text-[10px] font-medium transition-colors',
-              pathname.startsWith('/pipeline') ? 'text-primary font-bold' : 'text-muted-foreground hover:text-foreground'
+              pathname.startsWith('/pipeline') ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            <Kanban className="size-4.5" />
+            <Kanban className="size-4" />
             <span>Pipeline</span>
           </Link>
 
@@ -560,10 +557,10 @@ export function DashboardShell({
             prefetch={true}
             className={cn(
               'flex flex-col items-center gap-1 text-[10px] font-medium transition-colors',
-              pathname.startsWith('/followups') ? 'text-primary font-bold' : 'text-muted-foreground hover:text-foreground'
+              pathname.startsWith('/followups') ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            <CalendarClock className="size-4.5" />
+            <CalendarClock className="size-4" />
             <span>Cadence</span>
           </Link>
         </nav>
@@ -572,7 +569,7 @@ export function DashboardShell({
       {/* Mobile Navigation Drawer */}
       <DialogPrimitive.Root open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
         <DialogPrimitive.Portal>
-          <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-[2px] animate-in fade-in" />
+          <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-xs animate-in fade-in" />
           <DialogPrimitive.Content
             aria-describedby={undefined}
             className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-surface border-r border-border shadow-xl p-4 space-y-4 outline-none animate-in slide-in-from-left duration-200"
@@ -583,16 +580,16 @@ export function DashboardShell({
                 <Image
                   src="/logo-white-text.png"
                   alt="Leadwise"
-                  width={130}
-                  height={28}
-                  className="h-7 w-auto max-w-[130px] object-contain drop-shadow-[0_0_12px_rgba(99,102,241,0.3)] hidden dark:block"
+                  width={124}
+                  height={26}
+                  className="h-6 w-auto max-w-[124px] object-contain hidden dark:block"
                 />
                 <Image
                   src="/logo-dark-text.png"
                   alt="Leadwise"
-                  width={130}
-                  height={28}
-                  className="h-7 w-auto max-w-[130px] object-contain block dark:hidden"
+                  width={124}
+                  height={26}
+                  className="h-6 w-auto max-w-[124px] object-contain block dark:hidden"
                 />
               </div>
               <DialogPrimitive.Close

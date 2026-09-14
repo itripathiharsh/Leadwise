@@ -73,21 +73,21 @@ export function MetricCard({
 
   const toneGlows: Partial<Record<Tone, string>> = {
     slate: 'hover:border-border-strong',
-    indigo: 'hover:border-primary/50 hover:shadow-[0_4px_20px_-4px_rgba(99,102,241,0.2)]',
-    blue: 'hover:border-blue-500/50 hover:shadow-[0_4px_20px_-4px_rgba(59,130,246,0.2)]',
-    cyan: 'hover:border-accent/50 hover:shadow-[0_4px_20px_-4px_rgba(6,182,212,0.2)]',
-    emerald: 'hover:border-emerald-500/50 hover:shadow-[0_4px_20px_-4px_rgba(16,185,129,0.2)]',
-    amber: 'hover:border-amber-500/50 hover:shadow-[0_4px_20px_-4px_rgba(245,158,11,0.2)]',
-    rose: 'hover:border-rose-500/50 hover:shadow-[0_4px_20px_-4px_rgba(244,63,94,0.2)]',
+    indigo: 'hover:border-primary/60 hover:shadow-sm',
+    blue: 'hover:border-blue-500/60 hover:shadow-sm',
+    cyan: 'hover:border-cyan-500/60 hover:shadow-sm',
+    emerald: 'hover:border-emerald-500/60 hover:shadow-sm',
+    amber: 'hover:border-amber-500/60 hover:shadow-sm',
+    rose: 'hover:border-rose-500/60 hover:shadow-sm',
   }
 
   const shell = cn(
-    'group relative flex flex-col rounded-xl border bg-card/90 backdrop-blur-md p-4.5 shadow-xs rim-highlight transition-all duration-200 ease-out',
+    'group relative flex flex-col rounded-lg border bg-card p-4 shadow-xs transition-[border-color,box-shadow,transform] duration-140 ease-out',
     emphasis
-      ? 'border-primary/40 bg-gradient-to-b from-primary-soft/25 to-card'
-      : 'border-border/80',
-    href && 'cursor-pointer hover:-translate-y-0.5 active:translate-y-0',
-    href && (toneGlows[tone] || 'hover:border-primary/40 hover:shadow-md'),
+      ? 'border-primary/50 bg-primary-soft/10'
+      : 'border-border',
+    href && 'cursor-pointer hover:border-border-strong hover:shadow-sm active:translate-y-0',
+    href && toneGlows[tone],
     className,
   )
 

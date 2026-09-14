@@ -240,23 +240,23 @@ export default function TeamPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-8 p-4 sm:p-6 lg:p-8">
       {/* Executive Command Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/80 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary shadow-xs">
+            <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 border border-primary/20 text-primary">
               <Users className="size-5" />
             </div>
             <div>
               <div className="flex items-center gap-2.5">
-                <h1 className="font-display font-extrabold text-2xl tracking-tight text-foreground">
-                  Team Operations & Velocity
+                <h1 className="font-display font-bold text-2xl tracking-tight text-foreground">
+                  Team Operations & Governance
                 </h1>
-                <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-surface-elevated text-primary border border-primary/20 font-bold">
+                <span className="font-mono text-xs px-2 py-0.5 rounded bg-surface-elevated text-primary border border-border tabular-nums font-medium">
                   {users.length} Active Accounts
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Governance, RBAC privileges, and multi-channel 7-day outreach velocity matrix.
+                Role-based access control, territory governance, and 7-day outreach velocity matrix.
               </p>
             </div>
           </div>
@@ -268,7 +268,7 @@ export default function TeamPage() {
             size="sm"
             onClick={fetchData}
             icon={<RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />}
-            className="border-border hover:bg-surface-elevated"
+            className="border-border hover:bg-surface-elevated text-xs"
           >
             Refresh
           </Button>
@@ -277,27 +277,27 @@ export default function TeamPage() {
             size="sm"
             onClick={() => setCreateModalOpen(true)}
             icon={<UserPlus className="size-4" />}
-            className="shadow-md shadow-primary/20 font-semibold"
+            className="font-medium text-xs shadow-xs"
           >
-            + Add Team Member
+            Add Team Member
           </Button>
         </div>
       </div>
 
       {/* Pending Access Requests (TL/Owner Review) */}
       {pendingUsers.length > 0 && (
-        <div className="rounded-2xl border border-amber-500/40 bg-amber-500/5 backdrop-blur-xl p-6 shadow-lg space-y-4 rim-highlight animate-in fade-in slide-in-from-top-2">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-500/20 pb-3">
+        <div className="rounded-lg border border-amber-500/30 bg-surface-panel p-5 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border pb-3">
             <div className="flex items-center gap-3">
-              <div className="flex size-9 items-center justify-center rounded-xl bg-amber-500/20 text-amber-500 border border-amber-500/30 shadow-xs">
-                <Clock className="size-5 animate-pulse" />
+              <div className="flex size-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                <Clock className="size-4" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-base font-bold text-foreground">
+                  <h2 className="text-sm font-semibold text-foreground">
                     Pending Access Requests
                   </h2>
-                  <span className="text-[11px] font-mono font-bold uppercase px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                  <span className="text-[11px] font-mono font-medium uppercase px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 tabular-nums">
                     {pendingUsers.length} Pending Review
                   </span>
                 </div>
@@ -312,39 +312,40 @@ export default function TeamPage() {
             {pendingUsers.map((pendingUser) => (
               <div
                 key={pendingUser.id}
-                className="flex flex-col justify-between rounded-xl border border-border/80 bg-surface/90 p-4 space-y-3.5 shadow-sm"
+                className="flex flex-col justify-between rounded-lg border border-border bg-surface-card p-4 space-y-3.5"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <Avatar name={pendingUser.name} color={pendingUser.avatarColor} size="md" />
                     <div className="min-w-0">
-                      <div className="font-bold text-sm text-foreground truncate">
+                      <div className="font-semibold text-sm text-foreground truncate">
                         {pendingUser.name}
                       </div>
                       <div className="font-mono text-xs text-muted-foreground truncate">
                         {pendingUser.email}
                       </div>
                       {pendingUser.phone && (
-                        <div className="text-[11px] text-muted-foreground mt-0.5">
-                          📞 {pendingUser.phone}
+                        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mt-0.5 font-mono">
+                          <Phone className="size-3 text-muted-foreground" aria-hidden="true" />
+                          <span>{pendingUser.phone}</span>
                         </div>
                       )}
                     </div>
                   </div>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-semibold shrink-0">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-elevated text-muted-foreground border border-border shrink-0 tabular-nums">
                     {formatDateTime(pendingUser.createdAt)}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between gap-3 pt-2 border-t border-border/60">
+                <div className="flex items-center justify-between gap-3 pt-2 border-t border-border">
                   <div className="flex items-center gap-2">
-                    <label className="text-[11px] font-semibold text-muted-foreground">Assign Role:</label>
+                    <label className="text-[11px] font-medium text-muted-foreground">Role:</label>
                     <select
                       value={selectedRoles[pendingUser.id] || 'INTERN'}
                       onChange={(e) =>
                         setSelectedRoles((prev) => ({ ...prev, [pendingUser.id]: e.target.value }))
                       }
-                      className="rounded-lg border border-border bg-surface-elevated px-2 py-1 text-xs text-foreground font-medium focus:border-primary focus:outline-none"
+                      className="rounded border border-border bg-surface-elevated px-2 py-1 text-xs text-foreground font-medium focus:border-primary focus:outline-none"
                     >
                       <option value="INTERN">Intern (Scoped)</option>
                       <option value="TL">Team Lead (Executive)</option>
@@ -357,8 +358,8 @@ export default function TeamPage() {
                       size="xs"
                       onClick={() => handleReviewUser(pendingUser.id, 'REJECT')}
                       disabled={reviewingId === pendingUser.id}
-                      icon={<XCircle className="size-3.5 text-rose-500" />}
-                      className="hover:bg-rose-500/10 hover:text-rose-500 hover:border-rose-500/30 text-xs"
+                      icon={<XCircle className="size-3.5 text-rose-400" />}
+                      className="hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/30 text-xs"
                     >
                       Reject
                     </Button>
@@ -368,9 +369,9 @@ export default function TeamPage() {
                       onClick={() => handleReviewUser(pendingUser.id, 'APPROVE')}
                       loading={reviewingId === pendingUser.id}
                       icon={<CheckCircle2 className="size-3.5" />}
-                      className="shadow-xs font-semibold text-xs"
+                      className="text-xs font-medium"
                     >
-                      Approve & Grant Access
+                      Approve Access
                     </Button>
                   </div>
                 </div>
@@ -381,48 +382,48 @@ export default function TeamPage() {
       )}
 
       {/* 7-Day Team Performance Matrix */}
-      <div className="glass-card rounded-2xl border border-border/90 bg-surface/80 shadow-md overflow-hidden rim-highlight space-y-3 p-6">
-        <div className="flex items-center justify-between border-b border-border/60 pb-3">
+      <div className="rounded-lg border border-border bg-surface-panel overflow-hidden space-y-3 p-5">
+        <div className="flex items-center justify-between border-b border-border pb-3">
           <div className="flex items-center gap-2.5">
-            <BarChart3 className="size-5 text-primary" />
+            <BarChart3 className="size-4 text-primary" />
             <div>
-              <h2 className="text-sm font-bold text-foreground">7-Day Team Outreach Leaderboard</h2>
+              <h2 className="text-sm font-semibold text-foreground">7-Day Team Outreach Velocity</h2>
               <p className="text-xs text-muted-foreground">Comparative touchpoints, responses, and territory ownership across reps.</p>
             </div>
           </div>
-          <span className="font-mono text-[10px] font-bold uppercase text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-            Real-time Metrics
+          <span className="font-mono text-[10px] font-medium uppercase text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 tabular-nums">
+            Active Ledger
           </span>
         </div>
 
-        <div className="overflow-x-auto pt-2">
+        <div className="overflow-x-auto pt-1">
           <table className="w-full text-left text-sm border-collapse">
             <thead>
-              <tr className="border-b border-border/80 text-[11px] font-mono uppercase tracking-wider text-muted-foreground bg-surface-elevated/40">
-                <th className="py-3 px-3">Team Member</th>
-                <th className="py-3 px-3">Role</th>
-                <th className="py-3 px-3 text-right">Calls (7d)</th>
-                <th className="py-3 px-3 text-right">Emails (7d)</th>
-                <th className="py-3 px-3 text-right">LinkedIn (7d)</th>
-                <th className="py-3 px-3 text-right">Responses</th>
-                <th className="py-3 px-3 text-right">Interested</th>
-                <th className="py-3 px-3 text-right">Held Accounts</th>
+              <tr className="border-b border-border text-[11px] font-mono uppercase tracking-wider text-muted-foreground bg-surface-elevated/40">
+                <th className="py-2.5 px-3">Team Member</th>
+                <th className="py-2.5 px-3">Role</th>
+                <th className="py-2.5 px-3 text-right">Calls (7d)</th>
+                <th className="py-2.5 px-3 text-right">Emails (7d)</th>
+                <th className="py-2.5 px-3 text-right">LinkedIn (7d)</th>
+                <th className="py-2.5 px-3 text-right">Responses</th>
+                <th className="py-2.5 px-3 text-right">Interested</th>
+                <th className="py-2.5 px-3 text-right">Held Accounts</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/60">
+            <tbody className="divide-y divide-border">
               {performance.map((item) => (
-                <tr key={item.id} className="hover:bg-surface-elevated/60 transition-colors">
-                  <td className="py-3.5 px-3">
-                    <div className="flex items-center gap-3">
+                <tr key={item.id} className="hover:bg-surface-elevated/50 transition-colors">
+                  <td className="py-3 px-3">
+                    <div className="flex items-center gap-2.5">
                       <Avatar name={item.name} color={item.avatarColor} size="sm" />
                       <div>
-                        <div className="font-bold text-xs text-foreground">{item.name}</div>
+                        <div className="font-medium text-xs text-foreground">{item.name}</div>
                         <div className="font-mono text-[10px] text-muted-foreground">{item.email}</div>
                       </div>
                     </div>
                   </td>
 
-                  <td className="py-3.5 px-3">
+                  <td className="py-3 px-3">
                     <Badge
                       tone={
                         item.role === 'OWNER'
@@ -437,16 +438,16 @@ export default function TeamPage() {
                     </Badge>
                   </td>
 
-                  <td className="py-3.5 px-3 text-right font-mono text-xs text-foreground/90">{item.week.calls}</td>
-                  <td className="py-3.5 px-3 text-right font-mono text-xs text-foreground/90">{item.week.emails}</td>
-                  <td className="py-3.5 px-3 text-right font-mono text-xs text-foreground/90">{item.week.linkedin}</td>
-                  <td className="py-3.5 px-3 text-right font-mono text-xs font-bold text-teal-400">
+                  <td className="py-3 px-3 text-right font-mono text-xs text-foreground tabular-nums">{item.week.calls}</td>
+                  <td className="py-3 px-3 text-right font-mono text-xs text-foreground tabular-nums">{item.week.emails}</td>
+                  <td className="py-3 px-3 text-right font-mono text-xs text-foreground tabular-nums">{item.week.linkedin}</td>
+                  <td className="py-3 px-3 text-right font-mono text-xs font-semibold text-teal-400 tabular-nums">
                     {item.week.responses}
                   </td>
-                  <td className="py-3.5 px-3 text-right font-mono text-xs font-bold text-amber-400">
+                  <td className="py-3 px-3 text-right font-mono text-xs font-semibold text-amber-400 tabular-nums">
                     {item.week.interested}
                   </td>
-                  <td className="py-3.5 px-3 text-right font-mono font-bold text-xs text-foreground">
+                  <td className="py-3 px-3 text-right font-mono font-semibold text-xs text-foreground tabular-nums">
                     {item.assignedOrganisations}
                   </td>
                 </tr>
@@ -457,42 +458,42 @@ export default function TeamPage() {
       </div>
 
       {/* Users List & Accounts */}
-      <div className="glass-card rounded-2xl border border-border/90 bg-surface/80 shadow-md overflow-hidden rim-highlight space-y-3 p-6">
-        <div className="flex items-center justify-between border-b border-border/60 pb-3">
+      <div className="rounded-lg border border-border bg-surface-panel overflow-hidden space-y-3 p-5">
+        <div className="flex items-center justify-between border-b border-border pb-3">
           <div className="flex items-center gap-2.5">
-            <Shield className="size-5 text-primary" />
+            <Shield className="size-4 text-primary" />
             <div>
-              <h2 className="text-sm font-bold text-foreground">Authorized Accounts & Security State</h2>
+              <h2 className="text-sm font-semibold text-foreground">Authorized Accounts & Security State</h2>
               <p className="text-xs text-muted-foreground">Configured roles, session audit timestamps, and operational status.</p>
             </div>
           </div>
         </div>
 
-        <div className="overflow-x-auto pt-2">
+        <div className="overflow-x-auto pt-1">
           <table className="w-full text-left text-sm border-collapse">
             <thead>
-              <tr className="border-b border-border/80 text-[11px] font-mono uppercase tracking-wider text-muted-foreground bg-surface-elevated/40">
-                <th className="py-3 px-3">Name</th>
-                <th className="py-3 px-3">Email Address</th>
-                <th className="py-3 px-3">Phone</th>
-                <th className="py-3 px-3">Role</th>
-                <th className="py-3 px-3">Account State</th>
-                <th className="py-3 px-3">Last Active</th>
-                <th className="py-3 px-3 text-right">Actions</th>
+              <tr className="border-b border-border text-[11px] font-mono uppercase tracking-wider text-muted-foreground bg-surface-elevated/40">
+                <th className="py-2.5 px-3">Name</th>
+                <th className="py-2.5 px-3">Email Address</th>
+                <th className="py-2.5 px-3">Phone</th>
+                <th className="py-2.5 px-3">Role</th>
+                <th className="py-2.5 px-3">Account State</th>
+                <th className="py-2.5 px-3">Last Active</th>
+                <th className="py-2.5 px-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/60">
+            <tbody className="divide-y divide-border">
               {users.map((u) => (
-                <tr key={u.id} className="hover:bg-surface-elevated/60 transition-colors">
-                  <td className="py-3.5 px-3 font-bold text-xs text-foreground">
+                <tr key={u.id} className="hover:bg-surface-elevated/50 transition-colors">
+                  <td className="py-3 px-3 font-medium text-xs text-foreground">
                     <div className="flex items-center gap-2.5">
                       <Avatar name={u.name} color={u.avatarColor} size="xs" />
                       <span>{u.name}</span>
                     </div>
                   </td>
-                  <td className="py-3.5 px-3 text-xs font-mono text-muted-foreground">{u.email}</td>
-                  <td className="py-3.5 px-3 text-xs font-mono text-muted-foreground">{u.phone || '—'}</td>
-                  <td className="py-3.5 px-3">
+                  <td className="py-3 px-3 text-xs font-mono text-muted-foreground">{u.email}</td>
+                  <td className="py-3 px-3 text-xs font-mono text-muted-foreground">{u.phone || '—'}</td>
+                  <td className="py-3 px-3">
                     <Badge
                       tone={
                         u.role === 'OWNER'
@@ -506,28 +507,28 @@ export default function TeamPage() {
                       {u.role}
                     </Badge>
                   </td>
-                  <td className="py-3.5 px-3">
+                  <td className="py-3 px-3">
                     {u.status === 'DISCONTINUED' ? (
-                      <span className="inline-flex items-center gap-1 font-mono text-[11px] text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                      <span className="inline-flex items-center gap-1 font-mono text-[11px] text-amber-400 font-medium bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
                         <UserX className="size-3 text-amber-400" /> Discontinued
                       </span>
                     ) : u.isActive ? (
-                      <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                        <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-emerald-400 font-medium bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                        <span className="size-1.5 rounded-full bg-emerald-400" />
                         Active
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 font-mono text-[11px] text-rose-400 font-semibold bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
+                      <span className="inline-flex items-center gap-1 font-mono text-[11px] text-rose-400 font-medium bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
                         <XCircle className="size-3 text-rose-400" /> Inactive
                       </span>
                     )}
                   </td>
-                  <td className="py-3.5 px-3 text-xs font-mono text-muted-foreground">
+                  <td className="py-3 px-3 text-xs font-mono text-muted-foreground tabular-nums">
                     {u.lastLoginAt ? formatDateTime(u.lastLoginAt) : 'Never logged in'}
                   </td>
-                  <td className="py-3.5 px-3 text-right">
+                  <td className="py-3 px-3 text-right">
                     {u.id === currentUser?.id ? (
-                      <span className="text-[10px] font-mono text-muted-foreground font-semibold px-2 py-0.5 bg-surface-elevated rounded border border-border/60">
+                      <span className="text-[10px] font-mono text-muted-foreground font-medium px-2 py-0.5 bg-surface-elevated rounded border border-border">
                         Current Account
                       </span>
                     ) : u.role === 'INTERN' ? (
@@ -538,7 +539,7 @@ export default function TeamPage() {
                             size="xs"
                             onClick={() => setDiscontinueTarget(u)}
                             icon={<UserX className="size-3.5 text-amber-500" />}
-                            className="hover:bg-amber-500/10 hover:text-amber-500 hover:border-amber-500/40 text-xs font-semibold text-amber-600 dark:text-amber-400 shadow-xs"
+                            className="hover:bg-amber-500/10 hover:text-amber-400 hover:border-amber-500/40 text-xs font-medium text-amber-400 shadow-xs"
                             title="Discontinue intern and unassign active accounts"
                           >
                             Discontinue
@@ -549,7 +550,7 @@ export default function TeamPage() {
                             size="xs"
                             onClick={() => handleReactivate(u)}
                             icon={<UserCheck className="size-3.5 text-emerald-500" />}
-                            className="hover:bg-emerald-500/10 hover:text-emerald-500 hover:border-emerald-500/40 text-xs font-semibold text-emerald-600 dark:text-emerald-400 shadow-xs"
+                            className="hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/40 text-xs font-medium text-emerald-400 shadow-xs"
                             title="Reactivate intern access"
                           >
                             Reactivate
@@ -559,8 +560,8 @@ export default function TeamPage() {
                           variant="ghost"
                           size="xs"
                           onClick={() => setDeleteTarget(u)}
-                          icon={<Trash2 className="size-3 text-muted-foreground hover:text-rose-500" />}
-                          className="hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 p-1.5"
+                          icon={<Trash2 className="size-3 text-muted-foreground hover:text-rose-400" />}
+                          className="hover:bg-rose-500/10 text-muted-foreground hover:text-rose-400 p-1.5"
                           title="Delete intern permanently"
                         />
                       </div>
@@ -582,7 +583,7 @@ export default function TeamPage() {
         <DialogContent size="sm">
           <DialogHeader>
             <div className="flex items-center gap-2.5 text-amber-500">
-              <AlertTriangle className="size-5" />
+              <AlertTriangle className="size-4" />
               <DialogTitle>Discontinue Intern Access</DialogTitle>
             </div>
             <DialogDescription>
@@ -591,13 +592,13 @@ export default function TeamPage() {
           </DialogHeader>
 
           <DialogBody className="space-y-3 pt-2">
-            <div className="rounded-xl border border-border bg-surface-elevated/60 p-3.5 space-y-1.5 text-xs">
-              <div className="font-bold text-foreground">{discontinueTarget?.name}</div>
+            <div className="rounded-lg border border-border bg-surface-elevated/60 p-3 space-y-1 text-xs">
+              <div className="font-semibold text-foreground">{discontinueTarget?.name}</div>
               <div className="font-mono text-muted-foreground">{discontinueTarget?.email}</div>
             </div>
 
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-[11px] text-muted-foreground space-y-1">
-              <div className="font-semibold text-amber-500">System Impact:</div>
+            <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 text-[11px] text-muted-foreground space-y-1">
+              <div className="font-semibold text-amber-400">System Impact:</div>
               <ul className="list-disc list-inside space-y-0.5">
                 <li>Immediate session revocation and login lockout.</li>
                 <li>Any assigned organizations will be released back to the unassigned queue for reassignment.</li>
@@ -616,7 +617,7 @@ export default function TeamPage() {
               onClick={handleDiscontinue}
               loading={discontinuing}
               icon={<UserX className="size-4" />}
-              className="bg-amber-600 hover:bg-amber-700 text-white font-semibold"
+              className="bg-amber-600 hover:bg-amber-700 text-white font-medium"
             >
               Discontinue Intern
             </Button>
@@ -629,7 +630,7 @@ export default function TeamPage() {
         <DialogContent size="sm">
           <DialogHeader>
             <div className="flex items-center gap-2.5 text-rose-500">
-              <Trash2 className="size-5" />
+              <Trash2 className="size-4" />
               <DialogTitle>Delete Intern Account</DialogTitle>
             </div>
             <DialogDescription>
@@ -638,8 +639,8 @@ export default function TeamPage() {
           </DialogHeader>
 
           <DialogBody className="space-y-3 pt-2">
-            <div className="rounded-xl border border-border bg-surface-elevated/60 p-3.5 space-y-1.5 text-xs">
-              <div className="font-bold text-foreground">{deleteTarget?.name}</div>
+            <div className="rounded-lg border border-border bg-surface-elevated/60 p-3 space-y-1 text-xs">
+              <div className="font-semibold text-foreground">{deleteTarget?.name}</div>
               <div className="font-mono text-muted-foreground">{deleteTarget?.email}</div>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
@@ -656,7 +657,7 @@ export default function TeamPage() {
               onClick={handleDelete}
               loading={deleting}
               icon={<Trash2 className="size-4" />}
-              className="font-semibold"
+              className="font-medium"
             >
               Delete Intern
             </Button>

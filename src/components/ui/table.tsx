@@ -17,13 +17,13 @@ export function TableWrap({
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-xl border border-border bg-card shadow-xs',
+        'overflow-hidden rounded-lg border border-border bg-card shadow-xs',
         className,
       )}
       {...props}
     >
       <div
-        className="scrollbar-slim overflow-x-auto focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none rounded-xl"
+        className="scrollbar-slim overflow-x-auto focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none rounded-lg"
         tabIndex={0}
         role="region"
         aria-label="Scrollable data table"
@@ -46,7 +46,7 @@ export function Table({ className, ...props }: React.ComponentProps<'table'>) {
 export function THead({ className, ...props }: React.ComponentProps<'thead'>) {
   return (
     <thead
-      className={cn('sticky top-0 z-10 bg-surface-muted/95 backdrop-blur-sm', className)}
+      className={cn('sticky top-0 z-10 bg-surface-muted/95 border-b border-border', className)}
       {...props}
     />
   )
@@ -66,9 +66,9 @@ export function TR({
     <tr
       data-selected={selected || undefined}
       className={cn(
-        'transition-colors',
-        interactive && 'hover:bg-surface-muted/70',
-        selected && 'bg-primary-soft/45',
+        'transition-[background-color] duration-120 ease-out',
+        interactive && 'hover:bg-surface-hover/80',
+        selected && 'bg-primary-soft/40',
         className,
       )}
       {...props}

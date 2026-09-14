@@ -7,19 +7,14 @@ import {
   Clock,
   CheckCircle2,
   Phone,
-  Mail,
-  Building2,
   RefreshCw,
   AlertTriangle,
-  Flame,
   Check,
   Search,
   X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Avatar } from '@/components/ui/avatar'
-import { Card, CardContent } from '@/components/ui/card'
 import { LogActivityModal } from '@/components/domain/log-activity-modal'
 import { formatDate } from '@/lib/dates'
 import { toast } from 'sonner'
@@ -95,25 +90,25 @@ export default function FollowUpsPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 p-4 sm:p-6 lg:p-8">
-      {/* Executive Command Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/80 pb-5">
+    <div className="max-w-6xl mx-auto space-y-5 p-4 sm:p-6 lg:p-8">
+      {/* Precision Command Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-5">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary shadow-xs">
-              <CalendarClock className="size-5" />
+            <div className="flex size-9 items-center justify-center rounded-md bg-surface-muted text-foreground border border-border">
+              <CalendarClock className="size-4.5" />
             </div>
             <div>
               <div className="flex items-center gap-2.5">
-                <h1 className="font-display font-extrabold text-2xl tracking-tight text-foreground">
-                  Follow-ups & Cadence Tasks
+                <h1 className="font-sans font-bold text-xl sm:text-2xl tracking-tight text-foreground">
+                  Follow-ups & Cadence
                 </h1>
-                <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-surface-elevated text-primary border border-primary/20 font-bold">
+                <span className="font-mono text-xs px-2 py-0.5 rounded bg-surface-muted text-muted-foreground border border-border">
                   {total} In Queue
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Ensure zero lead cooling with scheduled partner callbacks, outreach reminders, and task completion.
+                Scheduled partner callbacks, touchpoint reminders, and cadence management.
               </p>
             </div>
           </div>
@@ -124,26 +119,25 @@ export default function FollowUpsPage() {
           size="sm"
           onClick={fetchFollowUps}
           icon={<RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />}
-          className="border-border hover:bg-surface-elevated"
         >
           Refresh Queue
         </Button>
       </div>
 
       {/* Segmented Bucket Selector Tabs & Search */}
-      <div className="glass-panel rounded-2xl border border-border/80 bg-surface/70 backdrop-blur-xl p-2.5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
+      <div className="rounded-lg border border-border bg-surface p-2.5 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-1 bg-surface-muted/60 p-1 rounded-md border border-border">
           <button
             type="button"
             onClick={() => setBucket('TODAY')}
             className={cn(
-              'px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 border flex items-center gap-2',
+              'px-3 py-1.5 rounded text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer',
               bucket === 'TODAY'
-                ? 'bg-amber-500/15 text-amber-400 border-amber-500/40 shadow-xs font-bold ring-1 ring-amber-500/20'
-                : 'bg-surface-elevated/60 text-muted-foreground border-border/70 hover:bg-surface-elevated hover:text-foreground',
+                ? 'bg-surface text-foreground shadow-xs'
+                : 'text-muted-foreground hover:text-foreground',
             )}
           >
-            <Clock className="size-3.5 text-amber-400" />
+            <Clock className="size-3.5 text-amber-500" />
             <span>Due Today</span>
           </button>
 
@@ -151,24 +145,24 @@ export default function FollowUpsPage() {
             type="button"
             onClick={() => setBucket('OVERDUE')}
             className={cn(
-              'px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 border flex items-center gap-2',
+              'px-3 py-1.5 rounded text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer',
               bucket === 'OVERDUE'
-                ? 'bg-rose-500/15 text-rose-400 border-rose-500/40 shadow-xs font-bold ring-1 ring-rose-500/20'
-                : 'bg-surface-elevated/60 text-muted-foreground border-border/70 hover:bg-surface-elevated hover:text-foreground',
+                ? 'bg-surface text-foreground shadow-xs'
+                : 'text-muted-foreground hover:text-foreground',
             )}
           >
-            <AlertTriangle className="size-3.5 text-rose-400" />
-            <span>Overdue Tasks</span>
+            <AlertTriangle className="size-3.5 text-rose-500" />
+            <span>Overdue</span>
           </button>
 
           <button
             type="button"
             onClick={() => setBucket('TOMORROW')}
             className={cn(
-              'px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 border flex items-center gap-2',
+              'px-3 py-1.5 rounded text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer',
               bucket === 'TOMORROW'
-                ? 'bg-blue-500/15 text-blue-400 border-blue-500/40 shadow-xs font-bold ring-1 ring-blue-500/20'
-                : 'bg-surface-elevated/60 text-muted-foreground border-border/70 hover:bg-surface-elevated hover:text-foreground',
+                ? 'bg-surface text-foreground shadow-xs'
+                : 'text-muted-foreground hover:text-foreground',
             )}
           >
             <span>Tomorrow</span>
@@ -178,13 +172,13 @@ export default function FollowUpsPage() {
             type="button"
             onClick={() => setBucket('UPCOMING')}
             className={cn(
-              'px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 border flex items-center gap-2',
+              'px-3 py-1.5 rounded text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer',
               bucket === 'UPCOMING'
-                ? 'bg-primary/15 text-primary border-primary/40 shadow-xs font-bold ring-1 ring-primary/20'
-                : 'bg-surface-elevated/60 text-muted-foreground border-border/70 hover:bg-surface-elevated hover:text-foreground',
+                ? 'bg-surface text-foreground shadow-xs'
+                : 'text-muted-foreground hover:text-foreground',
             )}
           >
-            <span>Upcoming Pipeline</span>
+            <span>Upcoming</span>
           </button>
         </div>
 
@@ -196,13 +190,13 @@ export default function FollowUpsPage() {
             placeholder="Search cadence tasks..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-border bg-surface-elevated/60 pl-9 pr-8 py-1.5 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary focus:bg-surface transition-all"
+            className="w-full rounded border border-border bg-surface-muted/60 pl-8 pr-7 py-1.5 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-border-strong"
           />
           {search && (
             <button
               type="button"
               onClick={() => setSearch('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-muted-foreground hover:text-foreground rounded transition-colors"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-muted-foreground hover:text-foreground rounded"
               title="Clear search"
             >
               <X className="size-3" />
@@ -212,21 +206,21 @@ export default function FollowUpsPage() {
       </div>
 
       {/* Follow-up Cards List */}
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {loading && followups.length === 0 ? (
           <div className="p-16 text-center space-y-3">
-            <RefreshCw className="size-6 mx-auto text-primary animate-spin" />
+            <RefreshCw className="size-5 mx-auto text-primary animate-spin" />
             <div className="font-semibold text-sm text-foreground">Syncing Cadence Tasks...</div>
             <p className="text-xs text-muted-foreground">Gathering scheduled touchpoint reminders.</p>
           </div>
         ) : filteredFollowups.length === 0 ? (
           search.trim() ? (
-            <div className="p-16 text-center space-y-4 rounded-2xl border border-border/80 bg-surface/60">
-              <div className="flex size-14 mx-auto items-center justify-center rounded-2xl bg-surface-elevated border border-border/80 text-muted-foreground">
-                <Search className="size-7 text-primary/70" />
+            <div className="p-16 text-center space-y-4 rounded-lg border border-border bg-surface">
+              <div className="flex size-12 mx-auto items-center justify-center rounded-lg bg-surface-muted border border-border text-muted-foreground">
+                <Search className="size-5" />
               </div>
               <div className="space-y-1">
-                <p className="font-display font-bold text-base text-foreground">No tasks match your search</p>
+                <p className="font-semibold text-sm text-foreground">No tasks match your search</p>
                 <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
                   No scheduled follow-ups matched &ldquo;{search.trim()}&rdquo; in this bucket.
                 </p>
@@ -241,14 +235,14 @@ export default function FollowUpsPage() {
               </Button>
             </div>
           ) : (
-            <div className="p-16 text-center space-y-4 rounded-2xl border border-border/80 bg-surface/60">
-              <div className="flex size-14 mx-auto items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                <CheckCircle2 className="size-7" />
+            <div className="p-16 text-center space-y-4 rounded-lg border border-border bg-surface">
+              <div className="flex size-12 mx-auto items-center justify-center rounded-lg bg-surface-muted border border-border text-emerald-500">
+                <CheckCircle2 className="size-6" />
               </div>
               <div className="space-y-1">
-                <p className="font-display font-bold text-base text-foreground">Zero pending follow-ups in this queue</p>
+                <p className="font-semibold text-sm text-foreground">Zero pending follow-ups in this queue</p>
                 <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                  All scheduled outreach tasks for this timeframe have been resolved. Your lead velocity is on track!
+                  All scheduled outreach tasks for this timeframe have been resolved.
                 </p>
               </div>
             </div>
@@ -258,10 +252,10 @@ export default function FollowUpsPage() {
             <div
               key={item.id}
               className={cn(
-                'glass-card rounded-2xl border p-4.5 shadow-sm transition-all duration-200 space-y-3 rim-highlight',
+                'rounded-lg border p-4 transition-[border-color,background-color] duration-120 space-y-2.5',
                 bucket === 'OVERDUE'
-                  ? 'border-rose-500/40 bg-rose-500/5 hover:border-rose-500/60'
-                  : 'border-border/80 bg-surface/75 hover:border-primary/40',
+                  ? 'border-rose-500/30 bg-rose-500/5 hover:border-rose-500/60'
+                  : 'border-border bg-surface hover:border-border-strong hover:bg-surface-hover',
               )}
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -269,11 +263,11 @@ export default function FollowUpsPage() {
                   <div className="flex items-center gap-2.5">
                     <Link
                       href={`/organisations/${item.organisation.id}`}
-                      className="font-bold text-sm text-foreground hover:text-primary transition-colors truncate"
+                      className="font-semibold text-xs text-foreground hover:text-primary transition-colors truncate"
                     >
                       {item.organisation.name}
                     </Link>
-                    <Badge tone={bucket === 'OVERDUE' ? 'rose' : 'amber'} size="sm" dot>
+                    <Badge tone={bucket === 'OVERDUE' ? 'rose' : 'amber'} size="sm">
                       {bucket === 'OVERDUE'
                         ? `Overdue ${getOverdueDays(item.dueDate)}d · Due ${formatDate(item.dueDate)}`
                         : `Due: ${formatDate(item.dueDate)}`}
@@ -292,7 +286,7 @@ export default function FollowUpsPage() {
                   </div>
 
                   {item.note && (
-                    <p className="text-xs text-foreground/90 bg-surface-elevated/60 p-3 rounded-xl border border-border/50 font-sans">
+                    <p className="text-xs text-foreground/90 bg-surface-muted/50 p-2.5 rounded border border-border font-sans">
                       {item.note}
                     </p>
                   )}
@@ -303,8 +297,7 @@ export default function FollowUpsPage() {
                     variant="outline"
                     size="xs"
                     onClick={() => handleComplete(item.id)}
-                    icon={<Check className="size-3.5 text-emerald-400" />}
-                    className="border-border hover:bg-emerald-500/10 hover:border-emerald-500/40 font-semibold"
+                    icon={<Check className="size-3.5" />}
                   >
                     Mark Done
                   </Button>
@@ -314,7 +307,6 @@ export default function FollowUpsPage() {
                     size="xs"
                     onClick={() => openLog(item)}
                     icon={<Phone className="size-3.5" />}
-                    className="shadow-sm font-semibold"
                   >
                     Log Touchpoint
                   </Button>
