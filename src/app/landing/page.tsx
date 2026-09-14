@@ -405,21 +405,21 @@ _Generated via Leadwise Institutional Outreach Console_`
       <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-surface-panel/85 backdrop-blur-md transition-[background-color,border-color] duration-150">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <Link href="/landing" className="flex items-center gap-3 group">
+            <Link href="/landing" className="flex items-center gap-3.5 group">
               <Image
                 src="/logo-white-text.png"
                 alt="Leadwise"
-                width={130}
-                height={34}
-                className="h-8 w-auto object-contain hidden dark:block"
+                width={160}
+                height={44}
+                className="h-9 sm:h-10 w-auto object-contain hidden dark:block"
                 priority
               />
               <Image
                 src="/logo-dark-text.png"
                 alt="Leadwise"
-                width={130}
-                height={34}
-                className="h-8 w-auto object-contain block dark:hidden"
+                width={160}
+                height={44}
+                className="h-9 sm:h-10 w-auto object-contain block dark:hidden"
                 priority
               />
               <span className="font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-surface-elevated text-primary border border-primary/20 font-medium">
@@ -1709,23 +1709,23 @@ _Generated via Leadwise Institutional Outreach Console_`
       {/* ── Institutional Modern Footer ─────────────────────────────────────── */}
       <footer className="border-t border-border/80 bg-surface-panel py-12 text-xs text-muted-foreground">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3.5">
             <Image
               src="/footer-logo-white.png"
               alt="Leadwise by HVT"
-              width={140}
-              height={44}
-              className="h-9 w-auto object-contain hidden dark:block"
+              width={180}
+              height={58}
+              className="h-12 sm:h-14 w-auto object-contain hidden dark:block"
             />
             <Image
               src="/footer-logo-dark.png"
               alt="Leadwise by HVT"
-              width={140}
-              height={44}
-              className="h-9 w-auto object-contain block dark:hidden"
+              width={180}
+              height={58}
+              className="h-12 sm:h-14 w-auto object-contain block dark:hidden"
             />
             <span className="text-border">|</span>
-            <span className="font-mono text-[11px]">Enterprise Outreach Intelligence</span>
+            <span className="font-mono text-xs">Enterprise Outreach Intelligence</span>
           </div>
 
           <div className="flex items-center gap-6 font-mono text-[11px]">
