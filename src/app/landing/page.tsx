@@ -1725,7 +1725,7 @@ _Generated via Leadwise Institutional Outreach Console_`
               className="h-7 w-auto object-contain block dark:hidden"
             />
             <span className="text-border">|</span>
-            <span className="font-mono text-[11px]">Sentio Enterprise CRM Platform</span>
+            <span className="font-mono text-[11px]">Enterprise Outreach Intelligence</span>
           </div>
 
           <div className="flex items-center gap-6 font-mono text-[11px]">
@@ -1739,7 +1739,7 @@ _Generated via Leadwise Institutional Outreach Console_`
           </div>
 
           <div className="text-[11px] font-mono text-muted-foreground">
-            © {new Date().getFullYear()} Sentio Leadwise CRM. All rights reserved.
+            © {new Date().getFullYear()} Leadwise CRM. All rights reserved.
           </div>
         </div>
       </footer>

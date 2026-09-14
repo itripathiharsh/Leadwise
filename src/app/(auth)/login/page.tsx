@@ -338,7 +338,7 @@ export default function LoginPage() {
                 <span>•</span>
                 <span className="tabular-nums font-semibold text-foreground">12</span> Scheduled
               </div>
-              <span className="text-[10px] text-muted-foreground">Sentio Intelligence Network</span>
+              <span className="text-[10px] text-muted-foreground">Leadwise Intelligence Network</span>
             </div>
           </div>
         </div>
@@ -349,7 +349,7 @@ export default function LoginPage() {
             <ShieldCheck className="size-4 text-primary shrink-0" />
             <span>Multi-Tier Role Governance</span>
           </div>
-          <span className="font-mono text-[11px]">Sentio Group CRM Platform</span>
+          <span className="font-mono text-[11px]">Leadwise Enterprise CRM</span>
         </div>
       </div>
 
@@ -455,7 +455,7 @@ export default function LoginPage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="admin@sentio.in"
+                  placeholder="admin@leadwise.io"
                   autoComplete="email"
                   required
                   value={email}

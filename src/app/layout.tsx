@@ -43,16 +43,16 @@ export const metadata: Metadata = {
     ],
   },
   openGraph: {
-    title: 'Leadwise — Partnership Outreach Command Center',
-    description: 'Enterprise healthcare & clinical outreach intelligence platform.',
+    title: 'Leadwise — High-Velocity Outreach Intelligence Platform',
+    description: 'Enterprise B2B sales intelligence and strategic outreach execution engine.',
     siteName: 'Leadwise',
     type: 'website',
     images: [{ url: '/logo-clean.png', width: 800, height: 600, alt: 'Leadwise Logo' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Leadwise — Partnership Outreach Command Center',
-    description: 'Enterprise healthcare & clinical outreach intelligence platform.',
+    title: 'Leadwise — High-Velocity Outreach Intelligence Platform',
+    description: 'Enterprise B2B sales intelligence and strategic outreach execution engine.',
   },
 }
 

@@ -160,7 +160,7 @@ export default function SignupPage() {
             <ShieldCheck className="size-4 text-primary shrink-0" aria-hidden="true" />
             <span>Role-Based Access Governance</span>
           </div>
-          <span className="font-mono text-[11px] text-muted-foreground">Sentio Group CRM</span>
+          <span className="font-mono text-[11px] text-muted-foreground">Leadwise Enterprise CRM</span>
         </div>
       </div>
 
@@ -289,7 +289,7 @@ export default function SignupPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="name@sentio.in"
+                    placeholder="name@leadwise.io"
                     autoComplete="email"
                     required
                     value={email}

@@ -26,9 +26,9 @@ async function runQaAudit() {
 
   // ── TEST SUITE 1: RBAC & Permission Matrix (P0) ──
   try {
-    const owner = { id: 'u1', role: Role.OWNER, email: 'owner@sentiomind.com', name: 'Harsh' }
-    const tl = { id: 'u2', role: Role.TL, email: 'tl@sentiomind.com', name: 'Priya' }
-    const intern = { id: 'u3', role: Role.INTERN, email: 'intern@sentiomind.com', name: 'Rahul' }
+    const owner = { id: 'u1', role: Role.OWNER, email: 'owner@leadwise.io', name: 'Harsh' }
+    const tl = { id: 'u2', role: Role.TL, email: 'tl@leadwise.io', name: 'Priya' }
+    const intern = { id: 'u3', role: Role.INTERN, email: 'intern@leadwise.io', name: 'Rahul' }
 
     const ownerCanBackup = can(owner, 'backup:manage')
     const ownerCanAssign = can(owner, 'org:assign')

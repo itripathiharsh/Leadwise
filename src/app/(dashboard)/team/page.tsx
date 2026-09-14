@@ -690,7 +690,7 @@ export default function TeamPage() {
               <Field label="Corporate Email" required>
                 <Input
                   type="email"
-                  placeholder="e.g. maya@sentiomind.com"
+                  placeholder="e.g. maya@leadwise.io"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
