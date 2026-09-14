@@ -143,9 +143,6 @@ export default function LoginPage() {
               priority
               className="h-11 w-auto object-contain block dark:hidden"
             />
-            <span className="font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-surface-elevated text-primary border border-primary/20 font-medium">
-              Enterprise v1.2
-            </span>
           </div>
 
           <div className="flex items-center gap-2 px-3 py-1 rounded border border-border bg-surface-card text-xs font-mono text-muted-foreground shadow-xs">
