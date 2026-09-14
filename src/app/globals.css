@@ -418,6 +418,26 @@
   }
 }
 
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes floatSlowReverse {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(8px); }
+}
+
+@keyframes marqueeSlow {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes radarSweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 .animate-scanline {
   animation: scanline 7s ease-in-out infinite;
 }
@@ -432,6 +452,22 @@
 
 .animate-slide-up {
   animation: slideUpFade 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-float-slow {
+  animation: floatSlow 5s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: floatSlowReverse 6s ease-in-out infinite;
+}
+
+.animate-marquee-slow {
+  animation: marqueeSlow 30s linear infinite;
+}
+
+.animate-radar-sweep {
+  animation: radarSweep 6s linear infinite;
 }
 
 @media print {
