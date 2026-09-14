@@ -403,23 +403,23 @@ _Generated via Leadwise Institutional Outreach Console_`
 
       {/* ── Sticky Top Navigation Bar ──────────────────────────────────────── */}
       <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-surface-panel/85 backdrop-blur-md transition-[background-color,border-color] duration-150">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-18 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <Link href="/landing" className="flex items-center gap-3.5 group">
               <Image
                 src="/logo-white-text.png"
                 alt="Leadwise"
-                width={160}
-                height={44}
-                className="h-9 sm:h-10 w-auto object-contain hidden dark:block"
+                width={180}
+                height={48}
+                className="h-10 sm:h-11 w-auto object-contain hidden dark:block"
                 priority
               />
               <Image
                 src="/logo-dark-text.png"
                 alt="Leadwise"
-                width={160}
-                height={44}
-                className="h-9 sm:h-10 w-auto object-contain block dark:hidden"
+                width={180}
+                height={48}
+                className="h-10 sm:h-11 w-auto object-contain block dark:hidden"
                 priority
               />
               <span className="font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-surface-elevated text-primary border border-primary/20 font-medium">
