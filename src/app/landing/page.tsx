@@ -1711,18 +1711,18 @@ _Generated via Leadwise Institutional Outreach Console_`
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
             <Image
-              src="/logo-white-text.png"
-              alt="Leadwise"
-              width={110}
-              height={30}
-              className="h-7 w-auto object-contain hidden dark:block"
+              src="/footer-logo-white.png"
+              alt="Leadwise by HVT"
+              width={140}
+              height={44}
+              className="h-9 w-auto object-contain hidden dark:block"
             />
             <Image
-              src="/logo-dark-text.png"
-              alt="Leadwise"
-              width={110}
-              height={30}
-              className="h-7 w-auto object-contain block dark:hidden"
+              src="/footer-logo-dark.png"
+              alt="Leadwise by HVT"
+              width={140}
+              height={44}
+              className="h-9 w-auto object-contain block dark:hidden"
             />
             <span className="text-border">|</span>
             <span className="font-mono text-[11px]">Enterprise Outreach Intelligence</span>
