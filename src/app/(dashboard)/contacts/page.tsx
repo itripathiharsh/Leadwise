@@ -144,10 +144,10 @@ export default function ContactsPage() {
             <div>
               <div className="flex items-center gap-2.5">
                 <h1 className="font-sans font-bold text-xl sm:text-2xl tracking-tight text-foreground">
-                  Contacts & Stakeholders
+                  Contacts
                 </h1>
                 <span className="font-mono text-xs px-2 py-0.5 rounded bg-surface-muted text-muted-foreground border border-border">
-                  {total} Key Stakeholders
+                  {total} Key Contacts
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
@@ -183,7 +183,7 @@ export default function ContactsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search by stakeholder name, designation, email, phone..."
+            placeholder="Search by contact name, designation, email, phone..."
             value={search}
             onChange={(e) => {
               setSearch(e.target.value)
@@ -212,7 +212,7 @@ export default function ContactsPage() {
         {loading && contacts.length === 0 ? (
           <div className="p-16 text-center space-y-3">
             <RefreshCw className="size-5 mx-auto text-primary animate-spin" />
-            <div className="font-semibold text-sm text-foreground">Syncing Stakeholders...</div>
+            <div className="font-semibold text-sm text-foreground">Syncing Contacts...</div>
             <p className="text-xs text-muted-foreground">Fetching decision maker hierarchy and communication channels.</p>
           </div>
         ) : contacts.length === 0 ? (
@@ -224,7 +224,7 @@ export default function ContactsPage() {
               <div className="space-y-1">
                 <p className="font-semibold text-sm text-foreground">No contacts match your search</p>
                 <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                  No stakeholders found matching &ldquo;{search.trim()}&rdquo;. Try another term or clear the search.
+                  No contacts found matching &ldquo;{search.trim()}&rdquo;. Try another term or clear the search.
                 </p>
               </div>
               <Button
@@ -247,7 +247,7 @@ export default function ContactsPage() {
               <div className="space-y-1">
                 <p className="font-semibold text-sm text-foreground">No contacts yet</p>
                 <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                  Add stakeholders or decision makers from any organization dossier to begin mapping authority.
+                  Add contacts or decision makers from any organization dossier to begin mapping authority.
                 </p>
               </div>
               <Button
@@ -276,7 +276,7 @@ export default function ContactsPage() {
                           {contact.name}
                         </span>
                         <div className="text-[11px] text-muted-foreground truncate">
-                          {contact.designation || 'Stakeholder'} {contact.department ? `· ${contact.department}` : ''}
+                          {contact.designation || 'Contact'} {contact.department ? `· ${contact.department}` : ''}
                         </div>
                       </div>
                     </div>
@@ -408,7 +408,7 @@ export default function ContactsPage() {
                             Decision Maker
                           </span>
                         ) : (
-                          <span className="text-xs text-muted-foreground/60 font-mono text-[11px]">Stakeholder</span>
+                          <span className="text-xs text-muted-foreground/60 font-mono text-[11px]">Contact</span>
                         )}
                       </td>
 

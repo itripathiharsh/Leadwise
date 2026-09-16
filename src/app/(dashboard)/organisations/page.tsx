@@ -95,7 +95,7 @@ export default function OrganisationsPage() {
         setPageCount(data.pageCount ?? 1)
       }
     } catch {
-      toast.error('Failed to load organisations.')
+        toast.error('Failed to load organizations.')
     } finally {
       setLoading(false)
     }
@@ -188,11 +188,11 @@ export default function OrganisationsPage() {
                   Organizations
                 </h1>
                 <span className="font-mono text-xs px-2 py-0.5 rounded bg-surface-muted text-muted-foreground border border-border">
-                  {total} Entities
+                  {total} Organizations
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Partnership accounts, clinical stakeholders, verified decision makers, and outreach stages.
+                Partnership accounts, organization contacts, verified decision makers, and outreach stages.
               </p>
             </div>
           </div>
@@ -392,7 +392,7 @@ export default function OrganisationsPage() {
               <div className="space-y-1">
                 <p className="font-semibold text-sm text-foreground">No organizations yet</p>
                 <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                  Your partnership pipeline starts here. Add your first clinical target, enterprise account, or partner entity to begin tracking outreach.
+                  Your partnership pipeline starts here. Add your first clinical target, enterprise account, or partner organization to begin tracking outreach.
                 </p>
               </div>
               <Button

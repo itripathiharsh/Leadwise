@@ -366,7 +366,7 @@ export function PipelineKanban({
                             )}
                           </div>
                           <div className="text-[10px] text-muted-foreground truncate">
-                            {org.primaryContact.designation || 'Key Stakeholder'}
+                            {org.primaryContact.designation || 'Key Contact'}
                           </div>
                         </div>
                       )}

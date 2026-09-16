@@ -44,7 +44,7 @@ interface SearchResultsState {
 
 const QUICK_LINKS = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, shortcut: 'G D' },
-  { label: 'Organisations', href: '/organisations', icon: Building2, shortcut: 'G O' },
+  { label: 'Organizations', href: '/organisations', icon: Building2, shortcut: 'G O' },
   { label: 'Contacts', href: '/contacts', icon: Users, shortcut: 'G C' },
   { label: 'Pipeline', href: '/pipeline', icon: Kanban, shortcut: 'G P' },
   { label: 'Follow-ups', href: '/followups', icon: CalendarClock, shortcut: 'G F' },
@@ -169,8 +169,8 @@ export function GlobalSearchDialog({
             <Search className="size-5 text-muted-foreground shrink-0" />
             <input
               type="text"
-              aria-label="Search records, contacts, and organisations"
-              placeholder="Search organisations, contacts, or navigate... (⌘K)"
+              aria-label="Search records, contacts, and organizations"
+              placeholder="Search organizations, contacts, or navigate... (⌘K)"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="flex-1 bg-transparent text-sm placeholder:text-muted-foreground outline-none text-foreground"
@@ -192,14 +192,14 @@ export function GlobalSearchDialog({
           <div className="max-h-[380px] overflow-y-auto p-2 divide-y divide-border/40">
             {query.trim().length >= 2 && !hasResults && !loading && (
               <div className="p-8 text-center text-xs text-muted-foreground">
-                No organisations or contacts match &ldquo;{query}&rdquo;.
+                No organizations or contacts match &ldquo;{query}&rdquo;.
               </div>
             )}
 
             {results.organisations.length > 0 && (
               <div className="py-2 space-y-1">
                 <div className="px-3 py-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Organisations
+                  Organizations
                 </div>
                 {results.organisations.map((org) => {
                   const idx = itemCounter++
@@ -222,7 +222,7 @@ export function GlobalSearchDialog({
                         <div className="min-w-0">
                           <div className="font-semibold text-foreground truncate">{org.name}</div>
                           <div className="text-[11px] text-muted-foreground truncate">
-                            {org.category || org.location || 'Organisation'}
+                            {org.category || org.location || 'Organization'}
                           </div>
                         </div>
                       </div>

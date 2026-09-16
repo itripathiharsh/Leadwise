@@ -163,7 +163,7 @@ export default function PipelinePage() {
           onChange={(e) => setHealthFilter(e.target.value as LeadHealth | '')}
           className="rounded border border-border bg-surface-muted/60 px-2.5 py-1 text-xs text-foreground font-medium outline-none focus:border-border-strong cursor-pointer"
         >
-          <option value="">All Lead Cadences</option>
+          <option value="">All Follow-up Cadences</option>
           <option value="ACTIVE">Active Cadence</option>
           <option value="ATTENTION">Needs Attention</option>
           <option value="GOING_COLD">Going Cold</option>

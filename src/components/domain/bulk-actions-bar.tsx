@@ -61,6 +61,9 @@ export function BulkActionsBar({
 
   if (selectedIds.length === 0) return null
 
+  /** User-facing display name — API/DB identifiers stay unchanged. */
+  const entityLabel = entityType === 'organisation' ? 'organization' : 'contact'
+
   const executeBulk = async (
     action: string,
     extra: Record<string, unknown> = {},
@@ -75,7 +78,7 @@ export function BulkActionsBar({
       })
       const data = await res.json()
       if (res.ok && data.success) {
-        toast.success(successMsg || `Bulk ${action.toLowerCase()} applied to ${data.count} ${entityType}s.`)
+        toast.success(successMsg || `Bulk ${action.toLowerCase()} applied to ${data.count} ${entityLabel}s.`)
         onClearSelection()
         onRefresh()
       } else {
@@ -113,17 +116,17 @@ export function BulkActionsBar({
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `leadwise_${entityType}s_export_${new Date().toISOString().slice(0, 10)}.csv`
+    link.download = `leadwise_${entityLabel}s_export_${new Date().toISOString().slice(0, 10)}.csv`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
-    toast.success(`Exported ${selectedData.length} ${entityType}s to CSV.`)
+    toast.success(`Exported ${selectedData.length} ${entityLabel}s to CSV.`)
   }
 
   const handleDelete = async () => {
     setConfirmDeleteOpen(false)
-    await executeBulk('DELETE', {}, `Archived ${selectedIds.length} ${entityType}s.`)
+    await executeBulk('DELETE', {}, `Archived ${selectedIds.length} ${entityLabel}s.`)
   }
 
   const allSelected = selectedIds.length === totalCount
@@ -169,7 +172,7 @@ export function BulkActionsBar({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48 p-1.5 space-y-0.5 max-h-64 overflow-y-auto">
                 <DropdownMenuItem
-                  onClick={() => executeBulk('ASSIGN', { assignedToId: null }, `Unassigned ${selectedIds.length} ${entityType}s.`)}
+                  onClick={() => executeBulk('ASSIGN', { assignedToId: null }, `Unassigned ${selectedIds.length} ${entityLabel}s.`)}
                   className="text-xs cursor-pointer rounded-md py-1.5"
                 >
                   Unassign (Open Pool)
@@ -275,16 +278,16 @@ export function BulkActionsBar({
       <Dialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
         <DialogContent size="sm">
           <DialogHeader>
-            <DialogTitle>Archive {selectedIds.length} {entityType}s?</DialogTitle>
+            <DialogTitle>Archive {selectedIds.length} {entityLabel}s?</DialogTitle>
             <DialogDescription>
-              This will soft-delete the selected {entityType}s and their associated contacts. They can be restored from backups. This action is audited.
+              This will soft-delete the selected {entityLabel}s and their associated contacts. They can be restored from backups. This action is audited.
             </DialogDescription>
           </DialogHeader>
           <DialogBody>
             <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-200 flex items-start gap-2.5">
               <AlertTriangle className="size-4 text-amber-500 shrink-0 mt-0.5" />
               <div>
-                <p className="font-bold">This action will archive {selectedIds.length} {entityType}{selectedIds.length !== 1 ? 's' : ''} and all associated contacts.</p>
+                <p className="font-bold">This action will archive {selectedIds.length} {entityLabel}{selectedIds.length !== 1 ? 's' : ''} and all associated contacts.</p>
                 <p className="mt-1 text-muted-foreground">Records are soft-deleted and can be restored.</p>
               </div>
             </div>

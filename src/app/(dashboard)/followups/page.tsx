@@ -281,7 +281,7 @@ export default function FollowUpsPage() {
 
                   <div className="text-xs text-muted-foreground flex items-center gap-2">
                     {item.contact && (
-                      <span>Stakeholder: <strong className="text-foreground font-semibold">{item.contact.name}</strong></span>
+                      <span>Contact: <strong className="text-foreground font-semibold">{item.contact.name}</strong></span>
                     )}
                     {item.assignedTo && (
                       <span className="flex items-center gap-1.5 font-mono text-[11px]">

@@ -40,7 +40,7 @@ export default function SettingsPage() {
     {
       title: 'Notification Center & Cadence Reminders',
       description:
-        'Configure delivery rules for follow-up notifications, daily meeting alerts, and assigned entity updates.',
+        'Configure delivery rules for follow-up notifications, daily meeting alerts, and assigned organization updates.',
       href: '/settings/notifications',
       icon: Bell,
       badge: 'Alerts',
@@ -60,7 +60,7 @@ export default function SettingsPage() {
     {
       title: 'Security State & Audit Trail',
       description:
-        'Review immutable audit events for all entity creations, status moves, assignments, CSV imports, and authenticated user logins.',
+        'Review immutable audit events for all organization creations, status moves, assignments, CSV imports, and authenticated user logins.',
       href: '/settings/audit',
       icon: Shield,
       badge: 'Compliance',

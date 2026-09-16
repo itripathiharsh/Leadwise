@@ -385,17 +385,6 @@ export const followUpStatusSchema = z.object({
   status: z.nativeEnum(FollowUpStatus),
 })
 
-// ── EOD ──────────────────────────────────────────────────────────────────────
-
-export const eodGenerateSchema = z.object({
-  dateKey: dateKeySchema,
-  /** Force a fresh AI pass + metric recomputation for an existing report. */
-  regenerate: z.boolean().optional().default(false),
-  /** Skip the AI call entirely and use the deterministic template. */
-  skipAi: z.boolean().optional().default(false),
-})
-export type EodGenerateInput = z.infer<typeof eodGenerateSchema>
-
 // ── Settings ─────────────────────────────────────────────────────────────────
 
 export const settingsSchema = z.object({

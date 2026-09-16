@@ -81,7 +81,7 @@ export const QUICK_NOTE_CHIPS: Record<ActivityType, string[]> = {
     'Conducted 15-min partnership discovery call',
     'Product walkthrough & demo presented',
     'Shared next steps & commercial terms',
-    'Stakeholder no-show — rescheduling',
+    'Contact no-show — rescheduling',
   ],
   FOLLOW_UP: [
     'Follow-up touchpoint completed',
@@ -89,7 +89,7 @@ export const QUICK_NOTE_CHIPS: Record<ActivityType, string[]> = {
     'Sent reminder about upcoming deadline',
   ],
   NOTE: [
-    'General update on organisation profile',
+    'General update on organization profile',
     'Noted internal stakeholder hierarchy',
     'Updated direct contact coordinates',
   ],

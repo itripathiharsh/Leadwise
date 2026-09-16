@@ -325,7 +325,7 @@ export default function BackupsSettingsPage() {
               <>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-lg border border-border/80 bg-muted/40 p-3.5 text-center">
                   <div>
-                    <div className="text-xs text-muted-foreground font-medium">Organisations</div>
+                    <div className="text-xs text-muted-foreground font-medium">Organizations</div>
                     <div className="text-lg font-bold text-foreground mt-0.5">
                       {latest.organisationsCount.toLocaleString()}
                     </div>

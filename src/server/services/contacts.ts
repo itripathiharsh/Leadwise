@@ -13,7 +13,7 @@ import { CONTACT_STATUS_META } from '@/lib/constants'
 import type { ContactCreateInput, ContactUpdateInput } from '@/lib/validation'
 import { NotFoundError } from '@/server/errors'
 import { writeAudit, writeAuditSafe } from './audit'
-import { findContactDuplicates, type ContactDuplicate } from './duplicates'
+import { findContactDuplicates, selectBlockingDuplicates, type ContactDuplicate } from './duplicates'
 
 /**
  * Contact service (spec §6, §7, §20, §22).
@@ -207,7 +207,10 @@ export async function createContact(
       phone: input.phone ?? null,
       linkedinUrl: input.linkedinUrl ?? null,
     })
-    if (duplicates.length > 0) return { status: 'DUPLICATE', duplicates }
+    // Only same-organisation matches block the save; cross-organisation
+    // matches (shared email/phone across orgs) are legitimate.
+    const blocking = selectBlockingDuplicates(duplicates, input.organisationId)
+    if (blocking.length > 0) return { status: 'DUPLICATE', duplicates: blocking }
   }
 
   // Whoever works the organisation works its contacts unless told otherwise by TL/Owner.
@@ -299,7 +302,8 @@ export async function updateContact(
       linkedinUrl: input.linkedinUrl ?? null,
       excludeId: existing.id,
     })
-    if (duplicates.length > 0) return { status: 'DUPLICATE', duplicates }
+    const blocking = selectBlockingDuplicates(duplicates, existing.organisationId)
+    if (blocking.length > 0) return { status: 'DUPLICATE', duplicates: blocking }
   }
 
   const updated = await prisma.contact.update({

@@ -98,7 +98,7 @@ const OUTCOMES_BY_TYPE: Record<
   ],
   NOTE: [
     { value: 'LOGGED', label: 'Note Added' },
-    { value: 'COMPLETED', label: 'Task Completed' },
+    { value: 'OTHER', label: 'Other' },
   ],
 }
 
@@ -337,7 +337,7 @@ export function LogActivityModal({
   // Core execution handler supporting both Save Activity and Log & Next
   const executeSubmit = async (keepOpen: boolean) => {
     if (!organisationId) {
-      toast.error('Please select an organisation.')
+      toast.error('Please select an organization.')
       return
     }
 
@@ -443,7 +443,7 @@ export function LogActivityModal({
               <div>
                 <DialogTitle>Log Outreach Activity</DialogTitle>
                 <DialogDescription>
-                  Record interactions to update the timeline, organisation status, and next follow-up.
+                  Record interactions to update the timeline, organization outreach status, and next follow-up.
                 </DialogDescription>
               </div>
             </div>
@@ -551,9 +551,9 @@ export function LogActivityModal({
               </button>
             </div>
 
-            {/* Organisation & Contact Selectors */}
+            {/* Organization & Contact Selectors */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Organisation" required>
+              <Field label="Organization" required>
                 {initialOrganisationId && selectedOrg ? (
                   <div className="flex h-10 items-center justify-between font-semibold text-sm px-3 bg-muted/40 rounded-lg border border-border">
                     <span className="truncate">{selectedOrg.name}</span>
@@ -573,7 +573,7 @@ export function LogActivityModal({
                     className="h-10 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-xs transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                   >
                     <option value="">
-                      {loadingOrgs ? 'Loading organisations...' : 'Select Organisation...'}
+                      {loadingOrgs ? 'Loading organizations...' : 'Select Organization...'}
                     </option>
                     {orgs.map((o) => (
                       <option key={o.id} value={o.id}>
@@ -592,7 +592,7 @@ export function LogActivityModal({
                   className="h-10 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-xs transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {!organisationId ? (
-                    <option value="">Select an organisation first</option>
+                    <option value="">Select an organization first</option>
                   ) : loadingContacts ? (
                     <option value="">Loading associated contacts...</option>
                   ) : contacts.length === 0 ? (

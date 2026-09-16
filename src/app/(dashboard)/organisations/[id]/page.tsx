@@ -36,7 +36,6 @@ import { LogActivityModal, type ActivityTypeTab } from '@/components/domain/log-
 import { CreateContactModal } from '@/components/domain/create-contact-modal'
 import { MergeOrganisationDialog } from '@/components/domain/merge-dialog'
 import { AiLeadIntelligenceCard } from '@/components/domain/ai-lead-intelligence-card'
-import { AiOutreachGeneratorModal } from '@/components/domain/ai-outreach-generator-modal'
 import { CallPrepDialog } from '@/components/domain/call-prep-dialog'
 import { CommentsFeed } from '@/components/domain/comments-feed'
 import { OrganisationAttachments } from '@/components/domain/organisation-attachments'
@@ -76,9 +75,6 @@ export default function OrganisationDetailPage() {
   const [logStartCallTimer, setLogStartCallTimer] = React.useState<boolean>(false)
   const [completedFollowUpId, setCompletedFollowUpId] = React.useState<string | undefined>()
 
-  const [aiOutreachOpen, setAiOutreachOpen] = React.useState(false)
-  const [aiOutreachTarget, setAiOutreachTarget] = React.useState<{ name: string; designation?: string } | null>(null)
-
   const [createContactOpen, setCreateContactOpen] = React.useState(false)
   const [mergeModalOpen, setMergeModalOpen] = React.useState(false)
   const [callPrepOpen, setCallPrepOpen] = React.useState(false)
@@ -96,10 +92,10 @@ export default function OrganisationDetailPage() {
         const json = await res.json()
         setData(json)
       } else {
-        toast.error('Failed to load organisation details.')
+        toast.error('Failed to load organization details.')
       }
     } catch {
-      toast.error('Network error loading organisation.')
+      toast.error('Network error loading organization.')
     } finally {
       setLoading(false)
     }
@@ -167,12 +163,12 @@ export default function OrganisationDetailPage() {
       if (res.ok) {
         toast.success(
           newAssigneeId === 'UNASSIGNED'
-            ? 'Entity unassigned and returned to open pool.'
-            : `Entity assigned to ${result.assigneeName || 'team member'}.`,
+            ? 'Organization unassigned and returned to open pool.'
+            : `Organization assigned to ${result.assigneeName || 'team member'}.`,
         )
         fetchDetails()
       } else {
-        toast.error(result.error || 'Failed to reassign entity.')
+        toast.error(result.error || 'Failed to reassign organization.')
       }
     } catch {
       toast.error('Network error during reassignment.')
@@ -225,7 +221,7 @@ export default function OrganisationDetailPage() {
         <p className="font-bold text-base text-foreground">Organisation not found</p>
         <Link href="/organisations">
           <Button variant="outline" size="sm">
-            Back to Organisations
+            Back to Organizations
           </Button>
         </Link>
       </div>
@@ -275,27 +271,6 @@ export default function OrganisationDetailPage() {
     })
   }
 
-  // W5: AI Drafter open and callback
-  const handleOpenAiGenerator = (contact?: any) => {
-    const target = contact || primaryContact
-    setAiOutreachTarget({
-      name: target?.name || 'Decision Maker',
-      designation: target?.designation || 'Partnership Lead',
-    })
-    setAiOutreachOpen(true)
-  }
-
-  const handleUseAiMessage = (content: string) => {
-    const target = contacts.find((c: any) => c.name === aiOutreachTarget?.name) || primaryContact
-    const subject = `Partnership Discussion — ${org.name}`
-    openLog('EMAIL', target?.id, {
-      outcome: 'SENT',
-      emailUsed: target?.email,
-      emailSubject: subject,
-      notes: content.slice(0, 4000),
-    })
-  }
-
   return (
     <div className="max-w-6xl mx-auto space-y-6 p-4 sm:p-6 lg:p-8">
       {/* Top Breadcrumb & Control Bar */}
@@ -330,7 +305,7 @@ export default function OrganisationDetailPage() {
                 Assigned Account Note:
               </span>{' '}
               <span className="text-muted-foreground">
-                This entity is managed by <strong className="text-foreground font-semibold">{org.assignedTo.name}</strong>. Coordinate internally before outreach.
+                This organization is managed by <strong className="text-foreground font-semibold">{org.assignedTo.name}</strong>. Coordinate internally before outreach.
               </span>
             </div>
           </div>
@@ -554,14 +529,6 @@ export default function OrganisationDetailPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => handleOpenAiGenerator(primaryContact)}
-              icon={<Sparkles className="size-3.5 text-cyan-500" />}
-            >
-              AI Outreach
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
               onClick={() => openLog('LINKEDIN')}
               icon={<Linkedin className="size-3.5 text-muted-foreground" />}
             >
@@ -592,7 +559,7 @@ export default function OrganisationDetailPage() {
               onClick={() => setMergeModalOpen(true)}
               className="text-xs text-muted-foreground hover:text-foreground"
             >
-              Merge Entity
+              Merge Organization
             </Button>
             <Button
               variant="primary"
@@ -622,7 +589,7 @@ export default function OrganisationDetailPage() {
                   Follow-up Due: {formatDate(nextPendingFollowup.dueDate)}
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {nextPendingFollowup.note || 'Scheduled touchpoint review with institutional stakeholder.'}
+                  {nextPendingFollowup.note || 'Scheduled touchpoint review with organization contact.'}
                 </p>
               </div>
             ) : (
@@ -632,7 +599,7 @@ export default function OrganisationDetailPage() {
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {primaryContact
-                    ? `Ready for touchpoint with ${primaryContact.name} (${primaryContact.designation || 'Stakeholder'}).`
+                    ? `Ready for touchpoint with ${primaryContact.name} (${primaryContact.designation || 'Contact'}).`
                     : 'No contact persons attached. Add a decision maker to begin personalized cadences.'}
                 </p>
               </div>
@@ -823,7 +790,7 @@ export default function OrganisationDetailPage() {
                   <p className="font-semibold text-primary">{org.domain || '—'}</p>
                 </div>
                 <div className="rounded-md border border-border bg-surface-muted/40 p-3 space-y-1">
-                  <span className="text-[11px] font-mono text-muted-foreground uppercase">Entity Category</span>
+                  <span className="text-[11px] font-mono text-muted-foreground uppercase">Organization Category</span>
                   <p className="font-semibold text-foreground">{org.category || 'Clinical Partner'}</p>
                 </div>
               </div>
@@ -831,7 +798,7 @@ export default function OrganisationDetailPage() {
               <div className="rounded-md border border-border bg-surface-muted/40 p-3.5 space-y-1">
                 <span className="text-[11px] font-mono text-muted-foreground uppercase">Internal Strategic Notes</span>
                 <p className="text-xs text-foreground/90 whitespace-pre-wrap leading-relaxed">
-                  {org.notes || 'No internal notes captured for this organisation yet.'}
+                  {org.notes || 'No internal notes captured for this organization yet.'}
                 </p>
               </div>
             </CardContent>
@@ -866,7 +833,7 @@ export default function OrganisationDetailPage() {
       {activeTab === 'contacts' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-sm text-foreground">Stakeholders & Decision Makers</h3>
+            <h3 className="font-semibold text-sm text-foreground">Contacts & Decision Makers</h3>
             <Button
               variant="outline"
               size="xs"
@@ -879,7 +846,7 @@ export default function OrganisationDetailPage() {
 
           {contacts.length === 0 ? (
             <Card className="p-12 text-center text-xs text-muted-foreground">
-              No contacts recorded for this entity. Click &ldquo;Add Contact Person&rdquo; to attach stakeholders.
+              No contacts recorded for this organization. Click &ldquo;Add Contact Person&rdquo; to add contacts.
             </Card>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -899,7 +866,7 @@ export default function OrganisationDetailPage() {
                         )}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {contact.designation || 'Stakeholder'} {contact.department ? `· ${contact.department}` : ''}
+                        {contact.designation || 'Contact'} {contact.department ? `· ${contact.department}` : ''}
                       </div>
                     </div>
                   </div>
@@ -954,15 +921,6 @@ export default function OrganisationDetailPage() {
                       title={contact.email ? `Compose email to ${contact.email} and log` : 'Log email'}
                     >
                       Email
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="xs"
-                      onClick={() => handleOpenAiGenerator(contact)}
-                      icon={<Sparkles className="size-3 text-cyan-500" />}
-                      title="AI outreach message draft"
-                    >
-                      AI Draft
                     </Button>
                   </div>
                 </div>
@@ -1190,7 +1148,7 @@ export default function OrganisationDetailPage() {
         <div className="space-y-2.5">
           {followups.length === 0 ? (
             <Card className="p-12 text-center text-xs text-muted-foreground">
-              No pending follow-ups scheduled for this organisation.
+              No pending follow-ups scheduled for this organization.
             </Card>
           ) : (
             followups.map((f: any) => (
@@ -1268,17 +1226,6 @@ export default function OrganisationDetailPage() {
         initialOrganisationId={org.id}
         initialContactId={selectedContactId}
         onSuccess={fetchDetails}
-      />
-
-      <AiOutreachGeneratorModal
-        open={aiOutreachOpen}
-        onOpenChange={setAiOutreachOpen}
-        orgId={org.id}
-        orgName={org.name}
-        contactName={aiOutreachTarget?.name || 'Decision Maker'}
-        contactDesignation={aiOutreachTarget?.designation || 'Partnership Lead'}
-        defaultChannel="EMAIL"
-        onUseMessage={handleUseAiMessage}
       />
 
       <CallPrepDialog

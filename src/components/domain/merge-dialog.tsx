@@ -117,7 +117,7 @@ export function MergeOrganisationDialog({
         onOpenChange(false)
         onSuccess?.()
       } else {
-        toast.error(d.error || 'Failed to merge organisations.')
+        toast.error(d.error || 'Failed to merge organizations.')
       }
     } catch {
       toast.error('Network error during merge.')
@@ -135,7 +135,7 @@ export function MergeOrganisationDialog({
               <Building2 className="size-5" />
             </div>
             <div>
-              <DialogTitle>Merge Duplicate Organisation</DialogTitle>
+              <DialogTitle>Merge Duplicate Organization</DialogTitle>
               <DialogDescription>
                 Merge <strong>{sourceName}</strong> into another target record. All contacts, activities, and follow-ups will be preserved.
               </DialogDescription>
@@ -148,13 +148,13 @@ export function MergeOrganisationDialog({
           {!targetId ? (
             <div className="space-y-2">
               <label className="text-xs font-semibold text-foreground">
-                Search and select target organisation:
+                Search and select target organization:
               </label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                 <input
                   type="text"
-                  placeholder="Type organisation name or domain..."
+                  placeholder="Type organization name or domain..."
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   className="w-full rounded-lg border border-border bg-surface pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
@@ -172,7 +172,7 @@ export function MergeOrganisationDialog({
                     >
                       <div>
                         <div className="font-semibold text-foreground">{org.name}</div>
-                        <div className="text-[11px] text-muted-foreground">{org.category || org.location || 'Organisation'}</div>
+                        <div className="text-[11px] text-muted-foreground">{org.category || org.location || 'Organization'}</div>
                       </div>
                       <span className="text-xs text-primary font-medium">Select →</span>
                     </button>
@@ -213,7 +213,7 @@ export function MergeOrganisationDialog({
 
               <div className="flex items-center gap-1.5 text-[11px] text-amber-700 dark:text-amber-300 font-medium">
                 <AlertTriangle className="size-3.5 shrink-0" />
-                <span>The source organisation will be archived, and history consolidated.</span>
+                <span>The source organization will be archived, and history consolidated.</span>
               </div>
             </div>
           )}

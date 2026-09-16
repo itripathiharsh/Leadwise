@@ -142,16 +142,16 @@ describe('Authentication & Organisation / Tenant Isolation', () => {
       expect(() => assertCan(internA, 'user:manage')).toThrow(ForbiddenError)
       expect(() => assertCan(internA, 'settings:manage')).toThrow(ForbiddenError)
       expect(() => assertCan(internA, 'team:view')).toThrow(ForbiddenError)
-      expect(() => assertCan(internA, 'eod:view')).toThrow(ForbiddenError)
-      expect(() => assertCan(internA, 'eod:generate')).toThrow(ForbiddenError)
+      expect(() => assertCan(internA, 'data:import')).toThrow(ForbiddenError)
+      expect(() => assertCan(internA, 'backup:manage')).toThrow(ForbiddenError)
 
       // Owner and TL can perform their allowed actions without error
       expect(() => assertCan(ownerUser, 'org:delete')).not.toThrow()
       expect(() => assertCan(tlUser, 'org:assign')).not.toThrow()
       expect(() => assertCan(ownerUser, 'team:view')).not.toThrow()
       expect(() => assertCan(tlUser, 'team:view')).not.toThrow()
-      expect(() => assertCan(ownerUser, 'eod:view')).not.toThrow()
-      expect(() => assertCan(tlUser, 'eod:view')).not.toThrow()
+      expect(() => assertCan(ownerUser, 'data:import')).not.toThrow()
+      expect(() => assertCan(tlUser, 'data:import')).not.toThrow()
     })
 
     it('allows interns to add organisations and contacts/leads', () => {
