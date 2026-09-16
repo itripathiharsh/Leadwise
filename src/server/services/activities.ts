@@ -221,6 +221,26 @@ export async function logActivity(
         })
         closedFollowUps = due.length
       }
+
+      // If an explicit follow-up from the queue was targeted, ensure it is completed even if scheduled for future days
+      if (input.completedFollowUpId && !due.some((f) => f.id === input.completedFollowUpId)) {
+        const target = await tx.followUp.findFirst({
+          where: {
+            id: input.completedFollowUpId,
+            organisationId: org.id,
+            status: 'PENDING',
+            deletedAt: null,
+          },
+          select: { id: true },
+        })
+        if (target) {
+          await tx.followUp.update({
+            where: { id: target.id },
+            data: { status: 'DONE', completedAt: activityDate, completedById: user.id },
+          })
+          closedFollowUps += 1
+        }
+      }
     }
 
     if (followUpAt) {

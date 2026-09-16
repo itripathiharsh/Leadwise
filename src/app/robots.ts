@@ -23,8 +23,6 @@ export default function robots(): MetadataRoute.Robots {
           '/reports',
           '/settings',
           '/profile',
-          '/eod',
-          '/import',
         ],
       },
     ],

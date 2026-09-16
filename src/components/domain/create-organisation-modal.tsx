@@ -534,9 +534,9 @@ export function CreateOrganisationModal({
 
     // Required: Lead Source
     if (!leadSource) {
-      errs.leadSource = 'Lead source is required.'
+      errs.leadSource = 'Source is required.'
     } else if (leadSource === 'Other' && !customLeadSource.trim()) {
-      errs.customLeadSource = 'Please specify the lead source.'
+      errs.customLeadSource = 'Please specify the source.'
     }
 
     // Optional Org Type: If Other, require customOrgType
@@ -709,7 +709,7 @@ export function CreateOrganisationModal({
                 Add Organization
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                Add a new organization or lead to the CRM. Fast, compact, and optimized for outreach workflows.
+                Add a new organization to the CRM. Fast, compact, and optimized for outreach workflows.
               </DialogDescription>
             </div>
           </div>
@@ -725,10 +725,10 @@ export function CreateOrganisationModal({
                   <AlertTriangle className="size-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                   <div>
                     <div className="font-bold text-sm text-amber-900 dark:text-amber-200">
-                      Organisation Already Exists
+                      Organization Already Exists
                     </div>
                     <p className="text-xs leading-relaxed text-muted-foreground mt-0.5">
-                      We found an existing organisation matching this name in Leadwise. You can add a new contact to the existing organisation instead of creating a duplicate:
+                      We found an existing organization matching this name in Leadwise. You can add a new contact to the existing organization instead of creating a duplicate:
                     </p>
                   </div>
                 </div>
@@ -762,7 +762,7 @@ export function CreateOrganisationModal({
                         icon={<UserPlus className="size-3.5" />}
                         className="shrink-0 font-semibold cursor-pointer"
                       >
-                        Add New Contact in this Org
+                        Add New Contact in this Organization
                       </Button>
                     </div>
                   ))}
@@ -776,7 +776,7 @@ export function CreateOrganisationModal({
                       onChange={(e) => setConfirmDuplicate(e.target.checked)}
                       className="size-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
                     />
-                    <span>Confirm and create duplicate organisation anyway</span>
+                    <span>Confirm and create duplicate organization anyway</span>
                   </label>
                 </div>
               </div>
@@ -1079,7 +1079,7 @@ export function CreateOrganisationModal({
                   <input
                     id="contact-email"
                     type="email"
-                    placeholder="contact@organisation.com"
+                    placeholder="contact@organization.com"
                     value={contactEmail}
                     onChange={(e) => {
                       setContactEmail(e.target.value)
@@ -1163,7 +1163,7 @@ export function CreateOrganisationModal({
                 {/* Lead Source */}
                 <div>
                   <label htmlFor="lead-source" className="block text-xs font-semibold text-foreground mb-1.5">
-                    Lead Source <span className="text-destructive">*</span>
+                    Source <span className="text-destructive">*</span>
                   </label>
                   <SearchableSelect
                     id="lead-source"
@@ -1173,7 +1173,7 @@ export function CreateOrganisationModal({
                       clearError('leadSource')
                     }}
                     options={LEAD_SOURCE_OPTIONS}
-                    placeholder="Select Lead Source"
+                    placeholder="Select Source"
                     searchPlaceholder="Search sources..."
                     error={!!errors.leadSource}
                   />
@@ -1184,12 +1184,12 @@ export function CreateOrganisationModal({
                   {leadSource === 'Other' && (
                     <div className="mt-2.5 animate-[fade-in_0.18s_ease-out]">
                       <label htmlFor="custom-lead-source" className="block text-xs font-medium text-muted-foreground mb-1">
-                        Specify lead source <span className="text-destructive">*</span>
+                        Specify source <span className="text-destructive">*</span>
                       </label>
                       <input
                         id="custom-lead-source"
                         type="text"
-                        placeholder="Enter custom lead source"
+                        placeholder="Enter custom source"
                         value={customLeadSource}
                         onChange={(e) => {
                           setCustomLeadSource(e.target.value)
@@ -1213,7 +1213,7 @@ export function CreateOrganisationModal({
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="block text-xs font-semibold text-foreground">
-                      Assign Entity / Lead To
+                      Assign Organization To
                     </label>
                     <span className="text-[10px] text-muted-foreground font-mono">
                       {currentUser?.role === 'INTERN' ? 'Auto-assigned' : 'Self or Others'}
@@ -1249,7 +1249,7 @@ export function CreateOrganisationModal({
                   )}
                   <p className="text-[10px] text-muted-foreground mt-1">
                     {currentUser?.role === 'INTERN'
-                      ? 'Interns automatically own and work the leads they create.'
+                      ? 'Team members automatically own and work the organizations they create.'
                       : 'As Team Lead or Owner, you can assign to yourself, delegate to any intern, or keep unassigned.'}
                   </p>
                 </div>

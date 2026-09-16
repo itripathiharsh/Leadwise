@@ -99,7 +99,7 @@ export default function AuditLogPage() {
                   <th className="py-3 px-4">Timestamp</th>
                   <th className="py-3 px-4">Performer</th>
                   <th className="py-3 px-4">Action</th>
-                  <th className="py-3 px-4">Entity</th>
+                  <th className="py-3 px-4">Record</th>
                   <th className="py-3 px-4">Summary</th>
                 </tr>
               </thead>

@@ -170,7 +170,7 @@ export default function NotificationSettingsPage() {
               <CardTitle className="text-base">Meetings & Team Assignments</CardTitle>
             </div>
             <CardDescription>
-              Alerts for upcoming partner meetings and new organisation assignments.
+              Alerts for upcoming partner meetings and new organization assignments.
             </CardDescription>
           </CardHeader>
 
@@ -196,7 +196,7 @@ export default function NotificationSettingsPage() {
               <div className="space-y-0.5">
                 <label className="text-sm font-medium text-foreground">Assignment Notifications</label>
                 <p className="text-xs text-muted-foreground">
-                  Get notified whenever an Owner or Team Lead assigns you a new organisation or lead.
+                  Get notified whenever an Owner or Team Lead assigns you a new organization or contact.
                 </p>
               </div>
               <input

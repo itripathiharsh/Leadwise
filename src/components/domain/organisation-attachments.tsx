@@ -76,7 +76,7 @@ export function OrganisationAttachments({
         setAttachments(json.attachments || [])
       }
     } catch {
-      toast.error('Failed to load organisation attachments.')
+      toast.error('Failed to load organization attachments.')
     } finally {
       setLoading(false)
     }
@@ -364,7 +364,7 @@ export function OrganisationAttachments({
           <FileText className="size-10 text-muted-foreground/40 mb-3" />
           <h4 className="text-sm font-bold text-foreground">No documents attached yet</h4>
           <p className="text-xs text-muted-foreground max-w-sm mt-1 mb-4">
-            Upload institutional agreements, partnership proposals, and collateral directly to this organisation.
+            Upload partnership proposals and agreements directly to this organization.
           </p>
           {canEdit && (
             <Button

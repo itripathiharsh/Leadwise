@@ -27,7 +27,7 @@ export function CreateContactModal({
   open,
   onOpenChange,
   organisationId: initialOrgId = '',
-  organisationName = 'Organisation',
+  organisationName = 'Organization',
   onSuccess,
 }: CreateContactModalProps) {
   const [organisationId, setOrganisationId] = React.useState(initialOrgId)
@@ -101,7 +101,7 @@ export function CreateContactModal({
     if (!name.trim()) return
 
     if (!organisationId) {
-      toast.error('Please select an organisation for this lead/contact.')
+      toast.error('Please select an organization for this contact.')
       return
     }
 
@@ -133,6 +133,25 @@ export function CreateContactModal({
         return
       }
 
+      // A same-organisation duplicate returns HTTP 200 with status DUPLICATE —
+      // never treat it as success: keep the form intact so nothing is lost.
+      if (data.status === 'DUPLICATE') {
+        const matches = Array.isArray(data.duplicates) ? data.duplicates : []
+        const detail = matches
+          .map((d: any) =>
+            Array.isArray(d?.reasons) && d.reasons.length > 0 ? `${d.name} (${d.reasons.join(', ')})` : d?.name,
+          )
+          .filter(Boolean)
+          .join('; ')
+        toast.error(
+          detail
+            ? `Duplicate contact in this organization: ${detail}. Use a different email or phone.`
+            : 'Duplicate contact in this organization. Use a different email or phone.',
+        )
+        setLoading(false)
+        return
+      }
+
       toast.success(`Added contact "${name}"`)
       onOpenChange(false)
       onSuccess?.()
@@ -152,9 +171,9 @@ export function CreateContactModal({
               <User className="size-5" />
             </div>
             <div>
-              <DialogTitle>Add Contact / Lead</DialogTitle>
+              <DialogTitle>Add Contact</DialogTitle>
               <DialogDescription>
-                {initialOrgId ? `Add a key stakeholder or lead under ${organisationName}.` : 'Add a new contact or lead to an outreach organisation.'}
+                {initialOrgId ? `Add a key contact under ${organisationName}.` : 'Add a new contact to an outreach organization.'}
               </DialogDescription>
             </div>
           </div>
@@ -163,14 +182,14 @@ export function CreateContactModal({
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <DialogBody className="space-y-4">
             {!initialOrgId && (
-              <Field label="Target Organisation" required>
+              <Field label="Target Organization" required>
                 <select
                   value={organisationId}
                   onChange={(e) => setOrganisationId(e.target.value)}
                   required
                   className="h-10 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-xs transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
-                  <option value="">-- Select Organisation --</option>
+                  <option value="">-- Select Organization --</option>
                   {orgList.map((org) => (
                     <option key={org.id} value={org.id}>
                       {org.name}
@@ -259,13 +278,13 @@ export function CreateContactModal({
             </div>
 
             {isLeader && (
-              <Field label="Assign Contact / Lead Handler">
+              <Field label="Assign Contact Handler">
                 <select
                   value={assignedToId}
                   onChange={(e) => setAssignedToId(e.target.value)}
                   className="h-10 w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold text-foreground shadow-xs transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                 >
-                  <option value="">Default to Organisation Handler</option>
+                  <option value="">Default to Organization Handler</option>
                   {currentUser && (
                     <option value={currentUser.id}>
                       Assign to Me ({currentUser.name})

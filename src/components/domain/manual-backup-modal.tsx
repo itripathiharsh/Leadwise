@@ -139,7 +139,7 @@ export function ManualBackupModal({ open, onOpenChange, onSuccess }: ManualBacku
             <div className="rounded-xl border border-border/80 bg-muted/40 p-4 text-sm text-muted-foreground space-y-2.5">
               <p className="font-medium text-foreground">This will export complete business data into separate Excel sheets:</p>
               <ul className="grid grid-cols-2 gap-2 text-xs text-foreground/80 pl-2">
-                <li>• Organisations (with IDs)</li>
+                <li>• Organizations (with IDs)</li>
                 <li>• Contacts & Designations</li>
                 <li>• Activities & Outcomes</li>
                 <li>• Follow-ups & Reminders</li>
@@ -155,7 +155,7 @@ export function ManualBackupModal({ open, onOpenChange, onSuccess }: ManualBacku
           ) : (
             <div className="rounded-xl border border-border bg-surface p-4 space-y-2">
               {renderStep('PREPARING', 'Preparing database export...', stage)}
-              {renderStep('EXPORTING', 'Exporting organisations, contacts & activities...', stage)}
+              {renderStep('EXPORTING', 'Exporting organizations, contacts & activities...', stage)}
               {renderStep('VALIDATING', 'Validating multi-sheet relational integrity...', stage)}
               {renderStep('UPLOADING', 'Uploading backup to Google Drive...', stage)}
               {renderStep('DONE', 'Backup validated and recorded successfully!', stage)}

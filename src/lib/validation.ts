@@ -319,6 +319,8 @@ const activityBase = z.object({
   meetingLocation: optionalText(240),
   /** Explicit status override; when omitted the outcome drives progression. */
   statusOverride: z.nativeEnum(OrgStatus).optional(),
+  /** Specific follow-up from the queue to mark done when logging outreach. */
+  completedFollowUpId: optionalCuid,
 })
 
 export const activityCreateSchema = activityBase.superRefine((data, ctx) => {
@@ -382,17 +384,6 @@ export const followUpStatusSchema = z.object({
   id: cuid,
   status: z.nativeEnum(FollowUpStatus),
 })
-
-// ── EOD ──────────────────────────────────────────────────────────────────────
-
-export const eodGenerateSchema = z.object({
-  dateKey: dateKeySchema,
-  /** Force a fresh AI pass + metric recomputation for an existing report. */
-  regenerate: z.boolean().optional().default(false),
-  /** Skip the AI call entirely and use the deterministic template. */
-  skipAi: z.boolean().optional().default(false),
-})
-export type EodGenerateInput = z.infer<typeof eodGenerateSchema>
 
 // ── Settings ─────────────────────────────────────────────────────────────────
 

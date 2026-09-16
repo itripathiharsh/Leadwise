@@ -403,7 +403,7 @@ export default function ProfilePage() {
               <Card className="h-full border-border bg-surface-panel p-4 hover:border-primary/40 transition-colors">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-muted-foreground">
-                    {isOwner ? 'Total Organisations' : 'Assigned Organisations'}
+                    {isOwner ? 'Total Organizations' : 'Assigned Organizations'}
                   </span>
                   <div className="p-1.5 rounded bg-primary/10 text-primary">
                     <Building2 className="size-4" />
@@ -432,7 +432,7 @@ export default function ProfilePage() {
                   {profile.counts.assignedContacts}
                 </div>
                 <div className="mt-1 text-[11px] text-muted-foreground">
-                  Decision makers & leads
+                  Decision makers & contacts
                 </div>
               </Card>
             </Link>
@@ -693,7 +693,7 @@ export default function ProfilePage() {
                     </div>
                   </div>
                   <div className="rounded-xl border border-border p-3 space-y-1">
-                    <div className="text-xs text-muted-foreground">Organisations</div>
+                    <div className="text-xs text-muted-foreground">Organizations</div>
                     <div className="text-xl font-bold">{profile.target.dailyOrganisations}</div>
                     <div className="text-[11px] text-muted-foreground">
                       Assigned: {profile.counts.assignedOrganisations} total
@@ -745,7 +745,7 @@ export default function ProfilePage() {
                           </span>
                           <span className="text-xs text-muted-foreground">•</span>
                           <span className="text-xs font-medium text-primary truncate">
-                            {act.organisation?.name || 'Unknown Organisation'}
+                            {act.organisation?.name || 'Unknown Organization'}
                           </span>
                           {act.contact && (
                             <span className="text-[11px] text-muted-foreground truncate">
@@ -989,7 +989,7 @@ export default function ProfilePage() {
                 <div className="space-y-2 pt-2">
                   <div className="flex items-start gap-2 text-muted-foreground">
                     <CheckCircle2 className="size-4 text-emerald-500 shrink-0 mt-0.5" />
-                    <span>Manage your assigned organisations, contacts, and deal stages.</span>
+                    <span>Manage your assigned organizations, contacts, and deal stages.</span>
                   </div>
                   <div className="flex items-start gap-2 text-muted-foreground">
                     <CheckCircle2 className="size-4 text-emerald-500 shrink-0 mt-0.5" />
@@ -1012,7 +1012,7 @@ export default function ProfilePage() {
                 <div className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/20 text-foreground space-y-1">
                   <div className="font-semibold text-blue-600 dark:text-blue-400">Team Lead Oversight</div>
                   <p className="text-muted-foreground text-[11px] leading-relaxed">
-                    As a Team Lead, you have complete visibility over team performance, outreach pipelines, and end-of-day reports.
+                    As a Team Lead, you have complete visibility over team performance, outreach pipelines, and analytics.
                   </p>
                 </div>
                 <div className="space-y-2 pt-2">
@@ -1022,11 +1022,11 @@ export default function ProfilePage() {
                   </div>
                   <div className="flex items-start gap-2 text-muted-foreground">
                     <CheckCircle2 className="size-4 text-blue-500 shrink-0 mt-0.5" />
-                    <span>Review daily EOD reports and monitor outreach bottlenecks.</span>
+                    <span>Review analytics and monitor outreach bottlenecks.</span>
                   </div>
                   <div className="flex items-start gap-2 text-muted-foreground">
                     <CheckCircle2 className="size-4 text-blue-500 shrink-0 mt-0.5" />
-                    <span>Assign organisations, review signups, approve and discontinue interns.</span>
+                    <span>Assign organizations, review signups, approve and discontinue team members.</span>
                   </div>
                   <div className="flex items-start gap-2 text-muted-foreground">
                     <CheckCircle2 className="size-4 text-blue-500 shrink-0 mt-0.5" />

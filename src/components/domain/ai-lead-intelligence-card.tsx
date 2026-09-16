@@ -39,7 +39,7 @@ export function AiLeadIntelligenceCard({
         const d = await res.json()
         setData(d.intelligence)
       } else {
-        toast.error('Failed to compute lead intelligence.')
+        toast.error('Failed to compute organization intelligence.')
       }
     } catch {
       toast.error('Network error loading intelligence.')
@@ -131,7 +131,7 @@ export function AiLeadIntelligenceCard({
               <span className="text-[10px] text-muted-foreground">estimated</span>
             </div>
             <div className="text-[10px] text-muted-foreground italic pt-1 border-t border-border/50">
-              Derived from response history &amp; stakeholder mapping
+              Derived from response history &amp; contact mapping
             </div>
           </div>
         </div>
@@ -177,7 +177,7 @@ export function AiLeadIntelligenceCard({
                 )}
               </div>
               <div className="text-[10px] text-muted-foreground">
-                {data.recommendedContact.designation || 'Key Stakeholder'} · {data.recommendedContact.reason}
+                {data.recommendedContact.designation || 'Key Contact'} · {data.recommendedContact.reason}
               </div>
             </div>
           )}

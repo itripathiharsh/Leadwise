@@ -7,6 +7,7 @@ import {
   Clock,
   CheckCircle2,
   Phone,
+  Mail,
   RefreshCw,
   AlertTriangle,
   Check,
@@ -15,7 +16,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { LogActivityModal } from '@/components/domain/log-activity-modal'
+import { LogActivityModal, type ActivityTypeTab } from '@/components/domain/log-activity-modal'
 import { formatDate } from '@/lib/dates'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -45,6 +46,7 @@ export default function FollowUpsPage() {
 
   const [logModalOpen, setLogModalOpen] = React.useState(false)
   const [activeItem, setActiveItem] = React.useState<any>(null)
+  const [logType, setLogType] = React.useState<ActivityTypeTab>('CALL')
 
   const fetchFollowUps = React.useCallback(async () => {
     setLoading(true)
@@ -52,11 +54,13 @@ export default function FollowUpsPage() {
       const res = await fetch(`/api/followups?bucket=${bucket}&pageSize=50`)
       if (res.ok) {
         const data = await res.json()
-        setFollowups(data.items ?? [])
-        setTotal(data.total ?? 0)
+        setFollowups(data.items || [])
+        setTotal(data.total || 0)
+      } else {
+        toast.error('Failed to load follow-up queue.')
       }
     } catch {
-      toast.error('Failed to load follow-ups.')
+      toast.error('Network error loading follow-ups.')
     } finally {
       setLoading(false)
     }
@@ -66,7 +70,7 @@ export default function FollowUpsPage() {
     fetchFollowUps()
   }, [fetchFollowUps])
 
-  const handleComplete = async (id: string) => {
+  const handleDismiss = async (id: string) => {
     try {
       const res = await fetch('/api/followups', {
         method: 'PATCH',
@@ -74,18 +78,19 @@ export default function FollowUpsPage() {
         body: JSON.stringify({ id, action: 'COMPLETE' }),
       })
       if (res.ok) {
-        toast.success('Follow-up marked as completed! ✓')
+        toast.success('Follow-up dismissed.')
         fetchFollowUps()
       } else {
-        toast.error('Failed to complete follow-up.')
+        toast.error('Failed to dismiss follow-up.')
       }
     } catch {
-      toast.error('Network error completing follow-up.')
+      toast.error('Network error dismissing follow-up.')
     }
   }
 
-  const openLog = (item: any) => {
+  const openLog = (item: any, type: ActivityTypeTab = 'CALL') => {
     setActiveItem(item)
+    setLogType(type)
     setLogModalOpen(true)
   }
 
@@ -276,7 +281,7 @@ export default function FollowUpsPage() {
 
                   <div className="text-xs text-muted-foreground flex items-center gap-2">
                     {item.contact && (
-                      <span>Stakeholder: <strong className="text-foreground font-semibold">{item.contact.name}</strong></span>
+                      <span>Contact: <strong className="text-foreground font-semibold">{item.contact.name}</strong></span>
                     )}
                     {item.assignedTo && (
                       <span className="flex items-center gap-1.5 font-mono text-[11px]">
@@ -292,23 +297,37 @@ export default function FollowUpsPage() {
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0 sm:self-center">
-                  <Button
-                    variant="outline"
-                    size="xs"
-                    onClick={() => handleComplete(item.id)}
-                    icon={<Check className="size-3.5" />}
-                  >
-                    Mark Done
-                  </Button>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 shrink-0 sm:self-center">
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      variant="primary"
+                      size="xs"
+                      onClick={() => openLog(item, 'CALL')}
+                      icon={<Phone className="size-3.5" />}
+                      title="Log call outcome (automatically completes this follow-up)"
+                    >
+                      Log Call
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      size="xs"
+                      onClick={() => openLog(item, 'EMAIL')}
+                      icon={<Mail className="size-3.5 text-indigo-500" />}
+                      title="Log email outcome (automatically completes this follow-up)"
+                    >
+                      Log Email
+                    </Button>
+                  </div>
 
                   <Button
-                    variant="primary"
+                    variant="ghost"
                     size="xs"
-                    onClick={() => openLog(item)}
-                    icon={<Phone className="size-3.5" />}
+                    onClick={() => handleDismiss(item.id)}
+                    className="text-muted-foreground hover:text-foreground text-xs"
+                    title="Dismiss follow-up without outreach"
                   >
-                    Log Touchpoint
+                    Dismiss
                   </Button>
                 </div>
               </div>
@@ -321,8 +340,12 @@ export default function FollowUpsPage() {
         <LogActivityModal
           open={logModalOpen}
           onOpenChange={setLogModalOpen}
+          initialType={logType}
           initialOrganisationId={activeItem.organisation.id}
           initialContactId={activeItem.contactId || undefined}
+          initialPhoneNumberUsed={activeItem.contact?.phone || undefined}
+          initialEmailUsed={activeItem.contact?.email || undefined}
+          completedFollowUpId={activeItem.id}
           onSuccess={fetchFollowUps}
         />
       )}

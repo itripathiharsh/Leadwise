@@ -43,7 +43,7 @@ interface OrgStatusMeta {
 }
 
 export const ORG_STATUS_META: Record<OrgStatus, OrgStatusMeta> = {
-  NEW: { label: 'Assigned', tone: 'blue', rank: 1, description: 'Allocated to rep, outreach pending.' },
+  NEW: { label: 'New', tone: 'blue', rank: 1, description: 'Newly added, outreach not yet assigned.' },
   ASSIGNED: { label: 'Assigned', tone: 'blue', rank: 1, description: 'Allocated to rep, outreach pending.' },
   CONTACTED: { label: 'Contacted', tone: 'indigo', rank: 2, description: 'Initial outreach call, email, or message initiated.' },
   RESPONDED: { label: 'Responded', tone: 'cyan', rank: 3, description: 'Target responded or engaged with outreach.' },

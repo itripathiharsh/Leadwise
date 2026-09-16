@@ -202,3 +202,19 @@ export function describeDuplicates(reasons: DuplicateReason[]): string {
   if (reasons.length === 0) return 'Possible duplicate'
   return reasons.map(duplicateReasonLabel).join(' · ')
 }
+
+/**
+ * Pure helper deciding which matches actually block a save.
+ *
+ * Only duplicates inside the SAME organisation block creation — the same email
+ * or phone on a different organisation is a legitimate shared contact (e.g. a
+ * group office) and must never prevent saving.
+ */
+export function selectBlockingDuplicates(
+  duplicates: ContactDuplicate[],
+  organisationId: string,
+): ContactDuplicate[] {
+  return duplicates.filter(
+    (d) => !d.isCrossOrganisation && d.organisation.id === organisationId,
+  )
+}

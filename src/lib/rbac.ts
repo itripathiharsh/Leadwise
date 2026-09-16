@@ -36,8 +36,6 @@ export const PERMISSIONS = [
   'audit:view',
   'settings:manage',
   // Reporting
-  'eod:view',
-  'eod:generate',
   'data:import',
   'data:export',
   'backup:manage',

@@ -91,7 +91,7 @@ function DomainCoverageTooltip({ active, payload }: any) {
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Organisations:</span>
+            <span className="text-muted-foreground">Organizations:</span>
             <span className="font-mono tabular text-foreground">
               {item.contactedOrganisations} / {item.totalOrganisations}
             </span>
@@ -103,7 +103,7 @@ function DomainCoverageTooltip({ active, payload }: any) {
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Pipeline Leads:</span>
+            <span className="text-muted-foreground">Pipeline Organizations:</span>
             <span className="font-mono font-bold tabular text-amber-600 dark:text-amber-400">
               {item.pipelineLeads}
             </span>
@@ -321,7 +321,7 @@ export default function AnalyticsPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {[
             {
-              label: 'Organisations',
+              label: 'Organizations',
               value: data.currentWeek.organisationsContacted,
               prev: data.previousWeek.organisationsContacted,
               growth: data.growthPercent.organisations,

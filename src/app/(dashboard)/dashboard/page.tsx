@@ -438,7 +438,7 @@ export default async function DashboardPage() {
               href="/organisations"
               className="text-xs font-semibold text-primary hover:underline flex items-center gap-1.5 transition-colors"
             >
-              All Organisations <ArrowRight className="size-3" />
+              All Organizations <ArrowRight className="size-3" />
             </Link>
           </div>
 
@@ -578,7 +578,7 @@ export default async function DashboardPage() {
                           </div>
 
                           <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                            {act.notes || `${act.type} logged with ${act.contact?.name || 'organisation contact'}.`}
+                            {act.notes || `${act.type} logged with ${act.contact?.name || 'organization contact'}.`}
                           </p>
 
                           <div className="flex items-center gap-2 pt-0.5">
@@ -812,7 +812,7 @@ export default async function DashboardPage() {
             <CardContent className="pt-3">
               {hotLeads.items.length === 0 ? (
                 <div className="py-6 text-center text-xs text-muted-foreground">
-                  <p>No warm leads yet.</p>
+                  <p>No warm organizations yet.</p>
                 </div>
               ) : (
                 <div className="space-y-1.5">

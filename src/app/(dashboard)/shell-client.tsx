@@ -13,7 +13,6 @@ import {
   Activity,
   CalendarClock,
   CalendarCheck,
-  FileSpreadsheet,
   FileText,
   TrendingUp,
   BarChart3,
@@ -23,7 +22,6 @@ import {
   ChevronDown,
   Search,
   LogOut,
-  Sparkles,
   Menu,
   X,
   Sun,
@@ -106,7 +104,7 @@ export function DashboardShell({
       p: '/pipeline',
       f: '/followups',
       a: '/calendar',
-      r: '/reports/weekly',
+      r: '/analytics',
       s: '/settings',
     }
 
@@ -171,7 +169,7 @@ export function DashboardShell({
     {
       title: 'Outreach',
       items: [
-        { label: 'Organisations', href: '/organisations', icon: Building2 },
+        { label: 'Organizations', href: '/organisations', icon: Building2 },
         { label: 'Contacts', href: '/contacts', icon: Users },
         { label: 'Pipeline', href: '/pipeline', icon: Kanban },
         { label: 'Activities', href: '/activities', icon: Activity },
@@ -186,19 +184,16 @@ export function DashboardShell({
         ...(isOwnerOrTL ? [{ label: 'Team', href: '/team', icon: BarChart3 }] : []),
       ],
     },
-    ...(isOwnerOrTL
-      ? [
-          {
-            title: 'Insights',
-            items: [
-              { label: 'Analytics', href: '/analytics', icon: TrendingUp },
-              { label: 'AI & Funnel', href: '/analytics/advanced', icon: Sparkles },
-              { label: 'Weekly Report', href: '/reports/weekly', icon: BarChart3 },
-              { label: 'Monthly Report', href: '/reports/monthly', icon: CalendarCheck },
-            ],
-          },
-        ]
-      : []),
+  ...(isOwnerOrTL
+    ? [
+        {
+          title: 'Insights',
+          items: [
+            { label: 'Analytics', href: '/analytics', icon: TrendingUp },
+          ],
+        },
+      ]
+    : []),
     {
       title: 'System',
       items: [
@@ -426,8 +421,8 @@ export function DashboardShell({
                     <Users className="size-3.5" />
                   </div>
                   <div>
-                    <div className="font-semibold text-xs text-foreground">Add Contact / Lead</div>
-                    <div className="text-[10.5px] text-muted-foreground">Stakeholder or decision maker</div>
+                    <div className="font-semibold text-xs text-foreground">Add Contact</div>
+                    <div className="text-[10.5px] text-muted-foreground">Contact or decision maker</div>
                   </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -526,7 +521,7 @@ export function DashboardShell({
             )}
           >
             <Building2 className="size-4" />
-            <span>Entities</span>
+            <span>Orgs</span>
           </Link>
 
           {/* Quick Center Action */}

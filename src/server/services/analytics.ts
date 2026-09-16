@@ -15,7 +15,6 @@ export interface PeriodSummary {
   interested: number
   meetings: number
   followUpsCompleted: number
-  followUpsMissed: number
 }
 
 export interface TeamMemberWeeklyComparison {
@@ -156,7 +155,6 @@ export async function getWeeklyAnalytics(
       interested,
       meetings,
       followUpsCompleted: doneCount,
-      followUpsMissed: 0,
     }
   }
 
