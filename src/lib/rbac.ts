@@ -41,6 +41,10 @@ export const PERMISSIONS = [
   'backup:manage',
   'reassign:approve',
   'reassign:request',
+  // Team Chat & Communication
+  'chat:access',
+  'channel:create',
+  'channel:manage',
 ] as const
 
 export type Permission = (typeof PERMISSIONS)[number]
@@ -60,6 +64,7 @@ const INTERN_PERMISSIONS: Permission[] = [
   'followup:create',
   'template:manage',
   'reassign:request',
+  'chat:access',
 ]
 
 const MATRIX: Record<Role, Permission[]> = {

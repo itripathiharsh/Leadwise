@@ -27,6 +27,7 @@ import {
   Sun,
   Moon,
   Keyboard,
+  MessageSquare,
 } from 'lucide-react'
 import { NotificationCenter } from '@/components/domain/notification-center'
 import { GlobalSearchDialog } from '@/components/domain/global-search-dialog'
@@ -64,6 +65,28 @@ export function DashboardShell({
   const [preselectedOrg, setPreselectedOrg] = React.useState<{ id: string; name: string } | null>(null)
   const [isDark, setIsDark] = React.useState(true)
   const [shortcutsOpen, setShortcutsOpen] = React.useState(false)
+  const [unreadChatCount, setUnreadChatCount] = React.useState(0)
+
+  React.useEffect(() => {
+    let isMounted = true
+    const fetchUnreadChat = async () => {
+      if (document.hidden) return
+      try {
+        const res = await fetch('/api/chat/unread-count')
+        if (res.ok && isMounted) {
+          const data = await res.json()
+          setUnreadChatCount(data.unreadCount || 0)
+        }
+      } catch {}
+    }
+
+    fetchUnreadChat()
+    const interval = setInterval(fetchUnreadChat, 10000)
+    return () => {
+      isMounted = false
+      clearInterval(interval)
+    }
+  }, [pathname])
 
   React.useEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'))
@@ -106,6 +129,7 @@ export function DashboardShell({
       a: '/calendar',
       r: '/analytics',
       s: '/settings',
+      m: '/chat',
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -159,11 +183,29 @@ export function DashboardShell({
     }
   }, [router])
 
-  const navGroups = [
+interface NavItem {
+  label: string
+  href: string
+  icon: React.ComponentType<{ className?: string }>
+  badge?: number
+}
+
+interface NavGroup {
+  title: string
+  items: NavItem[]
+}
+
+  const navGroups: NavGroup[] = [
     {
       title: 'Overview',
       items: [
         { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+      ],
+    },
+    {
+      title: 'Communication',
+      items: [
+        { label: 'Chat', href: '/chat', icon: MessageSquare, badge: unreadChatCount },
       ],
     },
     {
@@ -272,14 +314,21 @@ export function DashboardShell({
                       href={item.href}
                       prefetch={true}
                       className={cn(
-                        'relative flex items-center gap-2.5 px-2.5 py-1.5 text-xs font-medium transition-[background-color,color] duration-120',
+                        'relative flex items-center justify-between px-2.5 py-1.5 text-xs font-medium transition-[background-color,color] duration-120',
                         active
                           ? 'bg-primary/10 text-primary font-semibold border-l-2 border-primary rounded-r-md rounded-l-none pl-2'
                           : 'text-muted-foreground hover:bg-surface-hover hover:text-foreground rounded-md border-l-2 border-transparent',
                       )}
                     >
-                      <Icon className={cn('size-4 shrink-0', active ? 'text-primary' : 'text-muted-foreground')} />
-                      <span>{item.label}</span>
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <Icon className={cn('size-4 shrink-0', active ? 'text-primary' : 'text-muted-foreground')} />
+                        <span className="truncate">{item.label}</span>
+                      </div>
+                      {typeof item.badge === 'number' && item.badge > 0 && (
+                        <span className="font-mono text-[10px] tabular-nums font-bold px-1.5 py-0.2 rounded-full bg-primary text-primary-foreground shrink-0 ml-1">
+                          {item.badge > 99 ? '99+' : item.badge}
+                        </span>
+                      )}
                     </Link>
                   )
                 })}
@@ -627,14 +676,21 @@ export function DashboardShell({
                           prefetch={true}
                           onClick={() => setMobileNavOpen(false)}
                           className={cn(
-                            'flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-colors',
+                            'flex items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition-colors',
                             active
                               ? 'bg-primary/10 text-primary font-semibold'
                               : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                           )}
                         >
-                          <Icon className={cn('size-4', active ? 'text-primary' : 'text-muted-foreground')} />
-                          <span>{item.label}</span>
+                          <div className="flex items-center gap-3 min-w-0">
+                            <Icon className={cn('size-4', active ? 'text-primary' : 'text-muted-foreground')} />
+                            <span className="truncate">{item.label}</span>
+                          </div>
+                          {typeof item.badge === 'number' && item.badge > 0 && (
+                            <span className="font-mono text-[10px] tabular-nums font-bold px-2 py-0.5 rounded-full bg-primary text-primary-foreground">
+                              {item.badge > 99 ? '99+' : item.badge}
+                            </span>
+                          )}
                         </Link>
                       )
                     })}

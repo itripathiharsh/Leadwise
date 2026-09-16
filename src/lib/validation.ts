@@ -401,6 +401,49 @@ export const settingsSchema = z.object({
   teamName: optionalText(80),
 })
 
+// ── Team Chat & Communication ───────────────────────────────────────────────
+
+export const createDmSchema = z.object({
+  type: z.literal('DM').default('DM'),
+  recipientId: z.string().trim().min(1, 'Recipient ID is required').max(64),
+})
+export type CreateDmInput = z.infer<typeof createDmSchema>
+
+export const createChannelSchema = z.object({
+  type: z.literal('CHANNEL'),
+  name: z
+    .string()
+    .trim()
+    .min(2, 'Channel name must be at least 2 characters')
+    .max(50, 'Channel name must be at most 50 characters')
+    .regex(/^[a-zA-Z0-9_-]+$/, 'Channel name may only contain letters, numbers, hyphens and underscores'),
+  description: z.string().trim().max(250, 'Description must be at most 250 characters').optional(),
+  memberIds: z.array(z.string().trim().min(1).max(64)).optional(),
+})
+export type CreateChannelInput = z.infer<typeof createChannelSchema>
+
+export const createConversationSchema = z.discriminatedUnion('type', [
+  createDmSchema,
+  createChannelSchema,
+])
+export type CreateConversationInput = z.infer<typeof createConversationSchema>
+
+export const sendMessageSchema = z.object({
+  content: z
+    .string()
+    .trim()
+    .min(1, 'Message cannot be empty')
+    .max(4000, 'Message cannot exceed 4000 characters'),
+})
+export type SendMessageInput = z.infer<typeof sendMessageSchema>
+
+export const chatMessagesQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  before: z.string().optional(),
+  cursor: z.string().optional(),
+})
+export type ChatMessagesQueryInput = z.infer<typeof chatMessagesQuerySchema>
+
 // ── Excel import ─────────────────────────────────────────────────────────────
 
 /** Canonical organisation fields an uploaded column can be mapped onto. */

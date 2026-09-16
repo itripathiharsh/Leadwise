@@ -189,6 +189,9 @@ model User {
   apiKeys                ApiKey[]
   webhooks               WebhookEndpoint[]
   attachments            Attachment[]
+  conversationsCreated   Conversation[]        @relation("ConversationCreator")
+  conversationMembers    ConversationMember[]
+  messagesSent           Message[]
 
   @@index([role])
   @@index([status])
@@ -837,3 +840,67 @@ model Attachment {
   @@index([organisationId])
   @@index([uploadedById])
 }
+
+// ── Team Communication & Chat ────────────────────────────────────────────────
+
+enum ConversationType {
+  DM
+  CHANNEL
+}
+
+model Conversation {
+  id          String           @id @default(cuid())
+  type        ConversationType @default(DM)
+  name        String?
+  description String?
+  /// Canonical sorted key for DMs ("user1Id:user2Id") enforcing single DM pair at DB level
+  dmKey       String?          @unique
+  createdById String
+  isArchived  Boolean          @default(false)
+  archivedAt  DateTime?
+
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  createdBy   User                 @relation("ConversationCreator", fields: [createdById], references: [id])
+  members     ConversationMember[]
+  messages    Message[]
+
+  @@index([type])
+  @@index([createdById])
+  @@index([updatedAt])
+  @@index([isArchived])
+}
+
+model ConversationMember {
+  id             String       @id @default(cuid())
+  conversationId String
+  userId         String
+  joinedAt       DateTime     @default(now())
+  lastReadAt     DateTime?
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+  @@index([conversationId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime?    @updatedAt
+  deletedAt      DateTime?
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+  @@index([deletedAt])
+}
+
