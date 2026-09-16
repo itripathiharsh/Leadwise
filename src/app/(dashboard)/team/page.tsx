@@ -19,6 +19,8 @@ import {
   UserCheck,
   Trash2,
   AlertTriangle,
+  KeyRound,
+  UserCog,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -52,6 +54,15 @@ export default function TeamPage() {
 
   const [deleteTarget, setDeleteTarget] = React.useState<any>(null)
   const [deleting, setDeleting] = React.useState(false)
+
+  const [resetPasswordTarget, setResetPasswordTarget] = React.useState<any>(null)
+  const [newPasswordInput, setNewPasswordInput] = React.useState('')
+  const [resettingPassword, setResettingPassword] = React.useState(false)
+
+  const [roleChangeTarget, setRoleChangeTarget] = React.useState<any>(null)
+  const [newRoleSelect, setNewRoleSelect] = React.useState<string>('INTERN')
+  const [confirmOwnerChangeInput, setConfirmOwnerChangeInput] = React.useState(false)
+  const [changingRole, setChangingRole] = React.useState(false)
 
   const [createModalOpen, setCreateModalOpen] = React.useState(false)
   const [name, setName] = React.useState('')
@@ -198,6 +209,65 @@ export default function TeamPage() {
       toast.error('Network error deleting user.')
     } finally {
       setDeleting(false)
+    }
+  }
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!resetPasswordTarget || !newPasswordInput) return
+    setResettingPassword(true)
+    try {
+      const res = await fetch('/api/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: resetPasswordTarget.id,
+          action: 'RESET_PASSWORD',
+          newPassword: newPasswordInput,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok || data.error) {
+        toast.error(data.error || 'Failed to reset password.')
+        return
+      }
+      toast.success(`Credentials reset successfully for ${resetPasswordTarget.name}.`)
+      setResetPasswordTarget(null)
+      setNewPasswordInput('')
+      fetchData()
+    } catch {
+      toast.error('Network error resetting password.')
+    } finally {
+      setResettingPassword(false)
+    }
+  }
+
+  const handleChangeRole = async () => {
+    if (!roleChangeTarget) return
+    setChangingRole(true)
+    try {
+      const res = await fetch('/api/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: roleChangeTarget.id,
+          action: 'CHANGE_ROLE',
+          role: newRoleSelect,
+          confirmOwnerChange: confirmOwnerChangeInput,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok || data.error) {
+        toast.error(data.error || 'Failed to change role.')
+        return
+      }
+      toast.success(`Role updated to ${newRoleSelect} for ${roleChangeTarget.name}.`)
+      setRoleChangeTarget(null)
+      fetchData()
+    } catch {
+      toast.error('Network error updating member role.')
+    } finally {
+      setChangingRole(false)
     }
   }
 
@@ -504,7 +574,13 @@ export default function TeamPage() {
                       }
                       size="sm"
                     >
-                      {u.role}
+                      {u.role === 'OWNER'
+                        ? u.email === 'admin@sentio.in'
+                          ? 'Primary Owner'
+                          : u.email === 'harsh@sentio.in'
+                            ? 'Backup Owner'
+                            : 'Owner'
+                        : u.role}
                     </Badge>
                   </td>
                   <td className="py-3 px-3">
@@ -527,49 +603,95 @@ export default function TeamPage() {
                     {u.lastLoginAt ? formatDateTime(u.lastLoginAt) : 'Never logged in'}
                   </td>
                   <td className="py-3 px-3 text-right">
-                    {u.id === currentUser?.id ? (
-                      <span className="text-[10px] font-mono text-muted-foreground font-medium px-2 py-0.5 bg-surface-elevated rounded border border-border">
-                        Current Account
-                      </span>
-                    ) : u.role === 'INTERN' ? (
-                      <div className="flex items-center justify-end gap-1.5">
-                        {u.isActive && u.status !== 'DISCONTINUED' ? (
-                          <Button
-                            variant="outline"
-                            size="xs"
-                            onClick={() => setDiscontinueTarget(u)}
-                            icon={<UserX className="size-3.5 text-amber-500" />}
-                            className="hover:bg-amber-500/10 hover:text-amber-400 hover:border-amber-500/40 text-xs font-medium text-amber-400 shadow-xs"
-                            title="Discontinue intern and unassign active accounts"
-                          >
-                            Discontinue
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="xs"
-                            onClick={() => handleReactivate(u)}
-                            icon={<UserCheck className="size-3.5 text-emerald-500" />}
-                            className="hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/40 text-xs font-medium text-emerald-400 shadow-xs"
-                            title="Reactivate intern access"
-                          >
-                            Reactivate
-                          </Button>
-                        )}
+                    <div className="flex items-center justify-end gap-1.5">
+                      {/* Password Reset action available for OWNER */}
+                      {currentUser?.role === 'OWNER' && (
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="xs"
-                          onClick={() => setDeleteTarget(u)}
-                          icon={<Trash2 className="size-3 text-muted-foreground hover:text-rose-400" />}
-                          className="hover:bg-rose-500/10 text-muted-foreground hover:text-rose-400 p-1.5"
-                          title="Delete intern permanently"
-                        />
-                      </div>
-                    ) : (
-                      <span className="text-[10px] font-mono text-muted-foreground font-medium px-2 py-0.5 bg-surface-elevated/50 rounded border border-border/40">
-                        Leadership
-                      </span>
-                    )}
+                          onClick={() => {
+                            setResetPasswordTarget(u)
+                            setNewPasswordInput('')
+                          }}
+                          icon={<KeyRound className="size-3.5 text-indigo-400" />}
+                          className="hover:bg-indigo-500/10 hover:text-indigo-400 hover:border-indigo-500/40 text-xs font-medium text-indigo-400 shadow-xs"
+                          title={`Reset credentials for ${u.name}`}
+                        >
+                          Reset Pass
+                        </Button>
+                      )}
+
+                      {u.id === currentUser?.id ? (
+                        <span className="text-[10px] font-mono text-muted-foreground font-medium px-2 py-0.5 bg-surface-elevated rounded border border-border">
+                          You
+                        </span>
+                      ) : u.role === 'INTERN' ? (
+                        <>
+                          {u.isActive && u.status !== 'DISCONTINUED' ? (
+                            <Button
+                              variant="outline"
+                              size="xs"
+                              onClick={() => setDiscontinueTarget(u)}
+                              icon={<UserX className="size-3.5 text-amber-500" />}
+                              className="hover:bg-amber-500/10 hover:text-amber-400 hover:border-amber-500/40 text-xs font-medium text-amber-400 shadow-xs"
+                              title="Discontinue intern and unassign active accounts"
+                            >
+                              Discontinue
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="xs"
+                              onClick={() => handleReactivate(u)}
+                              icon={<UserCheck className="size-3.5 text-emerald-500" />}
+                              className="hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/40 text-xs font-medium text-emerald-400 shadow-xs"
+                              title="Reactivate intern access"
+                            >
+                              Reactivate
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="xs"
+                            onClick={() => setDeleteTarget(u)}
+                            icon={<Trash2 className="size-3 text-muted-foreground hover:text-rose-400" />}
+                            className="hover:bg-rose-500/10 text-muted-foreground hover:text-rose-400 p-1.5"
+                            title="Delete intern permanently"
+                          />
+                        </>
+                      ) : (
+                        <>
+                          {!u.isActive && (
+                            <Button
+                              variant="outline"
+                              size="xs"
+                              onClick={() => handleReactivate(u)}
+                              icon={<UserCheck className="size-3.5 text-emerald-500" />}
+                              className="hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/40 text-xs font-medium text-emerald-400 shadow-xs"
+                              title="Reactivate account"
+                            >
+                              Reactivate
+                            </Button>
+                          )}
+                          {currentUser?.role === 'OWNER' && (
+                            <Button
+                              variant="outline"
+                              size="xs"
+                              onClick={() => {
+                                setRoleChangeTarget(u)
+                                setNewRoleSelect(u.role)
+                                setConfirmOwnerChangeInput(false)
+                              }}
+                              icon={<UserCog className="size-3.5 text-muted-foreground" />}
+                              className="hover:bg-surface-elevated text-xs font-medium text-muted-foreground"
+                              title="Change user role"
+                            >
+                              Role
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -742,6 +864,113 @@ export default function TeamPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset User Password Dialog (OWNER Only) */}
+      <Dialog open={!!resetPasswordTarget} onOpenChange={(open) => !open && setResetPasswordTarget(null)}>
+        <DialogContent size="sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="size-4 text-indigo-400" />
+              Reset User Credentials
+            </DialogTitle>
+            <DialogDescription>
+              Set new credentials for <strong>{resetPasswordTarget?.name}</strong> ({resetPasswordTarget?.email}).
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleResetPassword}>
+            <DialogBody className="space-y-4">
+              <Field label="New Password" required hint="Must be at least 8 characters with letters and numbers.">
+                <Input
+                  type="password"
+                  value={newPasswordInput}
+                  onChange={(e) => setNewPasswordInput(e.target.value)}
+                  placeholder="Enter new secure password..."
+                  required
+                  autoFocus
+                />
+              </Field>
+            </DialogBody>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setResetPasswordTarget(null)}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" loading={resettingPassword}>
+                Save Password
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modify User Role Dialog (OWNER Only) */}
+      <Dialog open={!!roleChangeTarget} onOpenChange={(open) => !open && setRoleChangeTarget(null)}>
+        <DialogContent size="sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserCog className="size-4 text-primary" />
+              Modify Member Role
+            </DialogTitle>
+            <DialogDescription>
+              Adjust permissions and responsibilities for <strong>{roleChangeTarget?.name}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogBody className="space-y-4">
+            <Field label="Designated Role" required>
+              <select
+                value={newRoleSelect}
+                onChange={(e) => setNewRoleSelect(e.target.value)}
+                className="w-full h-9 rounded-md border border-border bg-surface-elevated px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="INTERN">Intern (Normal Employee Access)</option>
+                <option value="TL">Team Lead (TL Executive Access)</option>
+                <option value="OWNER">Owner (Full Admin & Disaster Recovery Access)</option>
+              </select>
+            </Field>
+
+            {(roleChangeTarget?.role === 'OWNER' || newRoleSelect === 'OWNER') && (
+              <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 space-y-2">
+                <div className="flex items-center gap-2 text-xs font-semibold text-amber-400">
+                  <AlertTriangle className="size-4" />
+                  Owner Role Confirmation
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Modifying an OWNER account impacts recovery resilience and administrative governance.
+                </p>
+                <label className="flex items-center gap-2 text-xs text-foreground cursor-pointer pt-1">
+                  <input
+                    type="checkbox"
+                    checked={confirmOwnerChangeInput}
+                    onChange={(e) => setConfirmOwnerChangeInput(e.target.checked)}
+                    className="rounded border-border"
+                  />
+                  I confirm this administrative role modification.
+                </label>
+              </div>
+            )}
+          </DialogBody>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setRoleChangeTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              loading={changingRole}
+              onClick={handleChangeRole}
+              disabled={
+                (roleChangeTarget?.role === 'OWNER' || newRoleSelect === 'OWNER') &&
+                !confirmOwnerChangeInput
+              }
+            >
+              Update Role
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

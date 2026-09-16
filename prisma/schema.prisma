@@ -192,6 +192,7 @@ model User {
   conversationsCreated   Conversation[]        @relation("ConversationCreator")
   conversationMembers    ConversationMember[]
   messagesSent           Message[]
+  messageReactions       MessageReaction[]
 
   @@index([role])
   @@index([status])
@@ -898,9 +899,25 @@ model Message {
 
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  reactions      MessageReaction[]
 
   @@index([conversationId, createdAt])
   @@index([senderId])
   @@index([deletedAt])
+}
+
+model MessageReaction {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+  @@index([userId])
 }
 

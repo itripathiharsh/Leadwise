@@ -1,4 +1,4 @@
-import type { Prisma, Role } from '@prisma/client'
+import type { Prisma, Role, PrismaClient } from '@prisma/client'
 import { prisma } from '@/lib/db'
 import type { CurrentUser } from '@/lib/auth/current-user'
 import { checkPasswordStrength, hashPassword, verifyPassword } from '@/lib/auth/password'
@@ -271,11 +271,16 @@ export async function changeOwnPassword(
  * Reassigning someone's book of work before deactivation is the Owner's job, so
  * we refuse to strand organisations silently.
  */
-export async function deactivateUser(user: CurrentUser, id: string): Promise<void> {
+export async function deactivateUser(
+  user: CurrentUser,
+  id: string,
+  prismaClient: PrismaClient = prisma,
+): Promise<void> {
   assertCan(user, 'user:manage')
   if (id === user.id) throw new ForbiddenError('You cannot deactivate your own account.')
 
-  const target = await prisma.user.findFirst({
+  const db = prismaClient || prisma
+  const target = await db.user.findFirst({
     where: { id, deletedAt: null },
     select: {
       id: true,
@@ -287,7 +292,7 @@ export async function deactivateUser(user: CurrentUser, id: string): Promise<voi
   if (!target) throw new NotFoundError('User')
 
   if (target.role === 'OWNER') {
-    const otherOwners = await prisma.user.count({
+    const otherOwners = await db.user.count({
       where: { role: 'OWNER', isActive: true, deletedAt: null, id: { not: id } },
     })
     if (otherOwners === 0) {
@@ -295,7 +300,7 @@ export async function deactivateUser(user: CurrentUser, id: string): Promise<voi
     }
   }
 
-  await prisma.$transaction(async (tx) => {
+  await db.$transaction(async (tx: Prisma.TransactionClient) => {
     await tx.user.update({ where: { id }, data: { isActive: false } })
     await writeAudit(
       {
@@ -422,11 +427,16 @@ export async function reactivateUser(user: CurrentUser, id: string): Promise<{ s
 /**
  * Soft delete an intern account completely.
  */
-export async function deleteUser(user: CurrentUser, id: string): Promise<{ success: boolean }> {
+export async function deleteUser(
+  user: CurrentUser,
+  id: string,
+  prismaClient: PrismaClient = prisma,
+): Promise<{ success: boolean }> {
   assertCan(user, 'user:manage')
   if (id === user.id) throw new ForbiddenError('You cannot delete your own account.')
 
-  const target = await prisma.user.findFirst({
+  const db = prismaClient || prisma
+  const target = await db.user.findFirst({
     where: { id, deletedAt: null },
     select: {
       id: true,
@@ -442,7 +452,7 @@ export async function deleteUser(user: CurrentUser, id: string): Promise<{ succe
     throw new ValidationError('Owner accounts cannot be deleted.')
   }
 
-  await prisma.$transaction(async (tx) => {
+  await db.$transaction(async (tx: Prisma.TransactionClient) => {
     // Release any assigned organisations
     if (target._count.organisationsAssigned > 0) {
       await tx.organisation.updateMany({
@@ -700,4 +710,129 @@ export async function reviewUserRegistration(
 
     return { success: true, user: updated, status: 'REJECTED' }
   }
+}
+
+/**
+ * Reset a user's password directly by an authenticated OWNER.
+ * A backup OWNER can reset the primary OWNER's credentials, and vice versa.
+ * Never logs or returns the new password or hash.
+ */
+export async function resetUserPasswordByOwner(
+  caller: CurrentUser,
+  targetUserId: string,
+  newPassword: string,
+  prismaClient: PrismaClient = prisma,
+): Promise<{ success: boolean; message: string }> {
+  if (caller.role !== 'OWNER') {
+    throw new ForbiddenError('Only an authenticated OWNER can reset user credentials.')
+  }
+
+  const db = prismaClient || prisma
+  const target = await db.user.findFirst({
+    where: { id: targetUserId, deletedAt: null },
+    select: { id: true, name: true, email: true, role: true },
+  })
+  if (!target) throw new NotFoundError('User')
+
+  const strength = checkPasswordStrength(newPassword)
+  if (!strength.ok) {
+    throw new ValidationError(strength.message!, { newPassword: strength.message! })
+  }
+
+  const newHash = await hashPassword(newPassword)
+
+  await db.$transaction(async (tx: Prisma.TransactionClient) => {
+    await tx.user.update({
+      where: { id: target.id },
+      data: {
+        passwordHash: newHash,
+        updatedAt: new Date(),
+      },
+    })
+
+    await writeAudit(
+      {
+        userId: caller.id,
+        action: 'user.password_reset',
+        entityType: 'user',
+        entityId: target.id,
+        entityLabel: target.name,
+        summary: `${caller.name} (${caller.role}) reset credentials for ${target.role} ${target.name} (${target.email})`,
+      },
+      tx,
+    )
+  })
+
+  return { success: true, message: `Password reset successfully for ${target.name}.` }
+}
+
+/**
+ * Updates a user's role. Strictly guarded by OWNER role.
+ * Enforces confirmation when modifying OWNER accounts and prevents demoting the last active OWNER.
+ */
+export async function changeUserRole(
+  caller: CurrentUser,
+  targetUserId: string,
+  newRole: Role,
+  confirmOwnerChange = false,
+  prismaClient: PrismaClient = prisma,
+): Promise<{ success: boolean; message: string; role: Role }> {
+  if (caller.role !== 'OWNER') {
+    throw new ForbiddenError('Only an authenticated OWNER can change member roles.')
+  }
+
+  const db = prismaClient || prisma
+  const target = await db.user.findFirst({
+    where: { id: targetUserId, deletedAt: null },
+    select: { id: true, name: true, email: true, role: true, isActive: true },
+  })
+  if (!target) throw new NotFoundError('User')
+
+  if (target.role === newRole) {
+    return { success: true, message: `User is already in role ${newRole}.`, role: newRole }
+  }
+
+  const involvesOwner = target.role === 'OWNER' || newRole === 'OWNER'
+  if (involvesOwner && !confirmOwnerChange) {
+    throw new ValidationError(
+      `Explicit confirmation required to ${target.role === 'OWNER' ? 'demote' : 'promote'} an OWNER account.`,
+      { confirmation: 'Required' },
+    )
+  }
+
+  // Final active OWNER protection
+  if (target.role === 'OWNER' && newRole !== 'OWNER') {
+    const otherOwners = await db.user.count({
+      where: { role: 'OWNER', isActive: true, deletedAt: null, id: { not: target.id } },
+    })
+    if (otherOwners === 0) {
+      throw new ValidationError(
+        'Cannot demote the final active Owner. At least one active Owner is required in the CRM.',
+        { role: 'At least one active Owner is required' },
+      )
+    }
+  }
+
+  await db.$transaction(async (tx: Prisma.TransactionClient) => {
+    await tx.user.update({
+      where: { id: target.id },
+      data: { role: newRole },
+    })
+
+    await writeAudit(
+      {
+        userId: caller.id,
+        action: 'user.role_changed',
+        entityType: 'user',
+        entityId: target.id,
+        entityLabel: target.name,
+        summary: `${caller.name} (${caller.role}) changed role of ${target.name} (${target.email}) from ${target.role} to ${newRole}`,
+        before: { role: target.role },
+        after: { role: newRole },
+      },
+      tx,
+    )
+  })
+
+  return { success: true, message: `Role changed to ${newRole}.`, role: newRole }
 }

@@ -407,6 +407,38 @@ export async function getConversation(userId: string, conversationId: string) {
   }
 }
 
+export interface FormattedReaction {
+  emoji: string
+  count: number
+  users: Array<{ id: string; name: string }>
+  hasReacted: boolean
+}
+
+export function formatReactions(
+  reactions: Array<{ emoji: string; userId: string; user: { id: string; name: string } }>,
+  currentUserId: string
+): FormattedReaction[] {
+  const map = new Map<string, FormattedReaction>()
+  for (const r of reactions) {
+    const item = map.get(r.emoji)
+    if (!item) {
+      map.set(r.emoji, {
+        emoji: r.emoji,
+        count: 1,
+        users: [{ id: r.user.id, name: r.user.name }],
+        hasReacted: r.userId === currentUserId,
+      })
+    } else {
+      item.count++
+      item.users.push({ id: r.user.id, name: r.user.name })
+      if (r.userId === currentUserId) {
+        item.hasReacted = true
+      }
+    }
+  }
+  return Array.from(map.values())
+}
+
 /**
  * Retrieves paginated messages for a conversation.
  */
@@ -439,6 +471,13 @@ export async function getConversationMessages(
       sender: {
         select: userCardSelect,
       },
+      reactions: {
+        include: {
+          user: {
+            select: { id: true, name: true },
+          },
+        },
+      },
     },
   })
 
@@ -450,6 +489,7 @@ export async function getConversationMessages(
     createdAt: msg.createdAt,
     senderId: msg.senderId,
     sender: msg.sender,
+    reactions: formatReactions(msg.reactions, userId),
   }))
 }
 
@@ -654,3 +694,80 @@ export async function listEligibleDmUsers(currentUserId: string, search?: string
     orderBy: { name: 'asc' },
   })
 }
+
+/**
+ * Helper to fetch and format reactions for a message.
+ */
+export async function getMessageReactions(userId: string, messageId: string): Promise<FormattedReaction[]> {
+  const reactions = await prisma.messageReaction.findMany({
+    where: { messageId },
+    include: {
+      user: {
+        select: { id: true, name: true },
+      },
+    },
+    orderBy: { createdAt: 'asc' },
+  })
+
+  return formatReactions(reactions, userId)
+}
+
+/**
+ * Toggles an emoji reaction on a message by the current user.
+ * If reaction exists, removes it. If not, adds it.
+ */
+export async function toggleMessageReaction(
+  userId: string,
+  messageId: string,
+  emoji: string
+): Promise<{ success: boolean; reactions: FormattedReaction[] }> {
+  const cleanEmoji = emoji?.trim()
+  if (!cleanEmoji || cleanEmoji.length > 16) {
+    throw new ValidationError('A valid emoji is required.')
+  }
+
+  const message = await prisma.message.findUnique({
+    where: { id: messageId },
+    select: {
+      id: true,
+      conversationId: true,
+      deletedAt: true,
+    },
+  })
+
+  if (!message || message.deletedAt) {
+    throw new NotFoundError('Message not found or has been deleted.')
+  }
+
+  // Ensure user has access to conversation
+  await getConversation(userId, message.conversationId)
+
+  // Check if reaction already exists
+  const existing = await prisma.messageReaction.findUnique({
+    where: {
+      messageId_userId_emoji: {
+        messageId,
+        userId,
+        emoji: cleanEmoji,
+      },
+    },
+  })
+
+  if (existing) {
+    await prisma.messageReaction.delete({
+      where: { id: existing.id },
+    })
+  } else {
+    await prisma.messageReaction.create({
+      data: {
+        messageId,
+        userId,
+        emoji: cleanEmoji,
+      },
+    })
+  }
+
+  const reactions = await getMessageReactions(userId, messageId)
+  return { success: true, reactions }
+}
+

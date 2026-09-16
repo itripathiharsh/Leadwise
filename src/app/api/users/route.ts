@@ -6,8 +6,10 @@ import { userCreateSchema } from '@/lib/validation'
 
 const userActionSchema = z.object({
   userId: z.string().min(1, 'userId is required').max(64),
-  action: z.enum(['APPROVE', 'REJECT', 'DISCONTINUE', 'REACTIVATE']),
+  action: z.enum(['APPROVE', 'REJECT', 'DISCONTINUE', 'REACTIVATE', 'RESET_PASSWORD', 'CHANGE_ROLE']),
   role: z.enum(['OWNER', 'TL', 'INTERN']).optional(),
+  newPassword: z.string().min(8, 'Password must be at least 8 characters').max(100).optional(),
+  confirmOwnerChange: z.boolean().optional(),
 })
 
 const userDeleteSchema = z.object({
@@ -106,6 +108,30 @@ export async function PATCH(req: Request) {
     if (action === 'REACTIVATE') {
       const { reactivateUser } = await import('@/server/services/users')
       const result = await reactivateUser(user, userId)
+      return NextResponse.json(result)
+    }
+
+    if (action === 'RESET_PASSWORD') {
+      if (user.role !== 'OWNER') {
+        return NextResponse.json({ error: 'Forbidden: Only an OWNER can reset user credentials.' }, { status: 403 })
+      }
+      if (!parsed.data.newPassword) {
+        return NextResponse.json({ error: 'newPassword is required' }, { status: 400 })
+      }
+      const { resetUserPasswordByOwner } = await import('@/server/services/users')
+      const result = await resetUserPasswordByOwner(user, userId, parsed.data.newPassword)
+      return NextResponse.json(result)
+    }
+
+    if (action === 'CHANGE_ROLE') {
+      if (user.role !== 'OWNER') {
+        return NextResponse.json({ error: 'Forbidden: Only an OWNER can change user roles.' }, { status: 403 })
+      }
+      if (!role) {
+        return NextResponse.json({ error: 'role is required to change user role' }, { status: 400 })
+      }
+      const { changeUserRole } = await import('@/server/services/users')
+      const result = await changeUserRole(user, userId, role, parsed.data.confirmOwnerChange)
       return NextResponse.json(result)
     }
 

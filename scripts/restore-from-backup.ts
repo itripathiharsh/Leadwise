@@ -14,10 +14,15 @@ import { prisma } from '../src/lib/db'
 import { executeSafeRestore, validateAndPreviewRestore } from '../src/server/services/restore'
 
 async function main() {
-  const filePath = process.argv[2]
+  const args = process.argv.slice(2)
+  const filePath = args.find((a) => !a.startsWith('--'))
+  const isDryRun = args.includes('--dry-run')
+  const isExactOverwrite = args.includes('--mode=exact_overwrite') || args.includes('--overwrite')
+  const noPreBackup = args.includes('--no-pre-backup')
+
   if (!filePath) {
     console.error('❌ Error: Please provide the path to a leadwise backup .xlsx file.')
-    console.error('Usage: npx tsx scripts/restore-from-backup.ts <path-to-leadwise_backup.xlsx>')
+    console.error('Usage: npx tsx scripts/restore-from-backup.ts <path-to-leadwise_backup.xlsx> [--mode=missing_only|exact_overwrite] [--dry-run] [--no-pre-backup]')
     process.exit(1)
   }
 
@@ -35,19 +40,33 @@ async function main() {
 
   if (!preview.valid) {
     console.error('❌ Validation Failed:')
-    preview.errors.forEach(e => console.error(`  - ${e}`))
+    preview.errors.forEach((e) => console.error(`  - ${e}`))
     process.exit(1)
   }
 
-  console.log('✓ Backup file is valid.')
+  console.log('✓ Backup file structure is valid.')
   console.log('  Found sheets:', preview.foundSheets.join(', '))
   console.log('  Record counts in file:', preview.counts)
+  console.log(`  New records: ${preview.newRecordsCount}, Existing in DB: ${preview.existingRecordsCount}, Orphans: ${preview.foreignKeyOrphansCount}`)
 
-  console.log('\n🚀 Executing safe restoration into database...')
-  const result = await executeSafeRestore(null, buffer)
+  if (isDryRun) {
+    console.log('\n🔎 [DRY RUN MODE] Validation complete. Zero changes written to database.')
+    return
+  }
+
+  const mode = isExactOverwrite ? 'EXACT_OVERWRITE' : 'MISSING_ONLY'
+  console.log(`\n🚀 Executing safe restoration in ${mode} mode...`)
+  const result = await executeSafeRestore(null, buffer, {
+    mode,
+    preBackup: !noPreBackup,
+  })
 
   console.log('\n🎉 SUCCESS! Restore complete!')
-  console.log('Restored records summary:', result.restored)
+  if (result.preRestoreBackupFile) {
+    console.log(`  Pre-restore safety snapshot: ${result.preRestoreBackupFile}`)
+  }
+  console.log('  Restored records summary:', result.restored)
+  console.log(`  Skipped existing records: ${result.skippedExisting}`)
 }
 
 main()

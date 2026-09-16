@@ -1,10 +1,30 @@
 import ExcelJS from 'exceljs'
 import { prisma } from '@/lib/db'
 import { todayKey, formatDateTime } from '@/lib/dates'
-import { uploadBackupToGoogleDrive } from './google-drive'
+import { uploadBackupToGoogleDrive, verifyGoogleDriveUpload } from './google-drive'
 import { notifyOwnersAndTLs } from './notifications'
-import { getAppSetting, setAppSetting } from './settings'
+import { getAppSetting } from './settings'
 import type { BackupStatus, BackupTrigger } from '@prisma/client'
+
+export interface BackupCounts {
+  organisations: number
+  contacts: number
+  activities: number
+  followups: number
+  users: number
+  reassignments: number
+  eodReports: number
+  tags: number
+  templates: number
+  auditLogs: number
+  organisationTags: number
+  contactTags: number
+  comments: number
+  attachments: number
+  conversations: number
+  conversationMembers: number
+  messages: number
+}
 
 export interface BackupValidationResult {
   valid: boolean
@@ -49,18 +69,7 @@ function formatWorksheetHeader(sheet: ExcelJS.Worksheet, headerColor = 'FF1F2544
  */
 export async function buildFullBackupWorkbook(): Promise<{
   workbook: ExcelJS.Workbook
-  counts: {
-    organisations: number
-    contacts: number
-    activities: number
-    followups: number
-    users: number
-    reassignments: number
-    eodReports: number
-    tags: number
-    templates: number
-    auditLogs: number
-  }
+  counts: BackupCounts
 }> {
   const workbook = new ExcelJS.Workbook()
   workbook.creator = 'Leadwise'
@@ -83,6 +92,14 @@ export async function buildFullBackupWorkbook(): Promise<{
     { header: 'priority', key: 'priority', width: 12 },
     { header: 'status', key: 'status', width: 16 },
     { header: 'notes', key: 'notes', width: 44 },
+    { header: 'nextAction', key: 'nextAction', width: 28 },
+    { header: 'leadSource', key: 'leadSource', width: 20 },
+    { header: 'leadSourceDetail', key: 'leadSourceDetail', width: 28 },
+    { header: 'rejectionReason', key: 'rejectionReason', width: 24 },
+    { header: 'rejectionNote', key: 'rejectionNote', width: 32 },
+    { header: 'partnershipStage', key: 'partnershipStage', width: 22 },
+    { header: 'aiScore', key: 'aiScore', width: 12 },
+    { header: 'customFields', key: 'customFields', width: 36 },
     { header: 'assignedToId', key: 'assignedToId', width: 28 },
     { header: 'createdById', key: 'createdById', width: 28 },
     { header: 'lastContactedAt', key: 'lastContactedAt', width: 22 },
@@ -98,6 +115,7 @@ export async function buildFullBackupWorkbook(): Promise<{
   for (const org of orgs) {
     orgSheet.addRow({
       ...org,
+      customFields: org.customFields ? JSON.stringify(org.customFields) : '',
       lastContactedAt: org.lastContactedAt ? org.lastContactedAt.toISOString() : '',
       nextFollowupAt: org.nextFollowupAt ? org.nextFollowupAt.toISOString() : '',
       createdAt: org.createdAt.toISOString(),
@@ -119,12 +137,17 @@ export async function buildFullBackupWorkbook(): Promise<{
     { header: 'emailNormalized', key: 'emailNormalized', width: 28 },
     { header: 'phone', key: 'phone', width: 20 },
     { header: 'phoneNormalized', key: 'phoneNormalized', width: 20 },
+    { header: 'secondaryEmail', key: 'secondaryEmail', width: 28 },
+    { header: 'secondaryPhone', key: 'secondaryPhone', width: 20 },
     { header: 'linkedinUrl', key: 'linkedinUrl', width: 36 },
     { header: 'linkedinHandle', key: 'linkedinHandle', width: 24 },
+    { header: 'leadSource', key: 'leadSource', width: 20 },
     { header: 'isDecisionMaker', key: 'isDecisionMaker', width: 16 },
     { header: 'priority', key: 'priority', width: 12 },
     { header: 'status', key: 'status', width: 16 },
     { header: 'notes', key: 'notes', width: 44 },
+    { header: 'aiScore', key: 'aiScore', width: 12 },
+    { header: 'customFields', key: 'customFields', width: 36 },
     { header: 'assignedToId', key: 'assignedToId', width: 28 },
     { header: 'createdById', key: 'createdById', width: 28 },
     { header: 'lastContactedAt', key: 'lastContactedAt', width: 22 },
@@ -138,6 +161,7 @@ export async function buildFullBackupWorkbook(): Promise<{
   for (const c of contacts) {
     contactSheet.addRow({
       ...c,
+      customFields: c.customFields ? JSON.stringify(c.customFields) : '',
       isDecisionMaker: c.isDecisionMaker ? 'true' : 'false',
       lastContactedAt: c.lastContactedAt ? c.lastContactedAt.toISOString() : '',
       createdAt: c.createdAt.toISOString(),
@@ -227,6 +251,7 @@ export async function buildFullBackupWorkbook(): Promise<{
     { header: 'name', key: 'name', width: 24 },
     { header: 'email', key: 'email', width: 30 },
     { header: 'role', key: 'role', width: 12 },
+    { header: 'status', key: 'status', width: 14 },
     { header: 'phone', key: 'phone', width: 18 },
     { header: 'avatarColor', key: 'avatarColor', width: 14 },
     { header: 'isActive', key: 'isActive', width: 12 },
@@ -244,6 +269,7 @@ export async function buildFullBackupWorkbook(): Promise<{
       name: u.name,
       email: u.email,
       role: u.role,
+      status: u.status,
       phone: u.phone ?? '',
       avatarColor: u.avatarColor,
       isActive: u.isActive ? 'true' : 'false',
@@ -394,7 +420,154 @@ export async function buildFullBackupWorkbook(): Promise<{
     })
   }
 
-  // 11. Settings & Metadata Sheet
+  // 11. Organisation Tags
+  const orgTagSheet = workbook.addWorksheet('Organisation Tags')
+  orgTagSheet.columns = [
+    { header: 'organisationId', key: 'organisationId', width: 28 },
+    { header: 'tagId', key: 'tagId', width: 28 },
+  ]
+  formatWorksheetHeader(orgTagSheet)
+  const orgTags = await prisma.organisationTag.findMany({ orderBy: { organisationId: 'asc' }, take: 50000 })
+  for (const ot of orgTags) {
+    orgTagSheet.addRow(ot)
+  }
+
+  // 12. Contact Tags
+  const contactTagSheet = workbook.addWorksheet('Contact Tags')
+  contactTagSheet.columns = [
+    { header: 'contactId', key: 'contactId', width: 28 },
+    { header: 'tagId', key: 'tagId', width: 28 },
+  ]
+  formatWorksheetHeader(contactTagSheet)
+  const contactTags = await prisma.contactTag.findMany({ orderBy: { contactId: 'asc' }, take: 50000 })
+  for (const ct of contactTags) {
+    contactTagSheet.addRow(ct)
+  }
+
+  // 13. Comments
+  const commentSheet = workbook.addWorksheet('Comments')
+  commentSheet.columns = [
+    { header: 'id', key: 'id', width: 28 },
+    { header: 'organisationId', key: 'organisationId', width: 28 },
+    { header: 'authorId', key: 'authorId', width: 28 },
+    { header: 'body', key: 'body', width: 50 },
+    { header: 'mentions', key: 'mentions', width: 30 },
+    { header: 'createdAt', key: 'createdAt', width: 22 },
+    { header: 'updatedAt', key: 'updatedAt', width: 22 },
+    { header: 'deletedAt', key: 'deletedAt', width: 22 },
+  ]
+  formatWorksheetHeader(commentSheet)
+  const comments = await prisma.comment.findMany({ orderBy: { createdAt: 'asc' }, take: 50000 })
+  for (const c of comments) {
+    commentSheet.addRow({
+      ...c,
+      mentions: JSON.stringify(c.mentions || []),
+      createdAt: c.createdAt.toISOString(),
+      updatedAt: c.updatedAt.toISOString(),
+      deletedAt: c.deletedAt ? c.deletedAt.toISOString() : '',
+    })
+  }
+
+  // 14. Attachments Metadata
+  const attachSheet = workbook.addWorksheet('Attachments Metadata')
+  attachSheet.columns = [
+    { header: 'id', key: 'id', width: 28 },
+    { header: 'organisationId', key: 'organisationId', width: 28 },
+    { header: 'filename', key: 'filename', width: 32 },
+    { header: 'fileSize', key: 'fileSize', width: 16 },
+    { header: 'mimeType', key: 'mimeType', width: 24 },
+    { header: 'uploadedById', key: 'uploadedById', width: 28 },
+    { header: 'createdAt', key: 'createdAt', width: 22 },
+  ]
+  formatWorksheetHeader(attachSheet)
+  const attachments = await prisma.attachment.findMany({
+    select: {
+      id: true,
+      organisationId: true,
+      filename: true,
+      fileSize: true,
+      mimeType: true,
+      uploadedById: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: 'asc' },
+    take: 50000,
+  })
+  for (const a of attachments) {
+    attachSheet.addRow({
+      ...a,
+      createdAt: a.createdAt.toISOString(),
+    })
+  }
+
+  // 15. Conversations
+  const convSheet = workbook.addWorksheet('Conversations')
+  convSheet.columns = [
+    { header: 'id', key: 'id', width: 28 },
+    { header: 'type', key: 'type', width: 14 },
+    { header: 'name', key: 'name', width: 28 },
+    { header: 'description', key: 'description', width: 36 },
+    { header: 'dmKey', key: 'dmKey', width: 36 },
+    { header: 'createdById', key: 'createdById', width: 28 },
+    { header: 'isArchived', key: 'isArchived', width: 14 },
+    { header: 'archivedAt', key: 'archivedAt', width: 22 },
+    { header: 'createdAt', key: 'createdAt', width: 22 },
+    { header: 'updatedAt', key: 'updatedAt', width: 22 },
+  ]
+  formatWorksheetHeader(convSheet)
+  const conversations = await prisma.conversation.findMany({ orderBy: { createdAt: 'asc' }, take: 50000 })
+  for (const conv of conversations) {
+    convSheet.addRow({
+      ...conv,
+      isArchived: conv.isArchived ? 'true' : 'false',
+      archivedAt: conv.archivedAt ? conv.archivedAt.toISOString() : '',
+      createdAt: conv.createdAt.toISOString(),
+      updatedAt: conv.updatedAt.toISOString(),
+    })
+  }
+
+  // 16. Conversation Members
+  const memberSheet = workbook.addWorksheet('Conversation Members')
+  memberSheet.columns = [
+    { header: 'id', key: 'id', width: 28 },
+    { header: 'conversationId', key: 'conversationId', width: 28 },
+    { header: 'userId', key: 'userId', width: 28 },
+    { header: 'joinedAt', key: 'joinedAt', width: 22 },
+    { header: 'lastReadAt', key: 'lastReadAt', width: 22 },
+  ]
+  formatWorksheetHeader(memberSheet)
+  const members = await prisma.conversationMember.findMany({ orderBy: { joinedAt: 'asc' }, take: 50000 })
+  for (const m of members) {
+    memberSheet.addRow({
+      ...m,
+      joinedAt: m.joinedAt.toISOString(),
+      lastReadAt: m.lastReadAt ? m.lastReadAt.toISOString() : '',
+    })
+  }
+
+  // 17. Messages
+  const msgSheet = workbook.addWorksheet('Messages')
+  msgSheet.columns = [
+    { header: 'id', key: 'id', width: 28 },
+    { header: 'conversationId', key: 'conversationId', width: 28 },
+    { header: 'senderId', key: 'senderId', width: 28 },
+    { header: 'content', key: 'content', width: 60 },
+    { header: 'createdAt', key: 'createdAt', width: 22 },
+    { header: 'updatedAt', key: 'updatedAt', width: 22 },
+    { header: 'deletedAt', key: 'deletedAt', width: 22 },
+  ]
+  formatWorksheetHeader(msgSheet)
+  const messages = await prisma.message.findMany({ orderBy: { createdAt: 'asc' }, take: 50000 })
+  for (const msg of messages) {
+    msgSheet.addRow({
+      ...msg,
+      createdAt: msg.createdAt.toISOString(),
+      updatedAt: msg.updatedAt ? msg.updatedAt.toISOString() : '',
+      deletedAt: msg.deletedAt ? msg.deletedAt.toISOString() : '',
+    })
+  }
+
+  // 18. Settings & Metadata Sheet
   const metaSheet = workbook.addWorksheet('Backup Metadata')
   metaSheet.columns = [
     { header: 'Parameter', key: 'key', width: 26 },
@@ -403,7 +576,7 @@ export async function buildFullBackupWorkbook(): Promise<{
   formatWorksheetHeader(metaSheet)
 
   metaSheet.addRow({ key: 'Application', val: 'Leadwise' })
-  metaSheet.addRow({ key: 'Backup Version', val: '1.0.0' })
+  metaSheet.addRow({ key: 'Backup Version', val: '2.0.0' })
   metaSheet.addRow({ key: 'Generated At', val: formatDateTime(new Date()) })
   metaSheet.addRow({ key: 'Total Organisations', val: orgs.length })
   metaSheet.addRow({ key: 'Total Contacts', val: contacts.length })
@@ -414,6 +587,13 @@ export async function buildFullBackupWorkbook(): Promise<{
   metaSheet.addRow({ key: 'Total Tags', val: tags.length })
   metaSheet.addRow({ key: 'Total Templates', val: templates.length })
   metaSheet.addRow({ key: 'Total Audit Logs', val: auditLogs.length })
+  metaSheet.addRow({ key: 'Total Organisation Tags', val: orgTags.length })
+  metaSheet.addRow({ key: 'Total Contact Tags', val: contactTags.length })
+  metaSheet.addRow({ key: 'Total Comments', val: comments.length })
+  metaSheet.addRow({ key: 'Total Attachments', val: attachments.length })
+  metaSheet.addRow({ key: 'Total Conversations', val: conversations.length })
+  metaSheet.addRow({ key: 'Total Conversation Members', val: members.length })
+  metaSheet.addRow({ key: 'Total Messages', val: messages.length })
 
   return {
     workbook,
@@ -428,6 +608,13 @@ export async function buildFullBackupWorkbook(): Promise<{
       tags: tags.length,
       templates: templates.length,
       auditLogs: auditLogs.length,
+      organisationTags: orgTags.length,
+      contactTags: contactTags.length,
+      comments: comments.length,
+      attachments: attachments.length,
+      conversations: conversations.length,
+      conversationMembers: members.length,
+      messages: messages.length,
     },
   }
 }
@@ -437,31 +624,27 @@ export async function buildFullBackupWorkbook(): Promise<{
  */
 export async function validateBackup(
   buffer: Buffer,
-  counts: {
-    organisations: number
-    contacts: number
-    activities: number
-    followups: number
-    users: number
-    reassignments: number
-    eodReports: number
-    tags: number
-    templates: number
-    auditLogs: number
-  },
+  counts: Partial<BackupCounts>,
 ): Promise<BackupValidationResult> {
   const errors: string[] = []
   const expectedSheets = [
-    { name: 'Organisations', expectedCount: counts.organisations },
-    { name: 'Contacts', expectedCount: counts.contacts },
-    { name: 'Activities', expectedCount: counts.activities },
-    { name: 'Followups', expectedCount: counts.followups },
-    { name: 'Users', expectedCount: counts.users },
-    { name: 'Assignments', expectedCount: counts.reassignments },
-    { name: 'EOD Reports', expectedCount: counts.eodReports },
-    { name: 'Tags', expectedCount: counts.tags },
-    { name: 'Templates', expectedCount: counts.templates },
-    { name: 'Audit Logs', expectedCount: counts.auditLogs },
+    { name: 'Organisations', expectedCount: counts.organisations ?? -1 },
+    { name: 'Contacts', expectedCount: counts.contacts ?? -1 },
+    { name: 'Activities', expectedCount: counts.activities ?? -1 },
+    { name: 'Followups', expectedCount: counts.followups ?? -1 },
+    { name: 'Users', expectedCount: counts.users ?? -1 },
+    { name: 'Assignments', expectedCount: counts.reassignments ?? -1 },
+    { name: 'EOD Reports', expectedCount: counts.eodReports ?? -1 },
+    { name: 'Tags', expectedCount: counts.tags ?? -1 },
+    { name: 'Templates', expectedCount: counts.templates ?? -1 },
+    { name: 'Audit Logs', expectedCount: counts.auditLogs ?? -1 },
+    { name: 'Organisation Tags', expectedCount: counts.organisationTags ?? -1 },
+    { name: 'Contact Tags', expectedCount: counts.contactTags ?? -1 },
+    { name: 'Comments', expectedCount: counts.comments ?? -1 },
+    { name: 'Attachments Metadata', expectedCount: counts.attachments ?? -1 },
+    { name: 'Conversations', expectedCount: counts.conversations ?? -1 },
+    { name: 'Conversation Members', expectedCount: counts.conversationMembers ?? -1 },
+    { name: 'Messages', expectedCount: counts.messages ?? -1 },
     { name: 'Backup Metadata', expectedCount: -1 },
   ]
 
@@ -479,6 +662,7 @@ export async function validateBackup(
   await workbook.xlsx.load(buffer as any)
 
   const sheetsResult: BackupValidationResult['sheets'] = []
+  const idExemptSheets = ['Backup Metadata', 'Organisation Tags', 'Contact Tags']
 
   for (const exp of expectedSheets) {
     const sheet = workbook.getWorksheet(exp.name)
@@ -505,7 +689,7 @@ export async function validateBackup(
 
     // Check first column is ID for data sheets
     let hasIds = true
-    if (exp.name !== 'Backup Metadata' && rowCount > 0) {
+    if (!idExemptSheets.includes(exp.name) && rowCount > 0) {
       const headerCell = sheet.getRow(1).getCell(1).text
       if (headerCell !== 'id') {
         hasIds = false
@@ -612,6 +796,13 @@ export async function executeFullBackup(
     if (!driveResult.success) {
       finalStatus = 'PARTIAL_SUCCESS'
       driveErrorMsg = driveResult.error
+    } else if (driveResult.fileId) {
+      // Step 4b: Verify the upload actually exists on Drive
+      const verification = await verifyGoogleDriveUpload(driveResult.fileId, fileName, buffer.length)
+      if (!verification.verified) {
+        finalStatus = 'PARTIAL_SUCCESS'
+        driveErrorMsg = `Google Drive upload verification warning: ${verification.error || 'Verification check failed'}`
+      }
     }
 
     // 5. Update DB record

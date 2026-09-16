@@ -16,12 +16,14 @@ import {
   Unlink,
   ChevronDown,
   ChevronUp,
+  RotateCcw,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Field, Input } from '@/components/ui/field'
 import { ManualBackupModal } from '@/components/domain/manual-backup-modal'
+import { RestoreBackupModal } from '@/components/domain/restore-backup-modal'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
@@ -55,6 +57,8 @@ export default function BackupsSettingsPage() {
   const [connectingDrive, setConnectingDrive] = React.useState(false)
   const [disconnectingDrive, setDisconnectingDrive] = React.useState(false)
   const [modalOpen, setModalOpen] = React.useState(false)
+  const [restoreModalOpen, setRestoreModalOpen] = React.useState(false)
+  const [isOwner, setIsOwner] = React.useState(false)
   const [showAdvancedCredentials, setShowAdvancedCredentials] = React.useState(false)
 
   const [history, setHistory] = React.useState<BackupHistoryRecord[]>([])
@@ -120,9 +124,12 @@ export default function BackupsSettingsPage() {
     fetch('/api/auth/me')
       .then((r) => r.json())
       .then((d) => {
-        if (d?.user && d.user.role !== 'OWNER' && d.user.role !== 'TL') {
-          toast.error('Access Denied: Backup management is reserved for leadership.')
-          window.location.href = '/settings'
+        if (d?.user) {
+          setIsOwner(d.user.role === 'OWNER')
+          if (d.user.role !== 'OWNER' && d.user.role !== 'TL') {
+            toast.error('Access Denied: Backup management is reserved for leadership.')
+            window.location.href = '/settings'
+          }
         }
       })
       .catch(() => {})
@@ -266,6 +273,16 @@ export default function BackupsSettingsPage() {
           >
             Refresh
           </Button>
+          {isOwner && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setRestoreModalOpen(true)}
+              icon={<RotateCcw className="size-4" />}
+            >
+              Restore from Backup
+            </Button>
+          )}
           <Button
             variant="primary"
             size="sm"
@@ -759,6 +776,13 @@ export default function BackupsSettingsPage() {
       <ManualBackupModal
         open={modalOpen}
         onOpenChange={setModalOpen}
+        onSuccess={loadData}
+      />
+
+      {/* Restore Backup Modal (OWNER only) */}
+      <RestoreBackupModal
+        open={restoreModalOpen}
+        onOpenChange={setRestoreModalOpen}
         onSuccess={loadData}
       />
     </div>

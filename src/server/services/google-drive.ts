@@ -464,3 +464,99 @@ export async function disconnectGoogleDrive(): Promise<void> {
   await setAppSetting('google_drive_oauth_refresh_token', '')
   await setAppSetting('google_drive_oauth_user_email', '')
 }
+
+/**
+ * Verifies that a backup file was genuinely uploaded to Google Drive.
+ * Queries Drive v3 API to check existence, name, size, mimeType, and trashed status.
+ */
+export async function verifyGoogleDriveUpload(
+  fileId: string,
+  expectedFileName?: string,
+  _expectedSize?: number,
+): Promise<{
+  verified: boolean
+  fileId: string
+  name?: string
+  sizeBytes?: number
+  mimeType?: string
+  viewUrl?: string
+  error?: string
+}> {
+  try {
+    const config = await getGoogleDriveConfig()
+    if (!config.clientId || !config.clientSecret || !config.refreshToken) {
+      return {
+        verified: false,
+        fileId,
+        error: 'OAuth credentials not configured for Drive verification.',
+      }
+    }
+
+    const accessToken = await getOAuth2AccessToken(
+      config.clientId,
+      config.clientSecret,
+      config.refreshToken,
+    )
+
+    const response = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(
+        fileId,
+      )}?fields=id,name,size,mimeType,trashed,webViewLink`,
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      },
+    )
+
+    if (!response.ok) {
+      const errText = await response.text().catch(() => '')
+      return {
+        verified: false,
+        fileId,
+        error: `Drive verification check returned status ${response.status}: ${errText}`,
+      }
+    }
+
+    const data = (await response.json()) as {
+      id: string
+      name: string
+      size?: string
+      mimeType?: string
+      trashed?: boolean
+      webViewLink?: string
+    }
+
+    if (data.trashed) {
+      return {
+        verified: false,
+        fileId,
+        error: `File ${fileId} exists in Google Drive but is trashed.`,
+      }
+    }
+
+    if (expectedFileName && data.name !== expectedFileName) {
+      return {
+        verified: false,
+        fileId,
+        error: `Drive file name mismatch: expected "${expectedFileName}", found "${data.name}".`,
+      }
+    }
+
+    const sizeBytes = data.size ? parseInt(data.size, 10) : undefined
+
+    return {
+      verified: true,
+      fileId: data.id,
+      name: data.name,
+      sizeBytes,
+      mimeType: data.mimeType,
+      viewUrl: data.webViewLink || `https://drive.google.com/file/d/${data.id}/view`,
+    }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err)
+    return {
+      verified: false,
+      fileId,
+      error: `Drive verification failed with exception: ${msg}`,
+    }
+  }
+}

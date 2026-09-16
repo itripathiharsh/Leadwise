@@ -76,4 +76,8 @@ export const env = {
     if (!pass || pass.trim() === '') throw new Error('Missing required environment variable SEED_PASSWORD. See .env.example.')
     return pass
   },
+
+  get ownerRecoverySecret(): string | undefined {
+    return process.env.OWNER_RECOVERY_SECRET?.trim() || undefined
+  },
 }

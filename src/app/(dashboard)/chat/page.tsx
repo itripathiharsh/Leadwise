@@ -19,12 +19,16 @@ import {
   Shield,
   Circle,
   AtSign,
+  Smile,
+  SmilePlus,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { EmojiPicker } from '@/components/chat/emoji-picker'
+import { isEmojiOnly, QUICK_REACTIONS } from '@/components/chat/emoji-data'
 
 interface ChatUser {
   id: string
@@ -55,6 +59,13 @@ interface ConversationItem {
   otherMember: ChatUser | null
 }
 
+export interface MessageReactionItem {
+  emoji: string
+  count: number
+  users: Array<{ id: string; name: string }>
+  hasReacted: boolean
+}
+
 interface MessageItem {
   id: string
   conversationId: string
@@ -62,6 +73,7 @@ interface MessageItem {
   createdAt: string
   senderId: string
   sender: ChatUser
+  reactions?: MessageReactionItem[]
 }
 
 function isOnline(lastLoginAt: string | null): boolean {
@@ -405,6 +417,28 @@ export default function ChatPage() {
     }, 10)
   }
 
+  const handleInsertEmoji = (emoji: string) => {
+    if (!textareaRef.current) {
+      setMessageText((prev) => prev + emoji)
+      return
+    }
+    const textarea = textareaRef.current
+    const start = textarea.selectionStart ?? messageText.length
+    const end = textarea.selectionEnd ?? messageText.length
+    const before = messageText.substring(0, start)
+    const after = messageText.substring(end)
+    const newText = before + emoji + after
+    setMessageText(newText)
+
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus()
+        const newCursor = start + emoji.length
+        textareaRef.current.setSelectionRange(newCursor, newCursor)
+      }
+    }, 10)
+  }
+
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value
     setMessageText(val)
@@ -511,6 +545,86 @@ export default function ChatPage() {
     } finally {
       setSending(false)
       setTimeout(() => textareaRef.current?.focus(), 50)
+    }
+  }
+
+  const handleToggleReaction = async (messageId: string, emoji: string) => {
+    if (!currentUser) return
+
+    // Optimistically update local messages state
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m.id !== messageId) return m
+        const currentReactions = m.reactions || []
+        const existingIndex = currentReactions.findIndex((r) => r.emoji === emoji)
+
+        let updated: MessageReactionItem[]
+        if (existingIndex >= 0) {
+          const existing = currentReactions[existingIndex]
+          if (existing.hasReacted) {
+            // User is removing their reaction
+            if (existing.count <= 1) {
+              updated = currentReactions.filter((_, idx) => idx !== existingIndex)
+            } else {
+              updated = currentReactions.map((r, idx) =>
+                idx === existingIndex
+                  ? {
+                      ...r,
+                      count: r.count - 1,
+                      hasReacted: false,
+                      users: r.users.filter((u) => u.id !== currentUser.id),
+                    }
+                  : r
+              )
+            }
+          } else {
+            // User is adding their reaction to existing emoji group
+            updated = currentReactions.map((r, idx) =>
+              idx === existingIndex
+                ? {
+                    ...r,
+                    count: r.count + 1,
+                    hasReacted: true,
+                    users: [...r.users, { id: currentUser.id, name: currentUser.name }],
+                  }
+                : r
+            )
+          }
+        } else {
+          // New emoji reaction on this message
+          updated = [
+            ...currentReactions,
+            {
+              emoji,
+              count: 1,
+              hasReacted: true,
+              users: [{ id: currentUser.id, name: currentUser.name }],
+            },
+          ]
+        }
+        return { ...m, reactions: updated }
+      })
+    )
+
+    // Sync with backend API
+    try {
+      const res = await fetch(`/api/chat/messages/${messageId}/reactions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emoji }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.reactions) {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === messageId ? { ...m, reactions: data.reactions } : m))
+          )
+        }
+      } else {
+        toast.error('Failed to update reaction.')
+      }
+    } catch {
+      toast.error('Network error updating reaction.')
     }
   }
 
@@ -1046,15 +1160,50 @@ export default function ChatPage() {
                     {/* Messages in this Date Group */}
                     {group.items.map((msg) => {
                       const isOwn = msg.senderId === currentUser?.id
+                      const emojiCheck = isEmojiOnly(msg.content)
 
                       return (
                         <div
                           key={msg.id}
                           className={cn(
-                            'flex gap-2.5 max-w-[85%] sm:max-w-[75%]',
+                            'group relative flex gap-2.5 max-w-[85%] sm:max-w-[75%]',
                             isOwn ? 'ml-auto flex-row-reverse' : 'mr-auto'
                           )}
                         >
+                          {/* Quick Reaction Bar on Hover / Focus */}
+                          <div
+                            className={cn(
+                              'absolute -top-7 z-20 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity flex items-center gap-0.5 p-0.5 rounded-lg bg-surface border border-border shadow-md backdrop-blur-xs',
+                              isOwn ? 'right-0' : 'left-0'
+                            )}
+                          >
+                            {QUICK_REACTIONS.map((emoji) => (
+                              <button
+                                key={emoji}
+                                type="button"
+                                title={`React with ${emoji}`}
+                                onClick={() => handleToggleReaction(msg.id, emoji)}
+                                className="size-6 flex items-center justify-center rounded text-xs hover:bg-surface-hover hover:scale-125 active:scale-95 transition-transform cursor-pointer"
+                              >
+                                <span>{emoji}</span>
+                              </button>
+                            ))}
+                            <div className="w-[1px] h-3 bg-border mx-0.5" />
+                            <EmojiPicker
+                              onSelect={(emoji) => handleToggleReaction(msg.id, emoji)}
+                              side="top"
+                              align={isOwn ? 'end' : 'start'}
+                            >
+                              <button
+                                type="button"
+                                title="More reactions"
+                                className="size-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-surface-hover transition-colors cursor-pointer"
+                              >
+                                <SmilePlus className="size-3.5" />
+                              </button>
+                            </EmojiPicker>
+                          </div>
+
                           {!isOwn && (
                             <Avatar
                               name={msg.sender.name}
@@ -1063,7 +1212,7 @@ export default function ChatPage() {
                             />
                           )}
 
-                          <div className={cn('space-y-1', isOwn && 'items-end flex flex-col')}>
+                          <div className={cn('space-y-1 min-w-0', isOwn && 'items-end flex flex-col')}>
                             {!isOwn && (
                               <div className="flex items-center gap-1.5 px-1">
                                 <span className="font-bold text-[11px] text-foreground">
@@ -1077,32 +1226,46 @@ export default function ChatPage() {
                               </div>
                             )}
 
-                            <div
-                              className={cn(
-                                'rounded-xl p-3 text-xs leading-relaxed break-words whitespace-pre-wrap shadow-xs',
-                                isOwn
-                                  ? 'bg-primary text-primary-foreground font-medium rounded-tr-xs'
-                                  : 'bg-surface border border-border text-foreground rounded-tl-xs'
-                              )}
-                            >
-                              <FormattedMessageContent
-                                content={msg.content}
-                                isOwn={isOwn}
-                                currentUserId={currentUser?.id}
-                                currentUserName={currentUser?.name}
-                                users={eligibleUsers}
-                                channels={conversations.channels}
-                                onSelectUser={(user) => {
-                                  if (currentUser && user.id === currentUser.id) return
-                                  handleStartDm(user.id)
-                                }}
-                                onSelectChannel={(channelId) => {
-                                  setActiveTab('channel')
-                                  setActiveConversationId(channelId)
-                                }}
-                              />
-                            </div>
+                            {/* Message Content: Large font for emoji-only messages, standard bubble for text */}
+                            {emojiCheck.isOnly ? (
+                              <div
+                                className={cn(
+                                  'py-1 select-text leading-tight',
+                                  emojiCheck.count <= 4 ? 'text-3xl sm:text-4xl' : 'text-xl sm:text-2xl',
+                                  isOwn ? 'text-right' : 'text-left'
+                                )}
+                              >
+                                <span>{msg.content}</span>
+                              </div>
+                            ) : (
+                              <div
+                                className={cn(
+                                  'rounded-xl p-3 text-xs leading-relaxed break-words whitespace-pre-wrap shadow-xs',
+                                  isOwn
+                                    ? 'bg-primary text-primary-foreground font-medium rounded-tr-xs'
+                                    : 'bg-surface border border-border text-foreground rounded-tl-xs'
+                                )}
+                              >
+                                <FormattedMessageContent
+                                  content={msg.content}
+                                  isOwn={isOwn}
+                                  currentUserId={currentUser?.id}
+                                  currentUserName={currentUser?.name}
+                                  users={eligibleUsers}
+                                  channels={conversations.channels}
+                                  onSelectUser={(user) => {
+                                    if (currentUser && user.id === currentUser.id) return
+                                    handleStartDm(user.id)
+                                  }}
+                                  onSelectChannel={(channelId) => {
+                                    setActiveTab('channel')
+                                    setActiveConversationId(channelId)
+                                  }}
+                                />
+                              </div>
+                            )}
 
+                            {/* Timestamp & Sent Status */}
                             <div
                               className={cn(
                                 'flex items-center gap-1 text-[10px] font-mono tabular-nums text-muted-foreground px-1',
@@ -1112,6 +1275,37 @@ export default function ChatPage() {
                               <span>{formatChatTime(msg.createdAt)}</span>
                               {isOwn && <CheckCheck className="size-3 text-primary" />}
                             </div>
+
+                            {/* Reaction Pills Row */}
+                            {msg.reactions && msg.reactions.length > 0 && (
+                              <div
+                                className={cn(
+                                  'flex flex-wrap gap-1 mt-0.5 items-center',
+                                  isOwn && 'justify-end'
+                                )}
+                              >
+                                {msg.reactions.map((r) => {
+                                  const tooltipText = r.users.map((u) => u.name).join(', ')
+                                  return (
+                                    <button
+                                      key={r.emoji}
+                                      type="button"
+                                      title={`${tooltipText} reacted with ${r.emoji}`}
+                                      onClick={() => handleToggleReaction(msg.id, r.emoji)}
+                                      className={cn(
+                                        'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border transition-all cursor-pointer select-none active:scale-95',
+                                        r.hasReacted
+                                          ? 'bg-primary/20 border-primary/40 text-foreground font-semibold shadow-xs'
+                                          : 'bg-surface border-border text-muted-foreground hover:text-foreground hover:bg-surface-hover'
+                                      )}
+                                    >
+                                      <span className="text-xs">{r.emoji}</span>
+                                      <span className="text-[10px] font-mono tabular-nums">{r.count}</span>
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            )}
                           </div>
                         </div>
                       )
@@ -1190,6 +1384,21 @@ export default function ChatPage() {
                     disabled={sending}
                   />
 
+                  {/* Left Bottom Toolbar: Emoji Picker */}
+                  <div className="absolute left-2.5 bottom-2 flex items-center gap-1">
+                    <EmojiPicker onSelect={handleInsertEmoji} side="top" align="start">
+                      <button
+                        type="button"
+                        aria-label="Add emoji"
+                        title="Insert emoji"
+                        className="p-1.5 text-muted-foreground hover:text-foreground rounded-md hover:bg-surface-muted transition-colors cursor-pointer"
+                      >
+                        <Smile className="size-4" />
+                      </button>
+                    </EmojiPicker>
+                  </div>
+
+                  {/* Right Bottom Toolbar: Send Button */}
                   <div className="absolute right-2.5 bottom-2.5 flex items-center gap-2">
                     <span className="hidden sm:inline text-[10px] text-muted-foreground font-mono">
                       Enter ↵ send
