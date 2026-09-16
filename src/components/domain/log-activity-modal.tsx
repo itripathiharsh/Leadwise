@@ -12,9 +12,10 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Field, Input } from '@/components/ui/field'
-import { Phone, Mail, Linkedin, Calendar, StickyNote, Check, AlertTriangle } from 'lucide-react'
+import { Phone, Mail, Linkedin, Calendar, StickyNote, Check, AlertTriangle, Clock, RotateCcw } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { suggestFollowupDate, QUICK_NOTE_CHIPS } from '@/lib/outreach-cadence'
 
 export type ActivityTypeTab = 'CALL' | 'EMAIL' | 'LINKEDIN' | 'MEETING' | 'NOTE'
 
@@ -39,12 +40,19 @@ interface OrganisationOption {
   contacts?: ContactOption[]
 }
 
-interface LogActivityModalProps {
+export interface LogActivityModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   initialType?: ActivityTypeTab
+  initialOutcome?: string
   initialOrganisationId?: string
   initialContactId?: string
+  initialNotes?: string
+  initialEmailSubject?: string
+  initialEmailUsed?: string
+  initialPhoneNumberUsed?: string
+  completedFollowUpId?: string
+  startCallTimer?: boolean
   organisationsList?: OrganisationOption[]
   onSuccess?: () => void
 }
@@ -98,25 +106,37 @@ export function LogActivityModal({
   open,
   onOpenChange,
   initialType = 'CALL',
+  initialOutcome = '',
   initialOrganisationId = '',
   initialContactId = '',
+  initialNotes = '',
+  initialEmailSubject = '',
+  initialEmailUsed = '',
+  initialPhoneNumberUsed = '',
+  completedFollowUpId,
+  startCallTimer = false,
   organisationsList = [],
   onSuccess,
 }: LogActivityModalProps) {
   const [type, setType] = React.useState<ActivityTypeTab>(initialType)
   const [organisationId, setOrganisationId] = React.useState(initialOrganisationId)
   const [contactId, setContactId] = React.useState(initialContactId)
-  const [outcome, setOutcome] = React.useState('')
-  const [notes, setNotes] = React.useState('')
+  const [outcome, setOutcome] = React.useState(initialOutcome)
+  const [notes, setNotes] = React.useState(initialNotes)
   const [nextFollowupDate, setNextFollowupDate] = React.useState('')
+  const [followupTouched, setFollowupTouched] = React.useState(false)
   const [reminderEnabled, setReminderEnabled] = React.useState(true)
 
   // Channel-specific fields
-  const [phoneNumberUsed, setPhoneNumberUsed] = React.useState('')
-  const [emailSubject, setEmailSubject] = React.useState('')
-  const [emailUsed, setEmailUsed] = React.useState('')
+  const [phoneNumberUsed, setPhoneNumberUsed] = React.useState(initialPhoneNumberUsed)
+  const [emailSubject, setEmailSubject] = React.useState(initialEmailSubject)
+  const [emailUsed, setEmailUsed] = React.useState(initialEmailUsed)
   const [meetingDate, setMeetingDate] = React.useState('')
   const [meetingLocation, setMeetingLocation] = React.useState('')
+
+  // W4: Approximate Call Session Timer
+  const [callDurationSeconds, setCallDurationSeconds] = React.useState(0)
+  const [callTimerRunning, setCallTimerRunning] = React.useState(false)
 
   const [loading, setLoading] = React.useState(false)
   const [orgs, setOrgs] = React.useState<OrganisationOption[]>(organisationsList)
@@ -124,13 +144,58 @@ export function LogActivityModal({
   const [contacts, setContacts] = React.useState<ContactOption[]>([])
   const [loadingContacts, setLoadingContacts] = React.useState(false)
 
-  // Reset when initial props change
+  const outcomeSelectRef = React.useRef<HTMLSelectElement>(null)
+
+  // Format timer into MM:SS
+  const formatTimer = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
+
+  // Live timer tick for CALL activities
   React.useEffect(() => {
+    if (!open || type !== 'CALL' || !callTimerRunning) return
+    const interval = setInterval(() => {
+      setCallDurationSeconds((prev) => prev + 1)
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [open, type, callTimerRunning])
+
+  // Reset & initialize when modal opens or initial props change
+  React.useEffect(() => {
+    if (!open) {
+      setCallTimerRunning(false)
+      setCallDurationSeconds(0)
+      return
+    }
+
     setType(initialType)
     setOrganisationId(initialOrganisationId)
     setContactId(initialContactId)
-    setOutcome(OUTCOMES_BY_TYPE[initialType][0]?.value || '')
-  }, [initialType, initialOrganisationId, initialContactId, open])
+    const startingOutcome =
+      initialOutcome || OUTCOMES_BY_TYPE[initialType]?.[0]?.value || ''
+    setOutcome(startingOutcome)
+    setNotes(initialNotes || '')
+    setEmailSubject(initialEmailSubject || '')
+    setEmailUsed(initialEmailUsed || '')
+    setPhoneNumberUsed(initialPhoneNumberUsed || '')
+    setFollowupTouched(false)
+    setNextFollowupDate(suggestFollowupDate(startingOutcome))
+    setCallDurationSeconds(0)
+    setCallTimerRunning(Boolean(startCallTimer || initialType === 'CALL'))
+  }, [
+    open,
+    initialType,
+    initialOutcome,
+    initialOrganisationId,
+    initialContactId,
+    initialNotes,
+    initialEmailSubject,
+    initialEmailUsed,
+    initialPhoneNumberUsed,
+    startCallTimer,
+  ])
 
   // Load existing organisations whenever modal opens
   React.useEffect(() => {
@@ -196,7 +261,7 @@ export function LogActivityModal({
       .finally(() => {
         setLoadingContacts(false)
       })
-  }, [open, organisationId, initialContactId])
+  }, [open, organisationId, initialContactId, phoneNumberUsed, emailUsed])
 
   // Handle contact selection & auto-populate details
   const handleContactSelect = (newContactId: string) => {
@@ -208,10 +273,17 @@ export function LogActivityModal({
     }
   }
 
-  // Auto set default outcome when type tab changes
+  // Auto set default outcome & suggestion when type tab changes
   const handleTypeChange = (newType: ActivityTypeTab) => {
     setType(newType)
-    setOutcome(OUTCOMES_BY_TYPE[newType][0]?.value || '')
+    const defaultOutcome = OUTCOMES_BY_TYPE[newType][0]?.value || ''
+    setOutcome(defaultOutcome)
+
+    // W1: Re-suggest follow-up if user hasn't manually edited date
+    if (!followupTouched) {
+      setNextFollowupDate(suggestFollowupDate(defaultOutcome))
+    }
+
     const selected = contacts.find((c) => c.id === contactId)
     if (selected) {
       if (newType === 'CALL' && selected.phone && !phoneNumberUsed) {
@@ -221,6 +293,26 @@ export function LogActivityModal({
         setEmailUsed(selected.email)
       }
     }
+
+    if (newType === 'CALL') {
+      setCallTimerRunning(true)
+    } else {
+      setCallTimerRunning(false)
+    }
+  }
+
+  // W1: Auto follow-up suggestion on outcome change
+  const handleOutcomeChange = (newOutcome: string) => {
+    setOutcome(newOutcome)
+    if (!followupTouched) {
+      setNextFollowupDate(suggestFollowupDate(newOutcome))
+    }
+  }
+
+  // W1: Reset to suggested cadence
+  const handleResetToSuggestion = () => {
+    setFollowupTouched(false)
+    setNextFollowupDate(suggestFollowupDate(outcome))
   }
 
   const [currentUser, setCurrentUser] = React.useState<{ id: string; name: string } | null>(null)
@@ -242,8 +334,8 @@ export function LogActivityModal({
     selectedOrg.assignedTo.id !== currentUser.id
   )
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  // Core execution handler supporting both Save Activity and Log & Next
+  const executeSubmit = async (keepOpen: boolean) => {
     if (!organisationId) {
       toast.error('Please select an organisation.')
       return
@@ -251,6 +343,16 @@ export function LogActivityModal({
 
     setLoading(true)
     try {
+      let finalNotes = notes.trim()
+
+      // W4: If timer ran >= 5 seconds, append approximate duration
+      if (type === 'CALL' && callDurationSeconds >= 5) {
+        const timerSnippet = `Approximate call session duration: ~${formatTimer(callDurationSeconds)}`
+        if (!finalNotes.includes('Approximate call session duration')) {
+          finalNotes = finalNotes ? `${finalNotes}\n${timerSnippet}` : timerSnippet
+        }
+      }
+
       const res = await fetch('/api/activities', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -259,13 +361,14 @@ export function LogActivityModal({
           contactId: contactId || undefined,
           type,
           outcome,
-          notes: notes.trim() || undefined,
-          nextFollowupDate: nextFollowupDate ? `${nextFollowupDate}T09:00` : undefined,
+          notes: finalNotes || undefined,
+          nextFollowupDate: nextFollowupDate || undefined, // Clean YYYY-MM-DD
           phoneNumberUsed: phoneNumberUsed || undefined,
           emailSubject: emailSubject || undefined,
           emailUsed: emailUsed || undefined,
           meetingDate: type === 'MEETING' ? (meetingDate || new Date().toISOString().slice(0, 16)) : undefined,
           meetingLocation: meetingLocation || undefined,
+          completedFollowUpId: completedFollowUpId || undefined,
         }),
       })
 
@@ -278,11 +381,30 @@ export function LogActivityModal({
       }
 
       toast.success(data.message || 'Activity logged successfully!')
-      onOpenChange(false)
-      // Reset form
-      setNotes('')
-      setNextFollowupDate('')
       onSuccess?.()
+
+      if (!keepOpen) {
+        // Close modal and reset
+        onOpenChange(false)
+        setNotes('')
+        setNextFollowupDate('')
+        setFollowupTouched(false)
+        setCallDurationSeconds(0)
+        setCallTimerRunning(false)
+      } else {
+        // W2: Log & Next — preserve organisationId, contactId, and type
+        const defaultOutcome = OUTCOMES_BY_TYPE[type][0]?.value || ''
+        setOutcome(defaultOutcome)
+        setNotes('')
+        setMeetingLocation('')
+        setFollowupTouched(false)
+        setNextFollowupDate(suggestFollowupDate(defaultOutcome))
+        setCallDurationSeconds(0)
+        setCallTimerRunning(type === 'CALL')
+        setTimeout(() => {
+          outcomeSelectRef.current?.focus()
+        }, 50)
+      }
     } catch {
       toast.error('Network error saving activity.')
     } finally {
@@ -290,20 +412,49 @@ export function LogActivityModal({
     }
   }
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    executeSubmit(false)
+  }
+
+  // Keyboard navigation: Ctrl/Cmd+Enter for Save, Shift+Enter for Log & Next
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault()
+      executeSubmit(false)
+      return
+    }
+    if (e.key === 'Enter' && e.shiftKey && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+      e.preventDefault()
+      executeSubmit(true)
+      return
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent size="lg">
+      <DialogContent size="lg" onKeyDown={handleKeyDown}>
         <DialogHeader>
-          <div className="flex items-center gap-2.5">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <Phone className="size-5" />
+          <div className="flex items-center justify-between gap-2 w-full">
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Phone className="size-5" />
+              </div>
+              <div>
+                <DialogTitle>Log Outreach Activity</DialogTitle>
+                <DialogDescription>
+                  Record interactions to update the timeline, organisation status, and next follow-up.
+                </DialogDescription>
+              </div>
             </div>
-            <div>
-              <DialogTitle>Log Outreach Activity</DialogTitle>
-              <DialogDescription>
-                Record interactions to update the timeline, organisation status, and next follow-up.
-              </DialogDescription>
-            </div>
+
+            {/* W4: Live approximate call session timer badge */}
+            {type === 'CALL' && callDurationSeconds > 0 && (
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs font-mono font-medium text-blue-600 dark:text-blue-400 shrink-0">
+                <span className="size-1.5 rounded-full bg-blue-500 animate-pulse" />
+                <span>Approx call: ~{formatTimer(callDurationSeconds)}</span>
+              </div>
+            )}
           </div>
         </DialogHeader>
 
@@ -320,20 +471,20 @@ export function LogActivityModal({
                       Another Member&apos;s Account
                     </span>
                   </div>
-                  <div className="text-[11px] mt-0.5 leading-relaxed text-muted-foreground">
-                    This organisation is actively assigned to <strong className="text-foreground">{selectedOrg?.assignedTo?.name}</strong>. Your outreach will be logged under your name, but please coordinate to avoid duplicate communication.
-                  </div>
+                  <p className="mt-0.5 opacity-90">
+                    Coordinate internally before performing outreach to avoid duplicated work or conflicting communication.
+                  </p>
                 </div>
               </div>
             )}
 
-            {/* Channel Type Selector Tabs */}
-            <div className="flex rounded-xl border border-border bg-muted/60 p-1 gap-1">
+            {/* Channel Tabs */}
+            <div className="flex rounded-xl bg-surface-muted/60 p-1 border border-border">
               <button
                 type="button"
                 onClick={() => handleTypeChange('CALL')}
                 className={cn(
-                  'flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all',
+                  'flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer',
                   type === 'CALL'
                     ? 'bg-surface text-foreground shadow-xs'
                     : 'text-muted-foreground hover:text-foreground',
@@ -347,7 +498,7 @@ export function LogActivityModal({
                 type="button"
                 onClick={() => handleTypeChange('EMAIL')}
                 className={cn(
-                  'flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all',
+                  'flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer',
                   type === 'EMAIL'
                     ? 'bg-surface text-foreground shadow-xs'
                     : 'text-muted-foreground hover:text-foreground',
@@ -361,7 +512,7 @@ export function LogActivityModal({
                 type="button"
                 onClick={() => handleTypeChange('LINKEDIN')}
                 className={cn(
-                  'flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all',
+                  'flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer',
                   type === 'LINKEDIN'
                     ? 'bg-surface text-foreground shadow-xs'
                     : 'text-muted-foreground hover:text-foreground',
@@ -375,7 +526,7 @@ export function LogActivityModal({
                 type="button"
                 onClick={() => handleTypeChange('MEETING')}
                 className={cn(
-                  'flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all',
+                  'flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer',
                   type === 'MEETING'
                     ? 'bg-surface text-foreground shadow-xs'
                     : 'text-muted-foreground hover:text-foreground',
@@ -389,7 +540,7 @@ export function LogActivityModal({
                 type="button"
                 onClick={() => handleTypeChange('NOTE')}
                 className={cn(
-                  'flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all',
+                  'flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer',
                   type === 'NOTE'
                     ? 'bg-surface text-foreground shadow-xs'
                     : 'text-muted-foreground hover:text-foreground',
@@ -453,7 +604,7 @@ export function LogActivityModal({
                         <option key={c.id} value={c.id}>
                           {c.name}
                           {c.designation ? ` — ${c.designation}` : ''}
-                          {c.isDecisionMaker ? ' ⭐ (Decision Maker)' : ''}
+                          {c.isDecisionMaker ? ' ★ (Decision Maker)' : ''}
                         </option>
                       ))}
                     </>
@@ -471,7 +622,7 @@ export function LogActivityModal({
                 )}
                 {selectedContact.isDecisionMaker && (
                   <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20">
-                    ⭐ Decision Maker
+                    ★ Decision Maker
                   </span>
                 )}
                 {selectedContact.phone && (
@@ -491,8 +642,9 @@ export function LogActivityModal({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="Interaction Outcome" required>
                 <select
+                  ref={outcomeSelectRef}
                   value={outcome}
-                  onChange={(e) => setOutcome(e.target.value)}
+                  onChange={(e) => handleOutcomeChange(e.target.value)}
                   required
                   className="h-10 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground shadow-xs transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
@@ -549,8 +701,35 @@ export function LogActivityModal({
               )}
             </div>
 
-            {/* Notes */}
-            <Field label="Notes / Conversation Summary / Outreach Copy">
+            {/* Notes & Quick Note Chips */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-foreground">
+                  Notes / Conversation Summary / Outreach Copy
+                </label>
+              </div>
+
+              {/* W1: Quick Note Chips */}
+              {QUICK_NOTE_CHIPS[type] && QUICK_NOTE_CHIPS[type].length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 pb-1">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mr-0.5">
+                    Quick Chips:
+                  </span>
+                  {QUICK_NOTE_CHIPS[type].map((chip) => (
+                    <button
+                      key={chip}
+                      type="button"
+                      onClick={() =>
+                        setNotes((prev) => (prev.trim() ? `${prev.trim()}\n${chip}` : chip))
+                      }
+                      className="inline-flex items-center rounded-md border border-border/70 bg-surface-muted/60 px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:border-primary/50 hover:bg-surface-muted hover:text-foreground transition-colors cursor-pointer"
+                    >
+                      + {chip}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               <textarea
                 rows={4}
                 placeholder="What was discussed? Next requirements, objections, or commitments..."
@@ -558,13 +737,32 @@ export function LogActivityModal({
                 onChange={(e) => setNotes(e.target.value)}
                 className="w-full rounded-lg border border-border bg-surface p-3 text-sm text-foreground shadow-xs transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 font-mono text-xs resize-y min-h-[80px]"
               />
-            </Field>
+            </div>
 
-            {/* Next Follow-up & Reminder */}
+            {/* Next Follow-up & Reminder (W1 Auto Suggestions) */}
             <div className="rounded-xl border border-border/80 bg-surface-muted/40 p-3.5 space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex-1">
-                  <label className="text-xs font-semibold text-foreground">Next Follow-up Date</label>
+                <div className="flex-1 space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-semibold text-foreground">Next Follow-up Date</label>
+                    {followupTouched ? (
+                      <button
+                        type="button"
+                        onClick={handleResetToSuggestion}
+                        className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline font-medium cursor-pointer"
+                      >
+                        <RotateCcw className="size-2.5" /> Reset to suggestion
+                      </button>
+                    ) : nextFollowupDate ? (
+                      <span className="text-[10px] font-mono text-muted-foreground bg-surface px-1.5 py-0.2 rounded border border-border">
+                        Auto-cadence
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground italic">
+                        No follow-up suggested
+                      </span>
+                    )}
+                  </div>
                   <p className="text-[11px] text-muted-foreground">
                     Schedule when the next outreach or call-back is due.
                   </p>
@@ -574,7 +772,10 @@ export function LogActivityModal({
                   <input
                     type="date"
                     value={nextFollowupDate}
-                    onChange={(e) => setNextFollowupDate(e.target.value)}
+                    onChange={(e) => {
+                      setNextFollowupDate(e.target.value)
+                      setFollowupTouched(true)
+                    }}
                     className="h-9 rounded-lg border border-border bg-surface px-3 py-1 text-xs text-foreground shadow-xs focus:border-primary focus:outline-none"
                   />
 
@@ -594,18 +795,53 @@ export function LogActivityModal({
             </div>
           </DialogBody>
 
-          <DialogFooter>
-            <Button variant="ghost" type="button" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              type="submit"
-              loading={loading}
-              icon={<Check className="size-4" />}
-            >
-              Save Activity
-            </Button>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-2">
+            <div className="text-[11px] text-muted-foreground hidden sm:flex items-center gap-2">
+              <span>
+                <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px]">
+                  Ctrl+Enter
+                </kbd>{' '}
+                Save
+              </span>
+              <span>&bull;</span>
+              <span>
+                <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border font-mono text-[10px]">
+                  Shift+Enter
+                </kbd>{' '}
+                Log &amp; Next
+              </span>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 w-full sm:w-auto">
+              <Button
+                variant="ghost"
+                type="button"
+                onClick={() => onOpenChange(false)}
+                disabled={loading}
+              >
+                Cancel
+              </Button>
+              {/* W2: Log & Next button */}
+              <Button
+                variant="outline"
+                type="button"
+                disabled={loading}
+                onClick={() => executeSubmit(true)}
+                title="Save this activity and immediately log another for the same contact (Shift+Enter)"
+              >
+                Log &amp; Next
+              </Button>
+              {/* Primary: Save Activity */}
+              <Button
+                variant="primary"
+                type="submit"
+                loading={loading}
+                icon={<Check className="size-4" />}
+                title="Save activity and close (Ctrl+Enter)"
+              >
+                Save Activity
+              </Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>

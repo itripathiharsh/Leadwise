@@ -36,6 +36,7 @@ import { LogActivityModal, type ActivityTypeTab } from '@/components/domain/log-
 import { CreateContactModal } from '@/components/domain/create-contact-modal'
 import { MergeOrganisationDialog } from '@/components/domain/merge-dialog'
 import { AiLeadIntelligenceCard } from '@/components/domain/ai-lead-intelligence-card'
+import { AiOutreachGeneratorModal } from '@/components/domain/ai-outreach-generator-modal'
 import { CallPrepDialog } from '@/components/domain/call-prep-dialog'
 import { CommentsFeed } from '@/components/domain/comments-feed'
 import { OrganisationAttachments } from '@/components/domain/organisation-attachments'
@@ -67,6 +68,17 @@ export default function OrganisationDetailPage() {
   const [logModalOpen, setLogModalOpen] = React.useState(false)
   const [logType, setLogType] = React.useState<ActivityTypeTab>('CALL')
   const [selectedContactId, setSelectedContactId] = React.useState<string>('')
+  const [logInitialOutcome, setLogInitialOutcome] = React.useState<string>('')
+  const [logInitialNotes, setLogInitialNotes] = React.useState<string>('')
+  const [logInitialEmailSubject, setLogInitialEmailSubject] = React.useState<string>('')
+  const [logInitialEmailUsed, setLogInitialEmailUsed] = React.useState<string>('')
+  const [logInitialPhoneNumberUsed, setLogInitialPhoneNumberUsed] = React.useState<string>('')
+  const [logStartCallTimer, setLogStartCallTimer] = React.useState<boolean>(false)
+  const [completedFollowUpId, setCompletedFollowUpId] = React.useState<string | undefined>()
+
+  const [aiOutreachOpen, setAiOutreachOpen] = React.useState(false)
+  const [aiOutreachTarget, setAiOutreachTarget] = React.useState<{ name: string; designation?: string } | null>(null)
+
   const [createContactOpen, setCreateContactOpen] = React.useState(false)
   const [mergeModalOpen, setMergeModalOpen] = React.useState(false)
   const [callPrepOpen, setCallPrepOpen] = React.useState(false)
@@ -169,12 +181,31 @@ export default function OrganisationDetailPage() {
     }
   }
 
-  const openLog = (type: ActivityTypeTab, contactId?: string) => {
+  const openLog = (
+    type: ActivityTypeTab,
+    contactId?: string,
+    options?: {
+      outcome?: string
+      notes?: string
+      emailSubject?: string
+      emailUsed?: string
+      phoneNumberUsed?: string
+      startCallTimer?: boolean
+      followUpId?: string
+    },
+  ) => {
     if (data?.organisation?.assignedTo && currentUser && data.organisation.assignedTo.id !== currentUser.id) {
       toast.warning(`Note: ${data.organisation.name} is assigned to ${data.organisation.assignedTo.name}. Coordinate before outreach.`)
     }
     setLogType(type)
-    if (contactId) setSelectedContactId(contactId)
+    setSelectedContactId(contactId || '')
+    setLogInitialOutcome(options?.outcome || '')
+    setLogInitialNotes(options?.notes || '')
+    setLogInitialEmailSubject(options?.emailSubject || '')
+    setLogInitialEmailUsed(options?.emailUsed || '')
+    setLogInitialPhoneNumberUsed(options?.phoneNumberUsed || '')
+    setLogStartCallTimer(Boolean(options?.startCallTimer))
+    setCompletedFollowUpId(options?.followUpId)
     setLogModalOpen(true)
   }
 
@@ -210,6 +241,60 @@ export default function OrganisationDetailPage() {
   // Compute Next Recommended Action
   const nextPendingFollowup = followups.find((f: any) => f.status === 'PENDING')
   const primaryContact = contacts.find((c: any) => c.isDecisionMaker) || contacts[0]
+
+  // W4: Action-first Call helper
+  const handleActionCall = (contact?: any, followUpId?: string) => {
+    const phone = contact?.phone
+    if (phone) {
+      window.location.href = `tel:${phone}`
+    }
+    openLog('CALL', contact?.id, {
+      phoneNumberUsed: phone,
+      startCallTimer: true,
+      followUpId,
+    })
+  }
+
+  // W5: Action-first Email helper
+  const handleActionEmail = (contact?: any, followUpId?: string) => {
+    const email = contact?.email
+    const orgName = org.name || 'Organisation'
+    const subject = `Partnership Collaboration — Leadwise & ${orgName}`
+    const body = `Hi ${contact?.name || 'Partnership Lead'},\n\nReaching out from Leadwise regarding collaborative partnership opportunities with ${orgName}.\n\nWould you have 10–15 minutes for a brief introductory discussion this week?\n\nBest regards,\nPartnership Outreach Team\nLeadwise`
+
+    if (email) {
+      window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+    }
+
+    openLog('EMAIL', contact?.id, {
+      outcome: 'SENT',
+      emailUsed: email,
+      emailSubject: subject,
+      notes: body,
+      followUpId,
+    })
+  }
+
+  // W5: AI Drafter open and callback
+  const handleOpenAiGenerator = (contact?: any) => {
+    const target = contact || primaryContact
+    setAiOutreachTarget({
+      name: target?.name || 'Decision Maker',
+      designation: target?.designation || 'Partnership Lead',
+    })
+    setAiOutreachOpen(true)
+  }
+
+  const handleUseAiMessage = (content: string) => {
+    const target = contacts.find((c: any) => c.name === aiOutreachTarget?.name) || primaryContact
+    const subject = `Partnership Discussion — ${org.name}`
+    openLog('EMAIL', target?.id, {
+      outcome: 'SENT',
+      emailUsed: target?.email,
+      emailSubject: subject,
+      notes: content.slice(0, 4000),
+    })
+  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 p-4 sm:p-6 lg:p-8">
@@ -469,6 +554,14 @@ export default function OrganisationDetailPage() {
             <Button
               variant="outline"
               size="sm"
+              onClick={() => handleOpenAiGenerator(primaryContact)}
+              icon={<Sparkles className="size-3.5 text-cyan-500" />}
+            >
+              AI Outreach
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => openLog('LINKEDIN')}
               icon={<Linkedin className="size-3.5 text-muted-foreground" />}
             >
@@ -548,23 +641,53 @@ export default function OrganisationDetailPage() {
 
           <div className="flex items-center gap-2 shrink-0">
             {nextPendingFollowup ? (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => openLog('CALL', nextPendingFollowup.contactId)}
-                icon={<Phone className="size-3.5" />}
-              >
-                Execute Call
-              </Button>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() =>
+                    handleActionCall(
+                      contacts.find((c: any) => c.id === nextPendingFollowup.contactId) || primaryContact,
+                      nextPendingFollowup.id,
+                    )
+                  }
+                  icon={<Phone className="size-3.5" />}
+                >
+                  Execute Call
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    handleActionEmail(
+                      contacts.find((c: any) => c.id === nextPendingFollowup.contactId) || primaryContact,
+                      nextPendingFollowup.id,
+                    )
+                  }
+                  icon={<Mail className="size-3.5 text-indigo-500" />}
+                >
+                  Email
+                </Button>
+              </div>
             ) : primaryContact ? (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => openLog('CALL', primaryContact.id)}
-                icon={<Phone className="size-3.5" />}
-              >
-                Call {primaryContact.name.split(' ')[0]}
-              </Button>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => handleActionCall(primaryContact)}
+                  icon={<Phone className="size-3.5" />}
+                >
+                  Call {primaryContact.name.split(' ')[0]}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleActionEmail(primaryContact)}
+                  icon={<Mail className="size-3.5 text-indigo-500" />}
+                >
+                  Email
+                </Button>
+              </div>
             ) : (
               <Button
                 variant="primary"
@@ -813,22 +936,33 @@ export default function OrganisationDetailPage() {
                     )}
                   </div>
 
-                  <div className="pt-2 flex items-center justify-end gap-2">
+                  <div className="pt-2 flex items-center justify-end gap-1.5">
                     <Button
                       variant="ghost"
                       size="xs"
-                      onClick={() => openLog('CALL', contact.id)}
-                      icon={<Phone className="size-3" />}
+                      onClick={() => handleActionCall(contact)}
+                      icon={<Phone className="size-3 text-blue-500" />}
+                      title={contact.phone ? `Dial ${contact.phone} and log call` : 'Log call'}
                     >
                       Call
                     </Button>
                     <Button
                       variant="ghost"
                       size="xs"
-                      onClick={() => openLog('EMAIL', contact.id)}
-                      icon={<Mail className="size-3" />}
+                      onClick={() => handleActionEmail(contact)}
+                      icon={<Mail className="size-3 text-indigo-500" />}
+                      title={contact.email ? `Compose email to ${contact.email} and log` : 'Log email'}
                     >
                       Email
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      onClick={() => handleOpenAiGenerator(contact)}
+                      icon={<Sparkles className="size-3 text-cyan-500" />}
+                      title="AI outreach message draft"
+                    >
+                      AI Draft
                     </Button>
                   </div>
                 </div>
@@ -1079,13 +1213,26 @@ export default function OrganisationDetailPage() {
                   </p>
                 </div>
 
-                <Button
-                  variant="primary"
-                  size="xs"
-                  onClick={() => openLog('CALL', f.contactId)}
-                >
-                  Log Call
-                </Button>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant="primary"
+                    size="xs"
+                    onClick={() =>
+                      handleActionCall(contacts.find((c: any) => c.id === f.contactId), f.id)
+                    }
+                  >
+                    Log Call
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    onClick={() =>
+                      handleActionEmail(contacts.find((c: any) => c.id === f.contactId), f.id)
+                    }
+                  >
+                    Log Email
+                  </Button>
+                </div>
               </div>
             ))
           )}
@@ -1111,9 +1258,27 @@ export default function OrganisationDetailPage() {
         open={logModalOpen}
         onOpenChange={setLogModalOpen}
         initialType={logType}
+        initialOutcome={logInitialOutcome}
+        initialNotes={logInitialNotes}
+        initialEmailSubject={logInitialEmailSubject}
+        initialEmailUsed={logInitialEmailUsed}
+        initialPhoneNumberUsed={logInitialPhoneNumberUsed}
+        startCallTimer={logStartCallTimer}
+        completedFollowUpId={completedFollowUpId}
         initialOrganisationId={org.id}
         initialContactId={selectedContactId}
         onSuccess={fetchDetails}
+      />
+
+      <AiOutreachGeneratorModal
+        open={aiOutreachOpen}
+        onOpenChange={setAiOutreachOpen}
+        orgId={org.id}
+        orgName={org.name}
+        contactName={aiOutreachTarget?.name || 'Decision Maker'}
+        contactDesignation={aiOutreachTarget?.designation || 'Partnership Lead'}
+        defaultChannel="EMAIL"
+        onUseMessage={handleUseAiMessage}
       />
 
       <CallPrepDialog

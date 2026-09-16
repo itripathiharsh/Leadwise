@@ -319,6 +319,8 @@ const activityBase = z.object({
   meetingLocation: optionalText(240),
   /** Explicit status override; when omitted the outcome drives progression. */
   statusOverride: z.nativeEnum(OrgStatus).optional(),
+  /** Specific follow-up from the queue to mark done when logging outreach. */
+  completedFollowUpId: optionalCuid,
 })
 
 export const activityCreateSchema = activityBase.superRefine((data, ctx) => {
