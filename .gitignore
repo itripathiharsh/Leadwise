@@ -66,3 +66,10 @@ stitch_work.md
 scripts/download_*.js
 /logo.png
 .planning/
+
+# Internal documentation & deployment metadata (private / local only)
+.docs/
+deployment-manifest.json
+*-REPORT.md
+*-RECOMMENDATIONS.md
+
