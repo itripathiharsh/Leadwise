@@ -28,6 +28,7 @@ import {
   Moon,
   Keyboard,
   MessageSquare,
+  BookOpen,
 } from 'lucide-react'
 import { NotificationCenter } from '@/components/domain/notification-center'
 import { GlobalSearchDialog } from '@/components/domain/global-search-dialog'
@@ -130,6 +131,7 @@ export function DashboardShell({
       r: '/analytics',
       s: '/settings',
       m: '/chat',
+      h: '/resources/about-organisation',
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -222,6 +224,7 @@ interface NavGroup {
     {
       title: 'Resources',
       items: [
+        { label: 'About Sentio Mind', href: '/resources/about-organisation', icon: BookOpen },
         { label: 'Templates', href: '/templates', icon: FileText },
         ...(isOwnerOrTL ? [{ label: 'Team', href: '/team', icon: BarChart3 }] : []),
       ],

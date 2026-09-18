@@ -45,6 +45,9 @@ export const PERMISSIONS = [
   'chat:access',
   'channel:create',
   'channel:manage',
+  // Handbook / Organisation CMS
+  'handbook:view',
+  'handbook:manage',
 ] as const
 
 export type Permission = (typeof PERMISSIONS)[number]
@@ -65,6 +68,7 @@ const INTERN_PERMISSIONS: Permission[] = [
   'template:manage',
   'reassign:request',
   'chat:access',
+  'handbook:view',
 ]
 
 const MATRIX: Record<Role, Permission[]> = {

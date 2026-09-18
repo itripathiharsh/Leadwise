@@ -193,6 +193,10 @@ model User {
   conversationMembers    ConversationMember[]
   messagesSent           Message[]
   messageReactions       MessageReaction[]
+  handbooksCreated       OrganisationHandbook[] @relation("HandbookCreator")
+  handbooksUpdated       OrganisationHandbook[] @relation("HandbookUpdater")
+  handbooksPublished     OrganisationHandbook[] @relation("HandbookPublisher")
+  handbookRevisions      HandbookRevision[]
 
   @@index([role])
   @@index([status])
@@ -919,5 +923,85 @@ model MessageReaction {
   @@unique([messageId, userId, emoji])
   @@index([messageId])
   @@index([userId])
+}
+
+// ── Organisation Handbook CMS ───────────────────────────────────────────────
+
+enum HandbookStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model OrganisationHandbook {
+  id            String         @id @default(cuid())
+  slug          String         @unique @default("about-sentio-mind")
+  title         String         @default("About Sentio Mind")
+  subtitle      String?        @default("AI-Powered Self-Awareness & Behavioural Intelligence")
+  status        HandbookStatus @default(PUBLISHED)
+  version       Int            @default(1)
+
+  publishedAt   DateTime?      @default(now())
+  publishedById String?
+  publishedBy   User?          @relation("HandbookPublisher", fields: [publishedById], references: [id], onDelete: SetNull)
+
+  createdById   String?
+  createdBy     User?          @relation("HandbookCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById   String?
+  updatedBy     User?          @relation("HandbookUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  sections      HandbookSection[]
+  revisions     HandbookRevision[]
+
+  @@index([slug])
+}
+
+model HandbookSection {
+  id            String               @id @default(cuid())
+  handbookId    String
+  sectionType   String               // hero, mission_vision, ecosystem, domains, principles, ai_humans, collaboration, how_we_build, research_focus, new_joiner, journey, cta, rich_text
+  title         String
+  subtitle      String?
+  badge         String?
+  content       String?              // Markdown / rich text description
+
+  // Structured card data for domains, principles, ecosystem cards, etc.
+  data          Json?                // Live published structured items
+
+  // Draft fields for staging edits before publishing
+  draftTitle    String?
+  draftSubtitle String?
+  draftContent  String?
+  draftData     Json?
+  isDraft       Boolean              @default(false)
+
+  sortOrder     Int                  @default(0)
+  isVisible     Boolean              @default(true)
+
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  handbook      OrganisationHandbook @relation(fields: [handbookId], references: [id], onDelete: Cascade)
+
+  @@index([handbookId, sortOrder])
+  @@index([sectionType])
+  @@index([isVisible])
+}
+
+model HandbookRevision {
+  id              String               @id @default(cuid())
+  handbookId      String
+  version         Int
+  contentSnapshot Json                 // Full snapshot of all sections at time of publication
+  changeSummary   String?
+  createdById     String
+  createdBy       User                 @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt       DateTime             @default(now())
+
+  handbook        OrganisationHandbook @relation(fields: [handbookId], references: [id], onDelete: Cascade)
+
+  @@index([handbookId, version])
 }
 
