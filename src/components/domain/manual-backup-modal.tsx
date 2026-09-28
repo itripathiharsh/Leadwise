@@ -186,9 +186,19 @@ export function ManualBackupModal({ open, onOpenChange, onSuccess }: ManualBacku
                   </div>
                 )}
                 {result.errorMessage && (
-                  <p className="text-amber-600 dark:text-amber-400 text-xs pt-1">
-                    Notice: {result.errorMessage}
-                  </p>
+                  <div className="pt-1 space-y-1">
+                    <p className="text-amber-600 dark:text-amber-400 text-xs">
+                      Notice: {result.errorMessage}
+                    </p>
+                    {result.errorMessage.includes('Settings > Backups') && (
+                      <a
+                        href="/settings/backups"
+                        className="inline-block text-xs text-primary font-medium hover:underline"
+                      >
+                        Open Settings &gt; Backups to Reconnect &rarr;
+                      </a>
+                    )}
+                  </div>
                 )}
               </div>
 

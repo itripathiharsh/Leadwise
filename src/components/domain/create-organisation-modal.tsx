@@ -420,6 +420,7 @@ export function CreateOrganisationModal({
   }, [name, website, open, confirmDuplicate])
 
   const [availableUsers, setAvailableUsers] = React.useState<Array<{ id: string; name: string; role?: string; avatarColor?: string }>>(usersList)
+  const isLeader = currentUser?.role === 'OWNER' || currentUser?.role === 'TL'
 
   React.useEffect(() => {
     if (open) {
@@ -605,6 +606,11 @@ export function CreateOrganisationModal({
       return
     }
 
+    if (!isLeader && duplicates.length > 0) {
+      toast.error('Duplicate organization creation is blocked. Please coordinate with the existing assignee.')
+      return
+    }
+
     setLoading(true)
     try {
       const finalCategory = category === 'Other' ? customCategory.trim() : category
@@ -670,15 +676,20 @@ export function CreateOrganisationModal({
         return
       }
 
-      if (!res.ok || data?.error) {
-        toast.error(data?.error || 'Failed to create organization.')
+      if (data?.status === 'DUPLICATE' || data?.duplicates) {
+        setDuplicates(data.duplicates || [])
+        toast.warning(
+          data.error ||
+            (data.blocked
+              ? 'Duplicate creation is blocked for team members.'
+              : 'Possible duplicate organization detected.'),
+        )
         setLoading(false)
         return
       }
 
-      if (data.status === 'DUPLICATE') {
-        setDuplicates(data.duplicates || [])
-        toast.warning('Possible duplicate organization detected.')
+      if (!res.ok || data?.error) {
+        toast.error(data?.error || 'Failed to create organization.')
         setLoading(false)
         return
       }
@@ -768,17 +779,26 @@ export function CreateOrganisationModal({
                   ))}
                 </div>
 
-                <div className="pt-2 border-t border-amber-500/20 flex items-center justify-between">
-                  <label className="flex items-center gap-2 text-xs font-medium text-foreground cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={confirmDuplicate}
-                      onChange={(e) => setConfirmDuplicate(e.target.checked)}
-                      className="size-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
-                    />
-                    <span>Confirm and create duplicate organization anyway</span>
-                  </label>
-                </div>
+                {isLeader ? (
+                  <div className="pt-2 border-t border-amber-500/20 flex items-center justify-between">
+                    <label className="flex items-center gap-2 text-xs font-medium text-foreground cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={confirmDuplicate}
+                        onChange={(e) => setConfirmDuplicate(e.target.checked)}
+                        className="size-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                      />
+                      <span>Confirm and create duplicate organization anyway (Leader Override)</span>
+                    </label>
+                  </div>
+                ) : (
+                  <div className="pt-2.5 border-t border-amber-500/20 flex items-start gap-2 text-xs text-amber-900 dark:text-amber-200">
+                    <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <span>
+                      <strong>Duplicate Creation Blocked:</strong> This organization is already in Leadwise. Team members cannot create duplicates to avoid duplicate outreach. Please collaborate with the existing assignee or contact a Team Lead.
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1465,10 +1485,11 @@ export function CreateOrganisationModal({
                 variant="primary"
                 type="submit"
                 loading={loading}
+                disabled={loading || (duplicates.length > 0 && !isLeader)}
                 icon={<Plus className="size-4" />}
                 className="shadow-sm cursor-pointer font-semibold"
               >
-                Add Organization
+                {duplicates.length > 0 && !isLeader ? 'Duplicate Blocked' : 'Add Organization'}
               </Button>
             </div>
           </DialogFooter>

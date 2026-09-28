@@ -122,16 +122,15 @@ export default function OrganisationsPage() {
       .catch(() => {})
   }, [])
 
-  // Fetch users for assignment filter (only for leaders)
+  // Fetch users for assignment filter
   React.useEffect(() => {
-    if (!isLeader) return
     fetch('/api/users')
       .then((r) => r.json())
       .then((d) => {
         if (d?.users) setUsersList(d.users)
       })
       .catch(() => {})
-  }, [isLeader])
+  }, [])
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -283,26 +282,29 @@ export default function OrganisationsPage() {
             <option value="LOW">Low Priority</option>
           </select>
 
-          {/* Owner Filter (Leaders Only) */}
-          {isLeader && (
-            <select
-              value={assigneeFilter}
-              onChange={(e) => {
-                setAssigneeFilter(e.target.value)
-                setPage(1)
-              }}
-              className="rounded-md border border-border bg-surface-muted/60 px-2.5 py-1.5 text-xs text-foreground font-medium outline-none focus:border-border-strong cursor-pointer"
-            >
-              <option value="">All Owners</option>
-              {usersList.map((u) => (
+          {/* Owner Filter */}
+          <select
+            value={assigneeFilter}
+            onChange={(e) => {
+              setAssigneeFilter(e.target.value)
+              setPage(1)
+            }}
+            className="rounded-md border border-border bg-surface-muted/60 px-2.5 py-1.5 text-xs text-foreground font-medium outline-none focus:border-border-strong cursor-pointer"
+          >
+            <option value="">All Owners</option>
+            {currentUser && (
+              <option value={currentUser.id}>My Accounts Only</option>
+            )}
+            {usersList
+              .filter((u) => u.id !== currentUser?.id)
+              .map((u) => (
                 <option key={u.id} value={u.id}>
                   {u.name}
                 </option>
               ))}
-            </select>
-          )}
+          </select>
 
-          {(search || statusFilter || priorityFilter || (isLeader && assigneeFilter)) && (
+          {(search || statusFilter || priorityFilter || assigneeFilter) && (
             <Button
               variant="ghost"
               size="xs"

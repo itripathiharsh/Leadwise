@@ -52,27 +52,24 @@ export default function PipelinePage() {
     fetchBoard()
   }, [fetchBoard])
 
-  const [currentUserRole, setCurrentUserRole] = React.useState<string | null>(null)
-  const isLeader = currentUserRole === 'OWNER' || currentUserRole === 'TL'
+  const [currentUser, setCurrentUser] = React.useState<{ id: string; role?: string } | null>(null)
+  const isLeader = currentUser?.role === 'OWNER' || currentUser?.role === 'TL'
 
   React.useEffect(() => {
     fetch('/api/auth/me')
       .then((r) => r.json())
       .then((d) => {
-        if (d?.user?.role) setCurrentUserRole(d.user.role)
+        if (d?.user) setCurrentUser(d.user)
       })
       .catch(() => {})
-  }, [])
 
-  React.useEffect(() => {
-    if (!isLeader) return
     fetch('/api/users')
       .then((r) => r.json())
       .then((d) => {
         if (d.users) setUsersList(d.users)
       })
       .catch(() => {})
-  }, [isLeader])
+  }, [])
 
   return (
     <div className="max-w-full mx-auto space-y-5 p-4 sm:p-6 lg:p-8">
@@ -128,22 +125,25 @@ export default function PipelinePage() {
           <Filter className="size-3.5 text-muted-foreground" /> Filters:
         </div>
 
-        {/* Assignee Filter (Leaders Only) */}
-        {isLeader && (
-          <select
-            value={assigneeFilter}
-            onChange={(e) => setAssigneeFilter(e.target.value)}
-            className="rounded border border-border bg-surface-muted/60 px-2.5 py-1 text-xs text-foreground font-medium outline-none focus:border-border-strong cursor-pointer"
-          >
-            <option value="">All Account Owners</option>
-            <option value="UNASSIGNED">Unassigned Only</option>
-            {usersList.map((u) => (
+        {/* Assignee Filter */}
+        <select
+          value={assigneeFilter}
+          onChange={(e) => setAssigneeFilter(e.target.value)}
+          className="rounded border border-border bg-surface-muted/60 px-2.5 py-1 text-xs text-foreground font-medium outline-none focus:border-border-strong cursor-pointer"
+        >
+          <option value="">All Account Owners</option>
+          {currentUser && (
+            <option value={currentUser.id}>My Leads Only</option>
+          )}
+          <option value="UNASSIGNED">Unassigned Only</option>
+          {usersList
+            .filter((u) => u.id !== currentUser?.id)
+            .map((u) => (
               <option key={u.id} value={u.id}>
                 {u.name}
               </option>
             ))}
-          </select>
-        )}
+        </select>
 
         {/* Priority Filter */}
         <select

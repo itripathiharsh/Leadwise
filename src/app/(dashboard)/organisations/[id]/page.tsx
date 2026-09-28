@@ -26,6 +26,7 @@ import {
   Paperclip,
   Search,
   Filter,
+  Shield,
   X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -229,7 +230,13 @@ export default function OrganisationDetailPage() {
   }
 
   const org = data.organisation
-  const isAssignedToMe = Boolean(currentUser && (org.assignedToId === currentUser.id || org.assignedTo?.id === currentUser.id))
+  const isAssignedToMe = Boolean(
+    currentUser &&
+      (org.assignedToId === currentUser.id ||
+        org.assignedTo?.id === currentUser.id ||
+        org.createdById === currentUser.id),
+  )
+  const canWrite = isLeader || isAssignedToMe || (!org.assignedToId && !org.createdById)
   const activities = data.activities || []
   const followups = data.followups || []
   const contacts = org.contacts || []
@@ -295,22 +302,22 @@ export default function OrganisationDetailPage() {
         </div>
       </div>
 
-      {/* Warning when viewing an organisation assigned to someone else */}
-      {currentUser && org.assignedTo && org.assignedTo.id !== currentUser.id && (
-        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* Read-Only Team Visibility Banner */}
+      {currentUser && !canWrite && org.assignedTo && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200">
           <div className="flex items-center gap-2.5">
-            <AlertTriangle className="size-4 text-amber-500 shrink-0" />
+            <Shield className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
             <div>
               <span className="font-semibold text-foreground">
-                Assigned Account Note:
+                Team Dossier (Read-Only Mode):
               </span>{' '}
               <span className="text-muted-foreground">
-                This organization is managed by <strong className="text-foreground font-semibold">{org.assignedTo.name}</strong>. Coordinate internally before outreach.
+                This account is actively managed by <strong className="text-foreground font-semibold">{org.assignedTo.name}</strong>. You have full transparency to review touchpoints, notes, and activity timeline to prevent duplicate outreach.
               </span>
             </div>
           </div>
           <Badge tone="amber" size="sm" className="shrink-0 font-medium">
-            Owner: {org.assignedTo.name}
+            Account Owner: {org.assignedTo.name}
           </Badge>
         </div>
       )}
@@ -434,7 +441,8 @@ export default function OrganisationDetailPage() {
               <select
                 value={org.status}
                 onChange={(e) => handleStatusChange(e.target.value)}
-                className="rounded border border-border bg-surface px-2 py-0.5 text-xs font-semibold text-foreground focus:border-border-strong focus:outline-none cursor-pointer"
+                disabled={!canWrite}
+                className="rounded border border-border bg-surface px-2 py-0.5 text-xs font-semibold text-foreground focus:border-border-strong focus:outline-none cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <option value="ASSIGNED">Assigned</option>
                 <option value="CONTACTED">Contacted</option>
@@ -469,14 +477,17 @@ export default function OrganisationDetailPage() {
                 <button
                   key={s.key}
                   type="button"
-                  onClick={() => handleStatusChange(s.key)}
+                  onClick={() => canWrite && handleStatusChange(s.key)}
+                  disabled={!canWrite}
                   className={cn(
-                    'flex items-center gap-2 rounded-md border p-2 text-left transition-[border-color,background-color] duration-150 text-xs cursor-pointer',
+                    'flex items-center gap-2 rounded-md border p-2 text-left transition-[border-color,background-color] duration-150 text-xs',
+                    canWrite ? 'cursor-pointer' : 'cursor-default',
                     isCurrent
                       ? 'border-primary bg-primary/10 text-primary font-semibold'
                       : isPassed
                         ? 'border-border bg-surface text-foreground'
-                        : 'border-border/60 bg-surface/40 text-muted-foreground hover:border-border hover:text-foreground'
+                        : 'border-border/60 bg-surface/40 text-muted-foreground hover:border-border hover:text-foreground',
+                    !canWrite && !isCurrent && 'hover:bg-surface-muted/40'
                   )}
                 >
                   <div
@@ -500,76 +511,88 @@ export default function OrganisationDetailPage() {
 
         {/* Monochromatic Primary Action Toolbar */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs font-semibold text-muted-foreground mr-1">Log Touchpoint:</span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => openLog('CALL')}
-              icon={<Phone className="size-3.5 text-muted-foreground" />}
-            >
-              Call
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCallPrepOpen(true)}
-              icon={<Sparkles className="size-3.5 text-muted-foreground" />}
-            >
-              Call Prep
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => openLog('EMAIL')}
-              icon={<Mail className="size-3.5 text-muted-foreground" />}
-            >
-              Email
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => openLog('LINKEDIN')}
-              icon={<Linkedin className="size-3.5 text-muted-foreground" />}
-            >
-              LinkedIn
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => openLog('MEETING')}
-              icon={<Calendar className="size-3.5 text-muted-foreground" />}
-            >
-              Meeting
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => openLog('NOTE')}
-              icon={<StickyNote className="size-3.5 text-muted-foreground" />}
-            >
-              Note
-            </Button>
-          </div>
+          {canWrite ? (
+            <>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-xs font-semibold text-muted-foreground mr-1">Log Touchpoint:</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openLog('CALL')}
+                  icon={<Phone className="size-3.5 text-muted-foreground" />}
+                >
+                  Call
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCallPrepOpen(true)}
+                  icon={<Sparkles className="size-3.5 text-muted-foreground" />}
+                >
+                  Call Prep
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openLog('EMAIL')}
+                  icon={<Mail className="size-3.5 text-muted-foreground" />}
+                >
+                  Email
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openLog('LINKEDIN')}
+                  icon={<Linkedin className="size-3.5 text-muted-foreground" />}
+                >
+                  LinkedIn
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openLog('MEETING')}
+                  icon={<Calendar className="size-3.5 text-muted-foreground" />}
+                >
+                  Meeting
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openLog('NOTE')}
+                  icon={<StickyNote className="size-3.5 text-muted-foreground" />}
+                >
+                  Note
+                </Button>
+              </div>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setMergeModalOpen(true)}
-              className="text-xs text-muted-foreground hover:text-foreground"
-            >
-              Merge Organization
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => setCreateContactOpen(true)}
-              icon={<Plus className="size-3.5" />}
-            >
-              Add Contact
-            </Button>
-          </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setMergeModalOpen(true)}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Merge Organization
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setCreateContactOpen(true)}
+                  icon={<Plus className="size-3.5" />}
+                >
+                  Add Contact
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center gap-2 py-1 text-xs text-muted-foreground">
+              <Shield className="size-3.5 text-amber-500 shrink-0" />
+              <span>
+                <strong>Read-Only Access:</strong> Touchpoints and contacts for this account are managed by{' '}
+                <strong className="text-foreground">{org.assignedTo?.name || 'the assigned owner'}</strong>.
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -607,7 +630,12 @@ export default function OrganisationDetailPage() {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {nextPendingFollowup ? (
+            {!canWrite ? (
+              <span className="text-xs text-muted-foreground italic font-medium flex items-center gap-1.5">
+                <Shield className="size-3.5 text-amber-500 shrink-0" />
+                Managed by {org.assignedTo?.name || 'Account Owner'}
+              </span>
+            ) : nextPendingFollowup ? (
               <div className="flex items-center gap-1.5">
                 <Button
                   variant="primary"
@@ -834,14 +862,16 @@ export default function OrganisationDetailPage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-sm text-foreground">Contacts & Decision Makers</h3>
-            <Button
-              variant="outline"
-              size="xs"
-              onClick={() => setCreateContactOpen(true)}
-              icon={<Plus className="size-3.5" />}
-            >
-              Add Contact Person
-            </Button>
+            {canWrite && (
+              <Button
+                variant="outline"
+                size="xs"
+                onClick={() => setCreateContactOpen(true)}
+                icon={<Plus className="size-3.5" />}
+              >
+                Add Contact Person
+              </Button>
+            )}
           </div>
 
           {contacts.length === 0 ? (
@@ -903,26 +933,28 @@ export default function OrganisationDetailPage() {
                     )}
                   </div>
 
-                  <div className="pt-2 flex items-center justify-end gap-1.5">
-                    <Button
-                      variant="ghost"
-                      size="xs"
-                      onClick={() => handleActionCall(contact)}
-                      icon={<Phone className="size-3 text-blue-500" />}
-                      title={contact.phone ? `Dial ${contact.phone} and log call` : 'Log call'}
-                    >
-                      Call
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="xs"
-                      onClick={() => handleActionEmail(contact)}
-                      icon={<Mail className="size-3 text-indigo-500" />}
-                      title={contact.email ? `Compose email to ${contact.email} and log` : 'Log email'}
-                    >
-                      Email
-                    </Button>
-                  </div>
+                  {canWrite && (
+                    <div className="pt-2 flex items-center justify-end gap-1.5">
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        onClick={() => handleActionCall(contact)}
+                        icon={<Phone className="size-3 text-blue-500" />}
+                        title={contact.phone ? `Dial ${contact.phone} and log call` : 'Log call'}
+                      >
+                        Call
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        onClick={() => handleActionEmail(contact)}
+                        icon={<Mail className="size-3 text-indigo-500" />}
+                        title={contact.email ? `Compose email to ${contact.email} and log` : 'Log email'}
+                      >
+                        Email
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

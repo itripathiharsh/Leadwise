@@ -292,7 +292,7 @@ export async function getOrganisationContacts(organisationId: string) {
 // ── Create / update ──────────────────────────────────────────────────────────
 
 export type CreateOrganisationResult =
-  | { status: 'DUPLICATE'; duplicates: OrganisationDuplicate[] }
+  | { status: 'DUPLICATE'; duplicates: OrganisationDuplicate[]; blocked?: boolean }
   | { status: 'CREATED'; id: string; name: string }
 
 export async function createOrganisation(
@@ -301,12 +301,21 @@ export async function createOrganisation(
 ): Promise<CreateOrganisationResult> {
   assertCan(user, 'org:create')
 
-  if (!input.confirmDuplicate) {
-    const duplicates = await findOrganisationDuplicates({
-      name: input.name,
-      website: input.website ?? null,
-    })
-    if (duplicates.length > 0) return { status: 'DUPLICATE', duplicates }
+  const duplicates = await findOrganisationDuplicates({
+    name: input.name,
+    website: input.website ?? null,
+  })
+
+  if (duplicates.length > 0) {
+    // Interns are strictly blocked from creating duplicates to prevent duplicate outreach.
+    // Only Owners and Team Leads (with org:assign) may confirm and bypass duplicate detection.
+    if (!can(user, 'org:assign')) {
+      return { status: 'DUPLICATE', duplicates, blocked: true }
+    }
+
+    if (!input.confirmDuplicate) {
+      return { status: 'DUPLICATE', duplicates, blocked: false }
+    }
   }
 
   // Sticky lead assignment: whosoever gets/creates the lead handles it throughout.

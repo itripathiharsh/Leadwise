@@ -470,6 +470,17 @@ export default function BackupsSettingsPage() {
             <div className="flex items-center gap-2">
               {oauthConnected ? (
                 <>
+                  {driveStatus && !driveStatus.connected && (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={handleConnectGoogle}
+                      loading={connectingDrive}
+                      icon={<Link2 className="size-3.5" />}
+                    >
+                      Reconnect Google
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"

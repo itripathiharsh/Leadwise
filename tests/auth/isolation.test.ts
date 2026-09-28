@@ -113,27 +113,15 @@ describe('Authentication & Organisation / Tenant Isolation', () => {
       expect(allowed).toBe(false)
     })
 
-    it('enforces scoped queries for interns so cross-org records are excluded', () => {
-      const scopeA = organisationScope(internA)
-      expect(scopeA).toEqual({
-        OR: [{ assignedToId: internA.id }, { createdById: internA.id }],
-      })
-
-      // Owner and TL see everything (unrestricted where clause)
+    it('allows transparent team organisation queries for all roles including interns', () => {
+      // With transparent team collaboration, interns see all organisations to avoid duplicate outreach
+      expect(organisationScope(internA)).toEqual({})
       expect(organisationScope(ownerUser)).toEqual({})
       expect(organisationScope(tlUser)).toEqual({})
     })
 
-    it('enforces contact queries scoping for interns', () => {
-      const scopeA = contactScope(internA)
-      expect(scopeA).toEqual({
-        OR: [
-          { assignedToId: internA.id },
-          { createdById: internA.id },
-          { organisation: { OR: [{ assignedToId: internA.id }, { createdById: internA.id }] } },
-        ],
-      })
-
+    it('allows transparent contact queries for all roles including interns', () => {
+      expect(contactScope(internA)).toEqual({})
       expect(contactScope(ownerUser)).toEqual({})
     })
 
@@ -163,14 +151,10 @@ describe('Authentication & Organisation / Tenant Isolation', () => {
       expect(() => assertCan(internA, 'org:assign')).toThrow(ForbiddenError)
     })
 
-    it('enforces team activity and follow-up scoping for Owner and TL vs Intern', () => {
-      // Intern only sees own activities and follow-ups
-      expect(activityScope(internA)).toEqual({
-        OR: [
-          { performedById: internA.id },
-          { organisation: { OR: [{ assignedToId: internA.id }, { createdById: internA.id }] } },
-        ],
-      })
+    it('allows team activity visibility while keeping follow-ups personal to intern', () => {
+      // Intern can see team activity history to know what each person did
+      expect(activityScope(internA)).toEqual({})
+      // But personal follow-up task queue remains scoped to the intern
       expect(followUpScope(internA)).toEqual({ assignedToId: internA.id })
 
       // Owner and TL see whole team works
@@ -182,9 +166,9 @@ describe('Authentication & Organisation / Tenant Isolation', () => {
   })
 
   describe('canReadOrganisation Scoping', () => {
-    it('allows interns to read assigned or created organisations only', () => {
+    it('allows interns to read team organisations to review history and prevent duplicate outreach', () => {
       expect(canReadOrganisation(internA, orgAssignedToA)).toBe(true)
-      expect(canReadOrganisation(internA, orgAssignedToB)).toBe(false)
+      expect(canReadOrganisation(internA, orgAssignedToB)).toBe(true)
     })
 
     it('allows Owner and TL to read any organisation', () => {

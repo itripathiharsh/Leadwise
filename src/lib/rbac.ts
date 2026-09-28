@@ -57,12 +57,14 @@ const OWNER_PERMISSIONS: Permission[] = [...PERMISSIONS]
 const TL_PERMISSIONS: Permission[] = PERMISSIONS.filter((p) => p !== 'org:delete')
 
 const INTERN_PERMISSIONS: Permission[] = [
-  // Interns see only what is assigned to them — enforced by scope helpers below,
-  // not by the absence of a permission.
+  // Transparent team collaboration: interns can view team organisations and activity history,
+  // but write paths remain strictly guarded by canWriteOrganisation.
+  'org:viewAll',
   'org:create',
   'contact:create',
   'contact:edit',
   'activity:create',
+  'activity:viewAll',
   'org:changeStatus',
   'followup:create',
   'template:manage',

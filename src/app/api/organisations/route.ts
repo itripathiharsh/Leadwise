@@ -62,6 +62,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid organisation input', details: parsed.error.flatten() }, { status: 400 })
     }
     const result = await createOrganisation(user, parsed.data)
+    if (result.status === 'DUPLICATE') {
+      return NextResponse.json(
+        {
+          ...result,
+          error: result.blocked
+            ? 'Organization already exists. Duplicate creation is blocked for team members to prevent duplicate outreach.'
+            : undefined,
+        },
+        { status: result.blocked ? 409 : 200 },
+      )
+    }
     return NextResponse.json(result)
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
