@@ -20,16 +20,16 @@ export function Card({
     subtle: 'border border-border/60 bg-surface-muted/60 text-card-foreground shadow-none',
     ghost: 'border-0 bg-transparent shadow-none',
     glass: 'border border-border bg-card text-card-foreground shadow-xs',
-    glow: 'border border-primary-border/60 bg-primary-soft/10 text-card-foreground shadow-xs',
+    glow: 'border border-primary-border/60 bg-primary-soft/10 text-card-foreground shadow-xs hover:border-primary/60 hover:shadow-[0_0_20px_rgba(79,70,229,0.15)]',
   }
 
   return (
     <div
       className={cn(
-        'rounded-lg transition-[border-color,background-color,box-shadow,transform] duration-140 ease-out',
+        'rounded-lg transition-all duration-200 ease-out',
         variantStyles[variant],
         interactive &&
-          'cursor-pointer hover:border-border-strong hover:shadow-sm active:translate-y-0',
+          'cursor-pointer hover:border-border-strong hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]',
         className,
       )}
       {...props}

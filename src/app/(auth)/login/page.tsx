@@ -226,7 +226,7 @@ export default function LoginPage() {
                   {liveCadenceEvents.map((evt, idx) => (
                     <div
                       key={evt.org}
-                      className="group flex items-start justify-between gap-3 p-2.5 rounded-md border border-border/80 bg-surface-panel/80 hover:bg-surface-elevated/60 hover:border-primary/40 transition-[background-color,border-color] duration-150"
+                      className="group flex items-start justify-between gap-3 p-2.5 rounded-md border border-border/80 bg-surface-panel/80 hover:bg-surface-elevated/80 hover:border-primary/50 hover:translate-x-1 hover:shadow-xs transition-all duration-200"
                     >
                       <div className="min-w-0 flex-1 space-y-0.5">
                         <div className="flex items-center gap-2">
@@ -517,7 +517,7 @@ export default function LoginPage() {
                 type="submit"
                 variant="primary"
                 size="lg"
-                className="group w-full mt-1.5 font-medium text-sm transition-[transform,background-color] duration-150"
+                className="group w-full mt-1.5 font-medium text-sm hover:shadow-[0_0_20px_rgba(79,70,229,0.4)] transition-all duration-200"
                 loading={loading}
                 loadingText="Authenticating command..."
                 icon={<ArrowRight className="size-4 group-hover:translate-x-1 transition-transform duration-150" />}

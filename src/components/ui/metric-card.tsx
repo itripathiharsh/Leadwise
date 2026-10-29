@@ -39,12 +39,12 @@ export function MetricCard({
     <>
       <div className="flex items-start justify-between gap-3">
         <p className="text-[12px] leading-4.5 font-medium text-muted-foreground">{label}</p>
-        {icon && <IconTile name={icon} tone={tone} size="sm" className="-mt-0.5" />}
+        {icon && <IconTile name={icon} tone={tone} size="sm" className="-mt-0.5 group-hover:scale-105 transition-transform duration-150" />}
       </div>
       <div className="mt-2.5 flex items-baseline gap-2">
         <p
           className={cn(
-            'tabular font-display font-semibold tracking-[-0.03em] text-foreground',
+            'tabular font-display font-semibold tracking-[-0.03em] text-foreground transition-colors duration-150 group-hover:text-primary',
             emphasis ? 'text-[32px] leading-9' : 'text-[26px] leading-8',
           )}
         >
@@ -53,7 +53,7 @@ export function MetricCard({
         {trend && (
           <span
             className={cn(
-              'text-[11px] font-semibold tabular px-1.5 py-0.5 rounded-md',
+              'text-[11px] font-semibold tabular px-1.5 py-0.5 rounded-md transition-transform duration-150 group-hover:scale-105',
               trend.positive
                 ? 'text-emerald-700 bg-emerald-500/10 dark:text-emerald-300'
                 : 'text-rose-700 bg-rose-500/10 dark:text-rose-300',
@@ -72,21 +72,21 @@ export function MetricCard({
   )
 
   const toneGlows: Partial<Record<Tone, string>> = {
-    slate: 'hover:border-border-strong',
-    indigo: 'hover:border-primary/60 hover:shadow-sm',
-    blue: 'hover:border-blue-500/60 hover:shadow-sm',
-    cyan: 'hover:border-cyan-500/60 hover:shadow-sm',
-    emerald: 'hover:border-emerald-500/60 hover:shadow-sm',
-    amber: 'hover:border-amber-500/60 hover:shadow-sm',
-    rose: 'hover:border-rose-500/60 hover:shadow-sm',
+    slate: 'hover:border-border-strong hover:shadow-md hover:-translate-y-0.5',
+    indigo: 'hover:border-primary/60 hover:shadow-[0_0_20px_rgba(79,70,229,0.15)] hover:-translate-y-0.5',
+    blue: 'hover:border-blue-500/60 hover:shadow-[0_0_20px_rgba(59,130,246,0.15)] hover:-translate-y-0.5',
+    cyan: 'hover:border-cyan-500/60 hover:shadow-[0_0_20px_rgba(6,182,212,0.15)] hover:-translate-y-0.5',
+    emerald: 'hover:border-emerald-500/60 hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] hover:-translate-y-0.5',
+    amber: 'hover:border-amber-500/60 hover:shadow-[0_0_20px_rgba(245,158,11,0.15)] hover:-translate-y-0.5',
+    rose: 'hover:border-rose-500/60 hover:shadow-[0_0_20px_rgba(244,63,94,0.15)] hover:-translate-y-0.5',
   }
 
   const shell = cn(
-    'group relative flex flex-col rounded-lg border bg-card p-4 shadow-xs transition-[border-color,box-shadow,transform] duration-140 ease-out',
+    'group relative flex flex-col rounded-lg border bg-card p-4 shadow-xs transition-all duration-200 ease-out',
     emphasis
-      ? 'border-primary/50 bg-primary-soft/10'
+      ? 'border-primary/50 bg-primary-soft/10 hover:border-primary/70'
       : 'border-border',
-    href && 'cursor-pointer hover:border-border-strong hover:shadow-sm active:translate-y-0',
+    href && 'cursor-pointer active:translate-y-0 active:scale-[0.99]',
     href && toneGlows[tone],
     className,
   )
@@ -97,7 +97,7 @@ export function MetricCard({
     <Link href={href} className={cn(shell, 'focus-visible:ring-[3px] focus-visible:ring-ring/25')}>
       {body}
       <ArrowRight
-        className="absolute right-3.5 bottom-3.5 size-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+        className="absolute right-3.5 bottom-3.5 size-3.5 text-muted-foreground opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0 group-hover:text-primary"
         aria-hidden
       />
     </Link>
@@ -133,7 +133,7 @@ export function StatPill({
     rose: 'text-rose-600 dark:text-rose-300',
   }
   return (
-    <div className={cn('min-w-0', className)}>
+    <div className={cn('min-w-0 transition-transform duration-150 hover:translate-x-0.5', className)}>
       <p className="tabular text-[15px] leading-5 font-semibold text-foreground">{value}</p>
       <p className={cn('mt-0.5 truncate text-[11px] leading-4 font-medium', TONES[tone])}>
         {label}

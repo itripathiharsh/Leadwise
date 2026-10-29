@@ -16,18 +16,18 @@ type Variant =
 type Size = 'xs' | 'sm' | 'md' | 'lg' | 'icon' | 'iconSm'
 
 const BASE =
-  'relative inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium transition-[background-color,border-color,color,box-shadow,transform] duration-140 ease-out outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-45 active:scale-[0.985] [&_svg]:pointer-events-none [&_svg]:shrink-0'
+  'relative inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium transition-all duration-150 ease-out outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-45 active:scale-[0.97] [&_svg]:pointer-events-none [&_svg]:shrink-0'
 
 const VARIANTS: Record<Variant, string> = {
   primary:
-    'bg-primary text-primary-foreground shadow-xs hover:bg-primary-hover border border-primary-border/80 hover:shadow-sm font-semibold active:bg-primary',
+    'bg-primary text-primary-foreground shadow-xs hover:bg-primary-hover border border-primary-border/80 hover:shadow-[0_0_16px_rgba(79,70,229,0.3)] hover:scale-[1.015] font-semibold active:bg-primary active:scale-[0.97]',
   secondary:
-    'bg-secondary text-secondary-foreground border border-border hover:bg-surface-hover hover:border-border-strong shadow-xs',
+    'bg-secondary text-secondary-foreground border border-border hover:bg-surface-hover hover:border-border-strong hover:-translate-y-0.5 shadow-xs active:translate-y-0',
   outline:
-    'border border-border bg-surface text-foreground hover:bg-surface-hover hover:border-border-strong shadow-xs',
+    'border border-border bg-surface text-foreground hover:bg-surface-hover hover:border-border-strong hover:-translate-y-0.5 shadow-xs active:translate-y-0',
   ghost: 'text-muted-foreground hover:bg-surface-hover hover:text-foreground border border-transparent',
   danger:
-    'bg-destructive text-destructive-foreground shadow-xs hover:brightness-105 border border-transparent font-semibold',
+    'bg-destructive text-destructive-foreground shadow-xs hover:brightness-105 hover:scale-[1.015] hover:shadow-[0_0_16px_rgba(239,68,68,0.3)] border border-transparent font-semibold active:scale-[0.97]',
   dangerGhost:
     'text-destructive hover:bg-destructive-soft border border-transparent',
   link: 'text-primary underline-offset-4 hover:underline p-0 h-auto border-0',

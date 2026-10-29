@@ -290,7 +290,7 @@ interface NavGroup {
             variant="primary"
             size="sm"
             onClick={() => setLogModalOpen(true)}
-            className="w-full justify-center font-semibold h-8 text-xs"
+            className="w-full justify-center font-semibold h-8 text-xs hover:shadow-[0_0_14px_rgba(79,70,229,0.35)] transition-all duration-200"
             icon={<Plus className="size-3.5" />}
           >
             Log Activity
@@ -317,14 +317,14 @@ interface NavGroup {
                       href={item.href}
                       prefetch={true}
                       className={cn(
-                        'relative flex items-center justify-between px-2.5 py-1.5 text-xs font-medium transition-[background-color,color] duration-120',
+                        'group relative flex items-center justify-between px-2.5 py-1.5 text-xs font-medium transition-all duration-150',
                         active
                           ? 'bg-primary/10 text-primary font-semibold border-l-2 border-primary rounded-r-md rounded-l-none pl-2'
-                          : 'text-muted-foreground hover:bg-surface-hover hover:text-foreground rounded-md border-l-2 border-transparent',
+                          : 'text-muted-foreground hover:bg-surface-hover hover:text-foreground hover:translate-x-1 rounded-md border-l-2 border-transparent transition-transform duration-150',
                       )}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <Icon className={cn('size-4 shrink-0', active ? 'text-primary' : 'text-muted-foreground')} />
+                        <Icon className={cn('size-4 shrink-0 transition-transform duration-150 group-hover:scale-110', active ? 'text-primary' : 'text-muted-foreground')} />
                         <span className="truncate">{item.label}</span>
                       </div>
                       {typeof item.badge === 'number' && item.badge > 0 && (
@@ -392,7 +392,7 @@ interface NavGroup {
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col min-w-0">
         {/* Top Header Bar */}
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-surface px-4 sm:px-6">
+        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-surface/85 backdrop-blur-md px-4 sm:px-6 transition-all duration-200">
           <div className="flex items-center gap-3">
             {/* Mobile Nav Toggle */}
             <button
@@ -419,7 +419,7 @@ interface NavGroup {
 
             {/* Operational Sync State */}
             <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-0.5 rounded-md border border-border bg-surface-muted text-[11px] font-mono text-muted-foreground">
-              <span className="size-1.5 rounded-full bg-emerald-500" />
+              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
               <span>Synced</span>
             </div>
           </div>

@@ -168,11 +168,11 @@ export default async function DashboardPage() {
       )}
 
       {/* Primary KPI Command Tiles */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 animate-enter-fade-up">
         <Link
           href="/followups?bucket=OVERDUE"
           className={cn(
-            'group rounded-lg border p-4.5 transition-[border-color,background-color] duration-150 flex flex-col justify-between',
+            'group rounded-lg border p-4.5 hover-lift transition-all duration-200 flex flex-col justify-between hover:shadow-md hover:-translate-y-0.5',
             overdueFollowups.total > 0
               ? 'border-rose-500/40 bg-rose-500/5 hover:border-rose-500/70 hover:bg-rose-500/10'
               : 'border-border bg-surface hover:border-border-strong hover:bg-surface-hover',
