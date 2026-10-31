@@ -60,6 +60,7 @@ export default function BackupsSettingsPage() {
   const [restoreModalOpen, setRestoreModalOpen] = React.useState(false)
   const [isOwner, setIsOwner] = React.useState(false)
   const [showAdvancedCredentials, setShowAdvancedCredentials] = React.useState(false)
+  const [downloadingLocal, setDownloadingLocal] = React.useState(false)
 
   const [history, setHistory] = React.useState<BackupHistoryRecord[]>([])
   const [health, setHealth] = React.useState<BackupHealth | null>(null)
@@ -80,6 +81,39 @@ export default function BackupsSettingsPage() {
     folderName?: string
     userEmail?: string
   } | null>(null)
+
+  const handleDownloadLocalBackup = async () => {
+    setDownloadingLocal(true)
+    const toastId = toast.loading('Generating complete multi-sheet database backup (Excel)...')
+    try {
+      const res = await fetch('/api/backups/export-local')
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || 'Failed to download backup')
+      }
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      const disposition = res.headers.get('Content-Disposition')
+      let filename = `leadwise-complete-backup-${new Date().toISOString().slice(0, 10)}.xlsx`
+      if (disposition && disposition.includes('filename=')) {
+        const match = disposition.match(/filename="?([^";]+)"?/)
+        if (match?.[1]) filename = match[1]
+      }
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+      toast.success('Complete database spreadsheet downloaded locally!', { id: toastId })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      toast.error(msg || 'Error downloading backup', { id: toastId })
+    } finally {
+      setDownloadingLocal(false)
+    }
+  }
 
   const loadData = React.useCallback(async () => {
     setLoading(true)
@@ -284,6 +318,17 @@ export default function BackupsSettingsPage() {
             </Button>
           )}
           <Button
+            variant="outline"
+            size="sm"
+            loading={downloadingLocal}
+            onClick={handleDownloadLocalBackup}
+            icon={<Download className="size-4 text-emerald-500" />}
+            title="Download full relational database directly as a multi-sheet Excel spreadsheet"
+            className="font-medium hover:border-emerald-500/50 hover:bg-emerald-500/5"
+          >
+            Download Whole Data (Excel)
+          </Button>
+          <Button
             variant="primary"
             size="sm"
             onClick={() => setModalOpen(true)}
@@ -292,6 +337,36 @@ export default function BackupsSettingsPage() {
             Create Backup Now
           </Button>
         </div>
+      </div>
+
+      {/* Direct Local Download Banner */}
+      <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+        <div className="flex items-center gap-3.5">
+          <div className="flex size-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0 ring-1 ring-emerald-500/20">
+            <Download className="size-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-sm text-foreground">Direct Local Database Export</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20">
+                All 14 Sheets (.xlsx)
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Download the entire relational database (Organisations, Contacts, Activities, Follow-ups, Users, Notes) directly to your PC as an Excel spreadsheet.
+            </p>
+          </div>
+        </div>
+        <Button
+          variant="primary"
+          size="sm"
+          loading={downloadingLocal}
+          onClick={handleDownloadLocalBackup}
+          icon={<Download className="size-4" />}
+          className="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+        >
+          Download Whole Data
+        </Button>
       </div>
 
       {/* Hero Health Banner */}

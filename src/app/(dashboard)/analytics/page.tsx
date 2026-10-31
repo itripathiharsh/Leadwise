@@ -12,7 +12,16 @@ import {
   Compass,
   ArrowUpRight,
   ArrowDownRight,
+  Download,
+  Calendar,
+  ChevronDown,
 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu'
 import {
   ResponsiveContainer,
   BarChart,
@@ -120,10 +129,45 @@ export default function AnalyticsPage() {
   const [targetsProgress, setTargetsProgress] = React.useState<any[]>([])
   const [loading, setLoading] = React.useState(true)
   const [mounted, setMounted] = React.useState(false)
+  const [downloading, setDownloading] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     setMounted(true)
   }, [])
+
+  const handleDownloadReport = async (range: 'today' | '7d') => {
+    setDownloading(range)
+    const label = range === 'today' ? "Today's Outreach Data" : '7-Day Team Performance'
+    const toastId = toast.loading(`Generating ${label} Excel sheet...`)
+    try {
+      const res = await fetch(`/api/analytics/export?range=${range}`)
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || 'Failed to download report')
+      }
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      const disposition = res.headers.get('Content-Disposition')
+      let filename = `leadwise-analytics-${range}-${new Date().toISOString().slice(0, 10)}.xlsx`
+      if (disposition && disposition.includes('filename=')) {
+        const match = disposition.match(/filename="?([^";]+)"?/)
+        if (match?.[1]) filename = match[1]
+      }
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+      toast.success(`${label} downloaded successfully!`, { id: toastId })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      toast.error(msg || 'Error downloading report', { id: toastId })
+    } finally {
+      setDownloading(null)
+    }
+  }
 
   const fetchData = React.useCallback(async () => {
     setLoading(true)
@@ -216,14 +260,57 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={fetchData}
-          icon={<RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />}
-        >
-          Refresh Data
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchData}
+            icon={<RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />}
+          >
+            Refresh Data
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="primary"
+                size="sm"
+                loading={Boolean(downloading)}
+                icon={<Download className="size-3.5" />}
+                className="font-semibold shadow-xs"
+              >
+                <span>Download Report</span>
+                <ChevronDown className="size-3 opacity-70 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64 p-1.5 space-y-1">
+              <DropdownMenuItem
+                onClick={() => handleDownloadReport('today')}
+                className="flex items-start gap-2.5 p-2 rounded-lg cursor-pointer hover:bg-muted/80 transition-colors"
+              >
+                <div className="flex size-7 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0 mt-0.5">
+                  <Calendar className="size-3.5" />
+                </div>
+                <div>
+                  <div className="font-semibold text-xs text-foreground">Download Today&apos;s Data (Excel)</div>
+                  <div className="text-[11px] text-muted-foreground">Today&apos;s activities, rep quotas & channel velocity</div>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleDownloadReport('7d')}
+                className="flex items-start gap-2.5 p-2 rounded-lg cursor-pointer hover:bg-muted/80 transition-colors"
+              >
+                <div className="flex size-7 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5">
+                  <BarChart3 className="size-3.5" />
+                </div>
+                <div>
+                  <div className="font-semibold text-xs text-foreground">7-Day Team Breakdown (Excel)</div>
+                  <div className="text-[11px] text-muted-foreground">Team productivity matrix & domain coverage</div>
+                </div>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Target vs Actual Daily Gauges */}

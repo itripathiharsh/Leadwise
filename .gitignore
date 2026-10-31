@@ -47,6 +47,7 @@ prisma/*.db-journal
 .vscode/*
 !.vscode/extensions.json
 .claude/
+.agents/
 
 # local scratch
 /tmp/

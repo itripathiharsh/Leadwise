@@ -12,10 +12,12 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Field, Input } from '@/components/ui/field'
-import { Phone, Mail, Linkedin, Calendar, StickyNote, Check, AlertTriangle, Clock, RotateCcw } from 'lucide-react'
+import { Phone, Mail, Linkedin, Calendar, StickyNote, Check, AlertTriangle, Clock, RotateCcw, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { suggestFollowupDate, QUICK_NOTE_CHIPS } from '@/lib/outreach-cadence'
+import { CreateOrganisationModal } from './create-organisation-modal'
+import { CreateContactModal } from './create-contact-modal'
 
 export type ActivityTypeTab = 'CALL' | 'EMAIL' | 'LINKEDIN' | 'MEETING' | 'NOTE'
 
@@ -143,6 +145,8 @@ export function LogActivityModal({
   const [loadingOrgs, setLoadingOrgs] = React.useState(false)
   const [contacts, setContacts] = React.useState<ContactOption[]>([])
   const [loadingContacts, setLoadingContacts] = React.useState(false)
+  const [createOrgOpen, setCreateOrgOpen] = React.useState(false)
+  const [createContactOpen, setCreateContactOpen] = React.useState(false)
 
   const outcomeSelectRef = React.useRef<HTMLSelectElement>(null)
 
@@ -167,6 +171,8 @@ export function LogActivityModal({
     if (!open) {
       setCallTimerRunning(false)
       setCallDurationSeconds(0)
+      setCreateOrgOpen(false)
+      setCreateContactOpen(false)
       return
     }
 
@@ -262,6 +268,57 @@ export function LogActivityModal({
         setLoadingContacts(false)
       })
   }, [open, organisationId, initialContactId, phoneNumberUsed, emailUsed])
+
+  // Handle successful organisation creation from nested modal
+  const handleOrgCreated = async (newOrg: { id: string; name: string }) => {
+    setCreateOrgOpen(false)
+    setOrgs((prev) => {
+      if (prev.some((o) => o.id === newOrg.id)) return prev
+      return [{ id: newOrg.id, name: newOrg.name }, ...prev]
+    })
+    setOrganisationId(newOrg.id)
+    setContactId('')
+
+    try {
+      const [fullOrgRes, contactsRes] = await Promise.all([
+        fetch(`/api/organisations/${newOrg.id}`).then((r) => r.json()).catch(() => null),
+        fetch(`/api/contacts?organisationId=${encodeURIComponent(newOrg.id)}&pageSize=100&sort=name`).then((r) => r.json()).catch(() => null),
+      ])
+
+      if (fullOrgRes?.organisation) {
+        setOrgs((prev) =>
+          prev.map((o) => (o.id === newOrg.id ? { ...o, ...fullOrgRes.organisation } : o)),
+        )
+      }
+
+      if (contactsRes?.items && Array.isArray(contactsRes.items) && contactsRes.items.length > 0) {
+        setContacts(contactsRes.items)
+        const primary = contactsRes.items[0]
+        setContactId(primary.id)
+        if (primary.phone && !phoneNumberUsed) setPhoneNumberUsed(primary.phone)
+        if (primary.email && !emailUsed) setEmailUsed(primary.email)
+      }
+    } catch {}
+  }
+
+  // Handle successful contact creation from nested modal
+  const handleContactCreated = async () => {
+    setCreateContactOpen(false)
+    if (!organisationId) return
+    try {
+      const res = await fetch(`/api/contacts?organisationId=${encodeURIComponent(organisationId)}&pageSize=100&sort=name`)
+      const d = await res.json()
+      if (d?.items && Array.isArray(d.items)) {
+        setContacts(d.items)
+        if (d.items.length > 0) {
+          const newest = d.items[0]
+          setContactId(newest.id)
+          if (newest.phone && !phoneNumberUsed) setPhoneNumberUsed(newest.phone)
+          if (newest.email && !emailUsed) setEmailUsed(newest.email)
+        }
+      }
+    } catch {}
+  }
 
   // Handle contact selection & auto-populate details
   const handleContactSelect = (newContactId: string) => {
@@ -419,6 +476,7 @@ export function LogActivityModal({
 
   // Keyboard navigation: Ctrl/Cmd+Enter for Save, Shift+Enter for Log & Next
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (createOrgOpen || createContactOpen) return
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault()
       executeSubmit(false)
@@ -432,7 +490,8 @@ export function LogActivityModal({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="lg" onKeyDown={handleKeyDown}>
         <DialogHeader>
           <div className="flex items-center justify-between gap-2 w-full">
@@ -553,7 +612,25 @@ export function LogActivityModal({
 
             {/* Organization & Contact Selectors */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Organization" required>
+              <Field
+                label={
+                  <div className="flex items-center justify-between w-full">
+                    <span className="flex items-center gap-1 font-medium text-foreground">
+                      Organization <span className="text-destructive">*</span>
+                    </span>
+                    {!initialOrganisationId && (
+                      <button
+                        type="button"
+                        onClick={() => setCreateOrgOpen(true)}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors cursor-pointer select-none"
+                      >
+                        <Plus className="size-3" />
+                        <span>Add Organisation</span>
+                      </button>
+                    )}
+                  </div>
+                }
+              >
                 {initialOrganisationId && selectedOrg ? (
                   <div className="flex h-10 items-center justify-between font-semibold text-sm px-3 bg-muted/40 rounded-lg border border-border">
                     <span className="truncate">{selectedOrg.name}</span>
@@ -562,32 +639,81 @@ export function LogActivityModal({
                     </span>
                   </div>
                 ) : (
-                  <select
-                    value={organisationId}
-                    onChange={(e) => {
-                      setOrganisationId(e.target.value)
-                      setContactId('')
-                    }}
-                    required
-                    disabled={loadingOrgs && orgs.length === 0}
-                    className="h-10 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-xs transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  >
-                    <option value="">
-                      {loadingOrgs ? 'Loading organizations...' : 'Select Organization...'}
-                    </option>
-                    {orgs.map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {o.name}
+                  <div className="space-y-1.5">
+                    <select
+                      value={organisationId}
+                      onChange={(e) => {
+                        if (e.target.value === '__NEW__') {
+                          setCreateOrgOpen(true)
+                          return
+                        }
+                        setOrganisationId(e.target.value)
+                        setContactId('')
+                      }}
+                      required
+                      disabled={loadingOrgs && orgs.length === 0}
+                      className="h-10 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-xs transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    >
+                      <option value="">
+                        {loadingOrgs
+                          ? 'Loading organizations...'
+                          : orgs.length === 0
+                            ? 'No organizations found — click Add Organisation'
+                            : 'Select Organization...'}
                       </option>
-                    ))}
-                  </select>
+                      {orgs.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.name}
+                        </option>
+                      ))}
+                      <option value="__NEW__" className="text-primary font-semibold">
+                        + Add new organization...
+                      </option>
+                    </select>
+
+                    {!loadingOrgs && orgs.length === 0 && (
+                      <div className="flex items-center justify-between p-2.5 rounded-lg bg-primary/10 border border-primary/20 text-xs animate-in fade-in">
+                        <span className="text-muted-foreground">No organisations found yet.</span>
+                        <button
+                          type="button"
+                          onClick={() => setCreateOrgOpen(true)}
+                          className="inline-flex items-center gap-1 font-semibold text-primary hover:underline cursor-pointer"
+                        >
+                          <Plus className="size-3.5" />
+                          <span>Add Organisation</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 )}
               </Field>
 
-              <Field label="Contact Person (Optional)">
+              <Field
+                label={
+                  <div className="flex items-center justify-between w-full">
+                    <span className="font-medium text-foreground">Contact Person (Optional)</span>
+                    {organisationId && (
+                      <button
+                        type="button"
+                        onClick={() => setCreateContactOpen(true)}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors cursor-pointer select-none"
+                      >
+                        <Plus className="size-3" />
+                        <span>Add Contact</span>
+                      </button>
+                    )}
+                  </div>
+                }
+              >
                 <select
                   value={contactId}
-                  onChange={(e) => handleContactSelect(e.target.value)}
+                  onChange={(e) => {
+                    if (e.target.value === '__NEW__') {
+                      setCreateContactOpen(true)
+                      return
+                    }
+                    handleContactSelect(e.target.value)
+                  }}
                   disabled={!organisationId || loadingContacts}
                   className="h-10 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-xs transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
@@ -596,7 +722,12 @@ export function LogActivityModal({
                   ) : loadingContacts ? (
                     <option value="">Loading associated contacts...</option>
                   ) : contacts.length === 0 ? (
-                    <option value="">No contacts found (General outreach)</option>
+                    <>
+                      <option value="">No contacts found (General outreach)</option>
+                      <option value="__NEW__" className="text-primary font-semibold">
+                        + Add Contact for this Organization...
+                      </option>
+                    </>
                   ) : (
                     <>
                       <option value="">General outreach (No specific person)</option>
@@ -607,6 +738,9 @@ export function LogActivityModal({
                           {c.isDecisionMaker ? ' ★ (Decision Maker)' : ''}
                         </option>
                       ))}
+                      <option value="__NEW__" className="text-primary font-semibold">
+                        + Add Contact...
+                      </option>
                     </>
                   )}
                 </select>
@@ -846,5 +980,25 @@ export function LogActivityModal({
         </form>
       </DialogContent>
     </Dialog>
+
+      <CreateOrganisationModal
+        open={createOrgOpen}
+        onOpenChange={setCreateOrgOpen}
+        onSuccess={handleOrgCreated}
+        onOpenAddContact={(orgId) => {
+          setCreateOrgOpen(false)
+          setOrganisationId(orgId)
+          setCreateContactOpen(true)
+        }}
+      />
+
+      <CreateContactModal
+        open={createContactOpen}
+        onOpenChange={setCreateContactOpen}
+        organisationId={organisationId}
+        organisationName={selectedOrg?.name || 'Organization'}
+        onSuccess={handleContactCreated}
+      />
+    </>
   )
 }

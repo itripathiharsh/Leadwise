@@ -708,7 +708,7 @@ export function CreateOrganisationModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent size="xl" className="max-w-4xl max-h-[92dvh] flex flex-col p-0 overflow-hidden">
+        <DialogContent size="xl" className="z-[60] max-w-4xl max-h-[92dvh] flex flex-col p-0 overflow-hidden">
         {/* Sticky Header */}
         <DialogHeader className="px-6 py-4.5 border-b border-border/80 bg-surface/80 backdrop-blur-xs shrink-0">
           <div className="flex items-center gap-3">
